@@ -4437,6 +4437,27 @@
       padding: 20px;
     }
 
+    .mobile-menu-links {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      padding: 8px 0;
+    }
+
+    .mobile-menu-links a {
+      padding: 14px 20px;
+      text-decoration: none;
+      color: #2b2b2b;
+      font-weight: 600;
+      font-size: 15px;
+      border-bottom: 1px solid #f4f4f4;
+    }
+
+    .mobile-menu-links a:active {
+      background: #faf5ec;
+    }
+
     .cart-drawer-item {
       display: flex;
       align-items: center;

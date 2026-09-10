@@ -433,6 +433,16 @@
       document.getElementById('wishlistDrawerOverlay').style.display = 'none';
     }
 
+    function openMobileMenuDrawer() {
+      document.getElementById('mobileMenuDrawer').classList.add('open');
+      document.getElementById('mobileMenuOverlay').style.display = 'block';
+    }
+
+    function closeMobileMenuDrawer() {
+      document.getElementById('mobileMenuDrawer').classList.remove('open');
+      document.getElementById('mobileMenuOverlay').style.display = 'none';
+    }
+
     function openCartDrawer() {
       document.getElementById('cartDrawer').classList.add('open');
       document.getElementById('cartDrawerOverlay').style.display = 'block';
