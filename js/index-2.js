@@ -1,0 +1,505 @@
+    // ---------- helpers ----------
+    const starIcon = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9"/></svg>`;
+    const heartIcon = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>`;
+    const tagIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20.5 12.79 12.7 20.6a2 2 0 0 1-2.83 0l-6.5-6.5a2 2 0 0 1 0-2.83L11.2 3.5H19a1.5 1.5 0 0 1 1.5 1.5v7.79z"/><circle cx="15.5" cy="8.5" r="1.25" fill="currentColor" stroke="none"/></svg>`;
+    const cartIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.4"/><circle cx="18" cy="21" r="1.4"/><path d="M2.5 3h2l2.4 12.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 8H6"/></svg>`;
+    const camIcon = `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.55"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>`;
+    const giftIcon = `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.55"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 7v14"/></svg>`;
+
+    // ---------- unsplash helper ----------
+    const unsplash = (w, h, kw, sig) => `https://source.unsplash.com/${w}x${h}/?${kw}&sig=${sig}`;
+
+    // ---------- Cloudinary auto-format/auto-quality helper ----------
+    function cldOpt(url) {
+      // Cloudinary account has Strict Transformations enabled — any on-the-fly
+      // transform (even a plain resize) 400s. No-op until that's turned off.
+      return url;
+    }
+
+    // ---------- categories ----------
+    const categories = [
+      ["Wedding Photography", "https://images.unsplash.com/photo-1519741497674-611481863552?w=150&h=150&fit=crop&q=80"],
+      ["Pre-Wedding", "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=150&h=150&fit=crop&q=80"],
+      ["Maternity Shoot", "https://images.unsplash.com/photo-1544126592-807ade215a0b?w=150&h=150&fit=crop&q=80"],
+      ["Baby Shoot", "https://images.unsplash.com/photo-1519689680058-324335c77eba?w=150&h=150&fit=crop&q=80"],
+      ["Birthday Photography", "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=150&h=150&fit=crop&q=80"],
+      ["Event Photography", "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=150&h=150&fit=crop&q=80"],
+      ["Customised Gift Shop", "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=150&h=150&fit=crop&q=80"],
+      ["Studio Services", "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=150&h=150&fit=crop&q=80"],
+      ["Corporate Gifts", "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=150&h=150&fit=crop&q=80"]
+    ];
+    const categoryLinks = {
+      "Wedding Photography": "photography.html?category=wedding",
+      "Pre-Wedding": "photography.html?category=prewedding",
+      "Maternity Shoot": "photography.html?category=maternity",
+      "Baby Shoot": "photography.html?category=baby",
+      "Birthday Photography": "photography.html?category=birthday",
+      "Event Photography": "photography.html?category=event",
+      "Customised Gift Shop": "gifts.html",
+      "Studio Services": "studio.html",
+      "Corporate Gifts": "corporate.html"
+    };
+
+    const categoryItemsHTML = categories.map(([name, imgUrl]) => `
+    <a href="${categoryLinks[name] || '#'}" class="cat-item" style="text-decoration: none; color: inherit;">
+      <div class="cat-circle"><img src="${imgUrl}" alt="${name}" loading="lazy"></div>
+      <span>${name}</span>
+    </a>`).join('');
+
+    // Duplicate for seamless infinite scroll
+    document.getElementById('catScroll').innerHTML = `<div class="cat-scroll-inner">${categoryItemsHTML}${categoryItemsHTML}</div>`;
+
+    // ---------- photography services ----------
+    // category id must match js/photography.js CATEGORIES ids, so the click lands
+    // on that exact service's packages/portfolio - not just the generic page.
+    // Populated by loadHomepageFeatured() below from the same GET /api/catalog/{page}
+    // endpoints photography.html/studio.html/gifts.html/corporate.html themselves use -
+    // one featured product per category, from the database, instead of a hand-copied
+    // snapshot of those pages' content that only stays correct until someone edits them.
+    let services = [];
+    function pctOff(price, old) {
+      const p = parseInt(price.replace(/[^\d]/g, ''), 10);
+      const o = parseInt(old.replace(/[^\d]/g, ''), 10);
+      return Math.round((o - p) / o * 100);
+    }
+
+    function productCardHTML({ name, price, old, imgUrl, badge, rating, onClick, actionHTML }) {
+      return `
+      <div class="p-card" onclick="${onClick}">
+        <div class="p-thumb">
+          <img src="${cldOpt(imgUrl)}" alt="${name}" loading="lazy">
+          <button class="p-wish${isWished(name) ? ' active' : ''}" data-name="${name}" onclick="event.stopPropagation(); toggleWishItem('${name}', '${price}', '${imgUrl}')" aria-label="Add ${name} to wishlist">${heartIcon}</button>
+        </div>
+        <div class="p-body">
+          <h4>${name}</h4>
+          ${badge ? `<span class="p-badge">${tagIcon}${badge}</span>` : ''}
+          <div class="p-card-footer">
+            <span class="price">${price}${old ? `<span class="price-sub"><span class="old">${old}</span><span class="off-pct">${pctOff(price, old)}% OFF</span></span>` : ''}</span>
+            ${rating ? `
+            <div class="p-rating">
+              <span class="p-rating-num">${rating}</span>
+              <button class="p-fav-btn" onclick="event.stopPropagation(); this.classList.toggle('faved')" aria-label="Add ${name} to favorites">${starIcon}</button>
+            </div>` : ''}
+          </div>
+          ${actionHTML ? `
+          <div class="p-bottom-row">
+            ${actionHTML}
+          </div>` : ''}
+        </div>
+      </div>`;
+    }
+
+    // Same booking.html link photography.html's own package cards use (see
+    // bookingURL() in js/photography.js) - so a homepage service card opens
+    // that exact package's booking page instead of just landing on its category.
+    function photoHref(categoryId, pid, name, tier, price, feat) {
+      const q = new URLSearchParams({
+        pid: pid || '',
+        category: categoryId,
+        package: name,
+        tier: (tier || '').toLowerCase(),
+        price: price,
+        feats: (feat || []).join('|')
+      });
+      return `booking.html?${q.toString()}`;
+    }
+
+    function renderPhotoServices() {
+      document.getElementById('photoServices').innerHTML = services.map(([name, price, tag, imgUrl, rating, categoryId, pid, tier, feat]) => productCardHTML({
+        name, price, imgUrl, badge: tag, rating, onClick: `location.href='${photoHref(categoryId, pid, name, tier, price, feat)}'`
+      })).join('');
+    }
+
+    // ---------- studio services ----------
+    // Populated by loadHomepageFeatured() below (see services comment above) -
+    // category key included so the deep link can select the right category before
+    // opening that package's preview modal (see studioHref() below).
+    let studio = [];
+
+    // ---------- customized gifts bestsellers ----------
+    // Populated by loadHomepageFeatured() below (see services comment above) -
+    // names must match the database exactly for gifts.html's ?view=product lookup.
+    let gifts = [];
+
+    // ---------- corporate gifts & hampers ----------
+    // Populated by loadHomepageFeatured() below (see services comment above).
+    let corp = [];
+
+    const HOMEPAGE_API_BASE = window.SAI_API_BASE || "http://localhost:8000";
+
+    // One featured product per category (falling back to that category's first
+    // product if none is marked featured), from the same page_bundle endpoint each
+    // storefront page itself uses - so "editing a product in admin" and "editing
+    // the homepage's picks for that page" are the same action for the owner.
+    function pickFeaturedPerCategory(data, limit) {
+      const picks = [];
+      data.categories.forEach(c => {
+        const pkgs = data.packages[c.id] || [];
+        const chosen = pkgs.find(p => p.featured) || pkgs[0];
+        if (chosen) picks.push({ ...chosen, _categoryId: c.id });
+      });
+      return picks.slice(0, limit);
+    }
+
+    async function loadHomepageFeatured() {
+      const fetchPage = slug => fetch(`${HOMEPAGE_API_BASE}/api/catalog/${slug}`)
+        .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); });
+
+      const [photoData, studioData, giftsData, corpData] = await Promise.all([
+        fetchPage('photography'), fetchPage('studio'), fetchPage('gifts'), fetchPage('corporate'),
+      ]);
+
+      services = pickFeaturedPerCategory(photoData, 6).map(p =>
+        [p.title, p.price, 'Starting from', (p.images && p.images[0]) || '', p.rating || '', p._categoryId, p.id, p.tier, p.feat]);
+      studio = pickFeaturedPerCategory(studioData, 6).map(p =>
+        [p.title, p.price, p.mrp || null, (p.images && p.images[0]) || '', p.rating || '', p._categoryId, p.id]);
+      gifts = pickFeaturedPerCategory(giftsData, 6).map(p =>
+        [p.title, p.price, p.mrp || null, (p.images && p.images[0]) || '', p.rating || '']);
+      corp = pickFeaturedPerCategory(corpData, 6).map(p =>
+        [p.title, p.price, p.mrp || null, (p.images && p.images[0]) || '', p.rating || '', p.id]);
+    }
+
+    // deep-link builders - each page supports opening one exact product differently
+    // (see the ?openProduct handling added to js/studio.js and js/corporate.js, and
+    // gifts.html's existing ?view=product route)
+    function giftHref(name) {
+      return `gifts.html?view=product&product=${encodeURIComponent(name)}`;
+    }
+    function studioHref(name, categoryKey, pid) {
+      const base = `studio.html?category=${encodeURIComponent(categoryKey)}&openProduct=${encodeURIComponent(name)}`;
+      return pid ? `${base}&pid=${encodeURIComponent(pid)}` : base;
+    }
+    function corpHref(name, price, imgUrl, pid) {
+      const base = `corporate.html?openProduct=${encodeURIComponent(name)}&openPrice=${encodeURIComponent(price)}&openImg=${encodeURIComponent(imgUrl)}`;
+      return pid ? `${base}&pid=${encodeURIComponent(pid)}` : base;
+    }
+
+    function cartProductCardHTML(name, price, old, imgUrl, rating, targetHref) {
+      // No quick-add "+" here anymore - the card itself now navigates straight to
+      // that exact product, so adding to cart happens on the actual product page.
+      return productCardHTML({
+        name, price, old, imgUrl, rating,
+        onClick: `location.href='${targetHref}'`
+      });
+    }
+
+    function renderProducts() {
+      renderPhotoServices();
+      document.getElementById('giftCards').innerHTML = gifts.map(([name, price, old, imgUrl, rating]) =>
+        cartProductCardHTML(name, price, old, imgUrl, rating, giftHref(name))).join('');
+
+      document.getElementById('studioServices').innerHTML = studio.map(([name, price, old, imgUrl, rating, categoryKey, pid]) =>
+        cartProductCardHTML(name, price, old, imgUrl, rating, studioHref(name, categoryKey, pid))).join('');
+
+      document.getElementById('corpCards').innerHTML = corp.map(([name, price, old, imgUrl, rating, pid]) =>
+        cartProductCardHTML(name, price, old, imgUrl, rating, corpHref(name, price, imgUrl, pid))).join('');
+    }
+
+    // --- Cart System ---
+    function getCart() {
+      try {
+        return JSON.parse(localStorage.getItem('sai_studio_cart')) || {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function saveCart(cart) {
+      localStorage.setItem('sai_studio_cart', JSON.stringify(cart));
+      updateCartUI();
+    }
+
+    function getCartQty(productName) {
+      const cart = getCart();
+      return cart[productName] ? cart[productName].qty : 0;
+    }
+
+    function updateCartQty(productName, delta, priceStr = '', imgUrl = '') {
+      const cart = getCart();
+      if (!cart[productName]) {
+        cart[productName] = {
+          name: productName,
+          qty: 0,
+          price: priceStr,
+          img: imgUrl
+        };
+      }
+      cart[productName].qty += delta;
+      if (cart[productName].qty <= 0) {
+        delete cart[productName];
+      }
+      saveCart(cart);
+      renderProducts();
+    }
+
+    function removeCartItem(productName) {
+      const cart = getCart();
+      delete cart[productName];
+      saveCart(cart);
+      renderProducts();
+    }
+
+    function updateCartUI() {
+      const cart = getCart();
+      const items = Object.values(cart);
+      let totalQty = 0;
+      let totalPrice = 0;
+      let firstItem = null;
+
+      items.forEach(item => {
+        totalQty += item.qty;
+        const priceNum = parseInt(item.price.replace(/[^\d]/g, '')) || 0;
+        totalPrice += priceNum * item.qty;
+        if (!firstItem) firstItem = item;
+      });
+
+      // Update Header Cart Badge
+      const navCartBadge = document.getElementById('navCartBadge');
+      if (navCartBadge) {
+        navCartBadge.textContent = totalQty;
+        navCartBadge.style.display = totalQty > 0 ? 'flex' : 'none';
+      }
+
+      // Update Mobile Header Cart Badge
+      const mobileCartBadge = document.getElementById('mobileCartBadge');
+      if (mobileCartBadge) {
+        mobileCartBadge.textContent = totalQty;
+        mobileCartBadge.style.display = totalQty > 0 ? 'flex' : 'none';
+      }
+
+      // Update Mobile Bottom Nav Cart Badge
+      const bottomNavCartBadge = document.getElementById('bottomNavCartBadge');
+      if (bottomNavCartBadge) {
+        bottomNavCartBadge.textContent = totalQty;
+        bottomNavCartBadge.style.display = totalQty > 0 ? 'flex' : 'none';
+      }
+
+      // Update Mobile Floating Cart Bar
+      const mobileBar = document.getElementById('mobileCartBar');
+      if (mobileBar) {
+        if (totalQty > 0) {
+          mobileBar.style.display = 'flex';
+          const barQty = document.getElementById('cartBarQty');
+          if (barQty) {
+            barQty.textContent = `${totalQty} ${totalQty === 1 ? 'item' : 'items'} • ₹${totalPrice}`;
+          }
+          const barThumb = document.getElementById('cartBarThumb');
+          if (barThumb && firstItem) {
+            barThumb.src = cldOpt(firstItem.img);
+          }
+        } else {
+          mobileBar.style.display = 'none';
+        }
+      }
+
+      // Update Cart Drawer Contents
+      const drawerItemsContainer = document.getElementById('cartDrawerItems');
+      const subtotalEl = document.getElementById('cartSubtotalValue');
+      if (drawerItemsContainer) {
+        if (items.length === 0) {
+          drawerItemsContainer.innerHTML = `
+            <div style="text-align: center; color: #888; padding-top: 40px;">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; opacity: 0.5;">
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+              </svg>
+              <p>Your cart is empty</p>
+            </div>
+          `;
+          if (subtotalEl) subtotalEl.textContent = '₹0';
+        } else {
+          drawerItemsContainer.innerHTML = items.map(item => `
+            <div class="cart-drawer-item">
+              <img class="cart-drawer-item-img" src="${cldOpt(item.img)}" alt="${item.name}">
+              <div class="cart-drawer-item-info">
+                <h5>${item.name}</h5>
+                <p>${item.price} each</p>
+              </div>
+              <div class="quantity-selector" style="height: 24px; min-width: 72px;">
+                <button class="qty-btn" onclick="updateCartQty('${item.name}', -1, '${item.price}', '${item.img}')">-</button>
+                <span class="qty-count">${item.qty}</span>
+                <button class="qty-btn" onclick="updateCartQty('${item.name}', 1, '${item.price}', '${item.img}')">+</button>
+              </div>
+              <button class="cart-drawer-item-remove" onclick="removeCartItem('${item.name}')" title="Remove item" aria-label="Remove item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+          `).join('');
+          if (subtotalEl) subtotalEl.textContent = `₹${totalPrice}`;
+        }
+      }
+    }
+
+    // --- Wishlist System ---
+    function getWishlist() {
+      try {
+        return JSON.parse(localStorage.getItem('sai_studio_wishlist')) || {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function saveWishlist(wishlist) {
+      localStorage.setItem('sai_studio_wishlist', JSON.stringify(wishlist));
+      updateWishlistUI();
+    }
+
+    function isWished(productName) {
+      return !!getWishlist()[productName];
+    }
+
+    function toggleWishItem(productName, priceStr, imgUrl) {
+      const wishlist = getWishlist();
+      if (wishlist[productName]) {
+        delete wishlist[productName];
+      } else {
+        wishlist[productName] = { name: productName, price: priceStr, img: imgUrl };
+      }
+      saveWishlist(wishlist);
+      document.querySelectorAll(`.p-wish[data-name="${CSS.escape(productName)}"]`).forEach(el => {
+        el.classList.toggle('active', !!wishlist[productName]);
+      });
+    }
+
+    function removeWishItem(productName) {
+      const wishlist = getWishlist();
+      delete wishlist[productName];
+      saveWishlist(wishlist);
+      document.querySelectorAll(`.p-wish[data-name="${CSS.escape(productName)}"]`).forEach(el => {
+        el.classList.remove('active');
+      });
+    }
+
+    function moveWishItemToCart(productName, priceStr, imgUrl) {
+      updateCartQty(productName, 1, priceStr, imgUrl);
+      removeWishItem(productName);
+    }
+
+    function updateWishlistUI() {
+      const wishlist = getWishlist();
+      const items = Object.values(wishlist);
+      const count = items.length;
+
+      [document.getElementById('navWishlistBadge'), document.getElementById('mobileWishlistBadge')].forEach(badge => {
+        if (!badge) return;
+        badge.textContent = count;
+        badge.style.display = count > 0 ? 'flex' : 'none';
+      });
+
+      const drawerItemsContainer = document.getElementById('wishlistDrawerItems');
+      if (!drawerItemsContainer) return;
+
+      if (items.length === 0) {
+        drawerItemsContainer.innerHTML = `
+          <div style="text-align: center; color: #888; padding-top: 40px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; opacity: 0.5;">
+              <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
+            </svg>
+            <p>Your wishlist is empty</p>
+          </div>
+        `;
+      } else {
+        drawerItemsContainer.innerHTML = items.map(item => `
+          <div class="cart-drawer-item">
+            <img class="cart-drawer-item-img" src="${cldOpt(item.img)}" alt="${item.name}">
+            <div class="cart-drawer-item-info">
+              <h5>${item.name}</h5>
+              <p>${item.price}</p>
+            </div>
+            <button class="cart-btn" title="Move to cart" aria-label="Move ${item.name} to cart" onclick="moveWishItemToCart('${item.name}', '${item.price}', '${item.img}')">${cartIcon}</button>
+            <button class="cart-drawer-item-remove" onclick="removeWishItem('${item.name}')" title="Remove item" aria-label="Remove item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        `).join('');
+      }
+    }
+
+    function openWishlistDrawer() {
+      document.getElementById('wishlistDrawer').classList.add('open');
+      document.getElementById('wishlistDrawerOverlay').style.display = 'block';
+      updateWishlistUI();
+    }
+
+    function closeWishlistDrawer() {
+      document.getElementById('wishlistDrawer').classList.remove('open');
+      document.getElementById('wishlistDrawerOverlay').style.display = 'none';
+    }
+
+    function openCartDrawer() {
+      document.getElementById('cartDrawer').classList.add('open');
+      document.getElementById('cartDrawerOverlay').style.display = 'block';
+      updateCartUI();
+    }
+
+    function closeCartDrawer() {
+      document.getElementById('cartDrawer').classList.remove('open');
+      document.getElementById('cartDrawerOverlay').style.display = 'none';
+    }
+
+    function checkoutWhatsApp() {
+      const cart = getCart();
+      const items = Object.values(cart);
+      if (items.length === 0) return;
+
+      let message = "Hello Sai Kumar Digital Lab & Studio, I would like to place an order:\n\n";
+      let total = 0;
+      items.forEach(item => {
+        const itemPrice = parseInt(item.price.replace(/[^\d]/g, '')) || 0;
+        const subtotal = itemPrice * item.qty;
+        total += subtotal;
+        message += `• ${item.name} x${item.qty} - ₹${subtotal}\n`;
+      });
+      message += `\n*Total Order Value: ₹${total}*`;
+
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappURL = `https://wa.me/919849233501?text=${encodedMessage}`;
+      window.open(whatsappURL, '_blank');
+    }
+
+    // ---------- cities ----------
+    const cities = ["Hyderabad", "Secunderabad", "Gachibowli", "Madhapur", "Kukatpally", "Hitech City", "Ameerpet", "Dilsukhnagar", "LB Nagar", "Uppal"];
+    const citiesVisibleCount = 4;
+    const citiesExpandedState = {};
+
+    function renderCityPills(containerId) {
+      const list = citiesExpandedState[containerId] ? cities : cities.slice(0, citiesVisibleCount);
+      document.getElementById(containerId).innerHTML = list.map(c => `<span class="pill">${c}</span>`).join('');
+    }
+    renderCityPills('citiesGifts');
+
+    function toggleCities(btn) {
+      const pillsWrap = btn.closest('.cities-card').querySelector('.city-pills');
+      const containerId = pillsWrap.id;
+      const expanded = !citiesExpandedState[containerId];
+      citiesExpandedState[containerId] = expanded;
+      pillsWrap.classList.toggle('expanded', expanded);
+      renderCityPills(containerId);
+      btn.classList.toggle('active', expanded);
+      btn.querySelector('.view-more-label').textContent = expanded ? 'View Less' : 'View More';
+    }
+
+    // --- On Load ---
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        await loadHomepageFeatured();
+      } catch (err) {
+        console.error('Could not load featured products for the homepage:', err);
+      }
+      renderProducts();
+      updateCartUI(); // Initial cart UI refresh
+      updateWishlistUI(); // Initial wishlist UI refresh
+    });
+
+    // ---------- MOBILE BOTTOM NAV ----------
+    function setActiveBottomNav(el) {
+      document.querySelectorAll(".bottom-nav-item").forEach(i => i.classList.remove("active"));
+      el.classList.add("active");
+    }

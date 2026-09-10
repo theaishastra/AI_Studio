@@ -1,0 +1,350 @@
+
+    const ACCT_ORDER_STATUS_LABELS = {
+      created: 'Created',
+      payment_pending: 'Awaiting Payment',
+      cod_confirmed: 'Confirmed (Cash on Delivery)',
+      paid: 'Paid',
+      in_production: 'In Production',
+      shipped: 'Shipped',
+      delivered: 'Delivered',
+      cancelled: 'Cancelled',
+      refunded: 'Refunded',
+    };
+
+    let acctLoginEmail = '';
+    let acctAddresses = [];
+
+    function refreshCartBadge() {
+      let totalQty = 0;
+      try {
+        const cart = JSON.parse(localStorage.getItem('sai_studio_cart')) || {};
+        totalQty = Object.values(cart).reduce((sum, item) => sum + (item.qty || 0), 0);
+      } catch (e) {}
+      [document.getElementById('navCartBadge'), document.getElementById('bottomNavCartBadge')].forEach(el => {
+        if (!el) return;
+        el.textContent = totalQty;
+        el.style.display = totalQty > 0 ? 'flex' : 'none';
+      });
+    }
+
+    function initMyAccountPage() {
+      refreshCartBadge();
+      if (isCustomerLoggedIn()) {
+        showAcctContent();
+      } else {
+        resetAcctLoginGate();
+      }
+    }
+
+    function resetAcctLoginGate() {
+      document.getElementById('acctLoginGate').style.display = 'block';
+      document.getElementById('acctContent').style.display = 'none';
+      acctLoginEmail = getCustomerEmail() || '';
+      document.getElementById('acctLoginEmail').value = acctLoginEmail;
+      document.getElementById('acctLoginOtp').value = '';
+      document.getElementById('acctLoginMsg').style.display = 'none';
+      document.getElementById('acctLoginEmailStep').style.display = 'block';
+      document.getElementById('acctLoginOtpStep').style.display = 'none';
+    }
+
+    function backToAcctEmailStep() {
+      document.getElementById('acctLoginEmailStep').style.display = 'block';
+      document.getElementById('acctLoginOtpStep').style.display = 'none';
+      document.getElementById('acctLoginMsg').style.display = 'none';
+    }
+
+    async function sendAcctOtp() {
+      const email = document.getElementById('acctLoginEmail').value.trim();
+      const msgEl = document.getElementById('acctLoginMsg');
+      msgEl.style.display = 'none';
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        msgEl.textContent = 'Please enter a valid email address.';
+        msgEl.style.display = 'block';
+        return;
+      }
+
+      const btn = document.getElementById('acctSendOtpBtn');
+      btn.disabled = true;
+      try {
+        await CustomerAuth.requestOtp(email);
+        acctLoginEmail = email;
+        document.getElementById('acctOtpSentTo').textContent = `(sent to ${email})`;
+        document.getElementById('acctLoginEmailStep').style.display = 'none';
+        document.getElementById('acctLoginOtpStep').style.display = 'block';
+        document.getElementById('acctLoginOtp').focus();
+      } catch (err) {
+        msgEl.textContent = err.message || 'Could not send the OTP. Please try again.';
+        msgEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function verifyAcctOtp() {
+      const code = document.getElementById('acctLoginOtp').value.trim();
+      const msgEl = document.getElementById('acctLoginMsg');
+      msgEl.style.display = 'none';
+
+      if (!/^\d{6}$/.test(code)) {
+        msgEl.textContent = 'Please enter the 6-digit code.';
+        msgEl.style.display = 'block';
+        return;
+      }
+
+      const btn = document.getElementById('acctVerifyOtpBtn');
+      btn.disabled = true;
+      try {
+        await CustomerAuth.verifyOtp(acctLoginEmail, code);
+        window.SaiAuthNav?.refresh();
+        await showAcctContent();
+      } catch (err) {
+        msgEl.textContent = err.message || 'That code didn’t work. Please try again.';
+        msgEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function showAcctContent() {
+      document.getElementById('acctLoginGate').style.display = 'none';
+      document.getElementById('acctContent').style.display = 'block';
+      await Promise.all([loadAcctProfile(), loadAcctAddresses(), loadAcctOrdersPreview()]);
+    }
+
+    /* ---------- profile ---------- */
+
+    function acctInitials(name, email) {
+      const src = (name || email || 'U').trim();
+      return src.split(/[\s@]+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    }
+
+    async function loadAcctProfile() {
+      try {
+        const me = await CustomerAuth.getMe();
+        document.getElementById('acctAvatar').textContent = acctInitials(me.name, me.email);
+        document.getElementById('acctHeroName').textContent = me.name || 'Your Account';
+        document.getElementById('acctHeroEmail').textContent = me.email;
+        document.getElementById('acctNameInput').value = me.name || '';
+        document.getElementById('acctPhoneInput').value = me.phone || '';
+        document.getElementById('acctEmailInput').value = me.email;
+        if (me.created_at) {
+          const since = new Date(me.created_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+          document.getElementById('acctSince').textContent = since;
+          document.getElementById('acctSinceChip').style.display = 'inline-flex';
+        }
+      } catch (err) {
+        // session likely expired
+        acctSignOut();
+      }
+    }
+
+    async function saveAcctProfile() {
+      const name = document.getElementById('acctNameInput').value.trim();
+      const phone = document.getElementById('acctPhoneInput').value.trim();
+      const msgEl = document.getElementById('acctProfileMsg');
+      msgEl.style.display = 'none';
+      msgEl.classList.remove('acct-save-ok');
+
+      if (phone && !/^[6-9]\d{9}$/.test(phone)) {
+        msgEl.textContent = 'Please enter a valid 10-digit mobile number.';
+        msgEl.style.display = 'block';
+        return;
+      }
+
+      const btn = document.getElementById('acctSaveProfileBtn');
+      btn.disabled = true;
+      try {
+        const me = await CustomerAuth.updateMe({ name: name || null, phone: phone || null });
+        document.getElementById('acctAvatar').textContent = acctInitials(me.name, me.email);
+        document.getElementById('acctHeroName').textContent = me.name || 'Your Account';
+        window.SaiAuthNav?.refresh();
+        msgEl.textContent = 'Profile updated successfully.';
+        msgEl.classList.add('acct-save-ok');
+        msgEl.style.display = 'block';
+      } catch (err) {
+        msgEl.textContent = err.message || 'Could not update your profile. Please try again.';
+        msgEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    /* ---------- addresses ---------- */
+
+    async function loadAcctAddresses() {
+      const wrap = document.getElementById('acctAddressList');
+      try {
+        acctAddresses = await CustomerAuth.getAddresses();
+        renderAcctAddresses();
+      } catch (err) {
+        wrap.innerHTML = `<div class="cart-form-msg" style="display:block;">${err.message || 'Could not load your addresses.'}</div>`;
+      }
+    }
+
+    function renderAcctAddresses() {
+      const wrap = document.getElementById('acctAddressList');
+      if (!acctAddresses.length) {
+        wrap.innerHTML = '<div class="acct-empty-mini">No saved addresses yet. Add one to speed up checkout.</div>';
+        return;
+      }
+      wrap.innerHTML = `<div class="acct-address-grid">${acctAddresses.map(addressCardHTML).join('')}</div>`;
+    }
+
+    function escapeAcctHTML(s) {
+      const d = document.createElement('div');
+      d.textContent = s == null ? '' : s;
+      return d.innerHTML;
+    }
+
+    function addressCardHTML(addr) {
+      return `
+        <div class="acct-address-card ${addr.is_default ? 'is-default' : ''}">
+          <div class="acct-address-label-row">
+            <span class="acct-address-label">${escapeAcctHTML(addr.label)}</span>
+            ${addr.is_default ? '<span class="acct-default-badge">Default</span>' : ''}
+          </div>
+          <div class="acct-address-name">${escapeAcctHTML(addr.full_name)} &middot; ${escapeAcctHTML(addr.phone)}</div>
+          <div class="acct-address-text">${escapeAcctHTML(addr.line1)}${addr.line2 ? ', ' + escapeAcctHTML(addr.line2) : ''}, ${escapeAcctHTML(addr.city)}, ${escapeAcctHTML(addr.state)} - ${escapeAcctHTML(addr.pincode)}</div>
+          <div class="acct-address-actions">
+            <button onclick="editAcctAddress('${addr.id}')">Edit</button>
+            ${!addr.is_default ? `<button onclick="makeAcctAddressDefault('${addr.id}')">Set Default</button>` : ''}
+            <button class="acct-danger" onclick="deleteAcctAddress('${addr.id}')">Delete</button>
+          </div>
+        </div>`;
+    }
+
+    function showAcctAddressForm() {
+      document.getElementById('acctAddressForm').style.display = 'block';
+      document.getElementById('acctAddAddressBtn').style.display = 'none';
+      document.getElementById('acctAddressForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function hideAcctAddressForm() {
+      document.getElementById('acctAddressForm').style.display = 'none';
+      document.getElementById('acctAddAddressBtn').style.display = 'inline-flex';
+      document.getElementById('acctAddressMsg').style.display = 'none';
+      document.getElementById('acctAddressId').value = '';
+      ['acctAddrLabel', 'acctAddrName', 'acctAddrPhone', 'acctAddrLine1', 'acctAddrLine2', 'acctAddrCity', 'acctAddrState', 'acctAddrPincode'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('acctAddrDefault').checked = false;
+    }
+
+    function editAcctAddress(id) {
+      const addr = acctAddresses.find(a => a.id === id);
+      if (!addr) return;
+      showAcctAddressForm();
+      document.getElementById('acctAddressId').value = addr.id;
+      document.getElementById('acctAddrLabel').value = addr.label || '';
+      document.getElementById('acctAddrName').value = addr.full_name || '';
+      document.getElementById('acctAddrPhone').value = addr.phone || '';
+      document.getElementById('acctAddrLine1').value = addr.line1 || '';
+      document.getElementById('acctAddrLine2').value = addr.line2 || '';
+      document.getElementById('acctAddrCity').value = addr.city || '';
+      document.getElementById('acctAddrState').value = addr.state || '';
+      document.getElementById('acctAddrPincode').value = addr.pincode || '';
+      document.getElementById('acctAddrDefault').checked = !!addr.is_default;
+    }
+
+    async function saveAcctAddress() {
+      const msgEl = document.getElementById('acctAddressMsg');
+      msgEl.style.display = 'none';
+
+      const data = {
+        label: document.getElementById('acctAddrLabel').value.trim() || 'Home',
+        full_name: document.getElementById('acctAddrName').value.trim(),
+        phone: document.getElementById('acctAddrPhone').value.trim(),
+        line1: document.getElementById('acctAddrLine1').value.trim(),
+        line2: document.getElementById('acctAddrLine2').value.trim() || null,
+        city: document.getElementById('acctAddrCity').value.trim(),
+        state: document.getElementById('acctAddrState').value.trim(),
+        pincode: document.getElementById('acctAddrPincode').value.trim(),
+        is_default: document.getElementById('acctAddrDefault').checked,
+      };
+
+      if (data.full_name.length < 2 || !/^[6-9]\d{9}$/.test(data.phone) || data.line1.length < 3 ||
+          data.city.length < 2 || data.state.length < 2 || !/^\d{6}$/.test(data.pincode)) {
+        msgEl.textContent = 'Please fill in all required fields correctly.';
+        msgEl.style.display = 'block';
+        return;
+      }
+
+      const id = document.getElementById('acctAddressId').value;
+      const btn = document.getElementById('acctSaveAddressBtn');
+      btn.disabled = true;
+      try {
+        if (id) {
+          await CustomerAuth.updateAddress(id, data);
+        } else {
+          await CustomerAuth.createAddress(data);
+        }
+        hideAcctAddressForm();
+        await loadAcctAddresses();
+      } catch (err) {
+        msgEl.textContent = err.message || 'Could not save this address. Please try again.';
+        msgEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function makeAcctAddressDefault(id) {
+      const addr = acctAddresses.find(a => a.id === id);
+      if (!addr) return;
+      try {
+        await CustomerAuth.updateAddress(id, { ...addr, is_default: true });
+        await loadAcctAddresses();
+      } catch (err) {
+        alert(err.message || 'Could not update this address.');
+      }
+    }
+
+    async function deleteAcctAddress(id) {
+      if (!confirm('Remove this saved address?')) return;
+      try {
+        await CustomerAuth.deleteAddress(id);
+        await loadAcctAddresses();
+      } catch (err) {
+        alert(err.message || 'Could not delete this address.');
+      }
+    }
+
+    /* ---------- orders preview ---------- */
+
+    async function loadAcctOrdersPreview() {
+      const wrap = document.getElementById('acctOrdersPreview');
+      try {
+        const orders = await CustomerAuth.myOrders();
+        if (!orders.length) {
+          wrap.innerHTML = '<div class="acct-empty-mini">No orders yet. Once you place an order, it’ll show up here.</div>';
+          return;
+        }
+        wrap.innerHTML = orders.slice(0, 3).map(orderMiniHTML).join('');
+      } catch (err) {
+        wrap.innerHTML = `<div class="cart-form-msg" style="display:block;">${err.message || 'Could not load your orders.'}</div>`;
+      }
+    }
+
+    function orderMiniHTML(order) {
+      const date = new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+      const statusLabel = ACCT_ORDER_STATUS_LABELS[order.status] || order.status;
+      return `
+        <div class="acct-order-mini">
+          <div class="acct-order-mini-info">
+            <b>Order ${escapeAcctHTML(order.number)}</b>
+            <span>${date} &middot; &#8377;${Math.round(order.total)}</span>
+          </div>
+          <span class="order-status-badge order-status-${order.status}">${statusLabel}</span>
+        </div>`;
+    }
+
+    /* ---------- sign out ---------- */
+
+    function acctSignOut() {
+      CustomerAuth.logout();
+      window.SaiAuthNav?.refresh();
+      resetAcctLoginGate();
+    }
+
+    window.addEventListener('DOMContentLoaded', initMyAccountPage);

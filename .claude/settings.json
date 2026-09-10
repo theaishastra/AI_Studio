@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(where psql *)",
+      "Bash(pg_config --version)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('C:/Users/mohan/AppData/Local/Temp/claude/d--Gen-AI-Sai-Kumar-Studio-Sai-Studio/62cc4212-1244-4f32-a391-acf76063a4d6/scratchpad/corporate_data.json','utf8'\\)\\); console.log\\('valid json'\\)\")",
+      "Bash(py -0p)",
+      "Bash(python3.12 --version)",
+      "Bash(py -3.12 -m venv venv)",
+      "Bash(python -c \"import json; json.load\\(open\\(r'C:\\\\Users\\\\mohan\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Gen-AI-Sai-Kumar-Studio-Sai-Studio\\\\62cc4212-1244-4f32-a391-acf76063a4d6\\\\scratchpad\\\\booking_equipment_homepage_data.json', encoding='utf-8'\\)\\); print\\('OK'\\)\")",
+      "Bash(node --check \"/d/Gen AI/Sai_Kumar_Studio/Sai_Studio/js/cart.js\")",
+      "Bash(node --check \"/d/Gen AI/Sai_Kumar_Studio/Sai_Studio/js/corporate.js\")",
+      "Bash(node --check \"/d/Gen AI/Sai_Kumar_Studio/Sai_Studio/js/studio.js\")",
+      "Bash(python -m py_compile app/schemas.py app/services/pricing.py app/routers/orders.py)",
+      "Bash(.venv/Scripts/python.exe -c ' *)",
+      "PowerShell(Try { $response = Invoke-WebRequest -Uri \"http://localhost:8000/api/health\" -ErrorAction Stop; $response.StatusCode } Catch { \"Backend not responding: $_\" })",
+      "Bash(awk 'NR==26{print length\\($0\\)}' js/gifts.js)"
+    ]
+  }
+}

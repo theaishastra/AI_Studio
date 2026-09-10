@@ -1,0 +1,2 @@
+cloudinary
+python-dotenv

@@ -1,0 +1,6 @@
+.env
+__pycache__/
+*.pyc
+image_assets_backup.zip
+backend/venv/
+backend/.venv/
