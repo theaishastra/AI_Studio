@@ -2886,7 +2886,10 @@
       .mobile-header {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
+        align-items: center;
+        background: #5C0930;
+        border-radius: 18px;
+        padding: 14px 16px;
       }
 
       .mobile-logo {
@@ -2906,7 +2909,7 @@
         font-size: 13px;
         font-weight: 800;
         line-height: 1.2;
-        color: #1F2937;
+        color: #fff;
         max-width: 150px;
       }
 
@@ -2915,6 +2918,24 @@
         align-items: center;
         gap: 14px;
         flex-shrink: 0;
+      }
+
+      .mobile-menu-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        border: none;
+        background: transparent;
+        color: #FFC700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        cursor: pointer;
+      }
+
+      .mobile-menu-btn:active {
+        background: rgba(255, 255, 255, 0.1);
       }
 
       .mobile-cart-icon-btn {
@@ -3237,7 +3258,7 @@
       .mobile-card-content h3 {
         font-size: 15.5px;
         font-weight: 900;
-        color: #111827;
+        color: #fff;
         letter-spacing: -0.3px;
         line-height: 1.15;
       }
@@ -3245,7 +3266,7 @@
       .mobile-card-sub {
         font-size: 9px;
         font-weight: 800;
-        color: #777;
+        color: rgba(255, 255, 255, 0.75);
         letter-spacing: 0.5px;
         text-transform: uppercase;
       }
@@ -3310,8 +3331,8 @@
         gap: 12px;
         margin: 14px 16px 4px;
         padding: 14px 16px;
-        background: #FDF0F5;
-        border: 1px solid #FBD6E9;
+        background: #FFC700;
+        border: 1px solid #FFC700;
         border-radius: 16px;
         text-decoration: none;
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
@@ -3386,26 +3407,26 @@
 
       /* Per-section mobile card gradient + blob colors */
       .card-photography {
-        --bg1: #FFF3F8;
-        --bg2: #FBC8DE;
+        --bg1: #5C0930;
+        --bg2: #5C0930;
         --blob: #4AAEF8;
       }
 
       .card-gifts {
-        --bg1: #FFF3F5;
-        --bg2: #FBD0D8;
+        --bg1: #5C0930;
+        --bg2: #5C0930;
         --blob: #FE98A5;
       }
 
       .card-studio {
-        --bg1: #FFF3F8;
-        --bg2: #FBC8DE;
+        --bg1: #5C0930;
+        --bg2: #5C0930;
         --blob: #7EE6B5;
       }
 
       .card-corporate {
-        --bg1: #FFFBE8;
-        --bg2: #FCE49A;
+        --bg1: #5C0930;
+        --bg2: #5C0930;
         --blob: #FEBA04;
       }
 
@@ -3519,6 +3540,52 @@
         font-weight: 600 !important;
         margin-top: 6px !important;
         white-space: nowrap !important;
+      }
+
+      /* Polished mobile card wrapper for "Explore our top categories" */
+      .categories-section {
+        width: 100% !important;
+        margin: 14px 0 !important;
+        padding: 18px 16px 16px !important;
+        background: #fff !important;
+        border-radius: 0 !important;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06) !important;
+      }
+
+      .categories-section.container {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+      }
+
+      .categories-section .section-head {
+        margin-bottom: 14px !important;
+      }
+
+      .categories-section .section-head h2 {
+        font-size: 16.5px !important;
+        color: #5C0930 !important;
+      }
+
+      .categories-section .cat-scroll {
+        margin: 0 -16px !important;
+      }
+
+      .categories-section .cat-scroll-inner {
+        padding: 0 16px 4px !important;
+      }
+
+      .categories-section .cat-circle {
+        width: 68px !important;
+        height: 68px !important;
+        background: linear-gradient(135deg, #FDE9F2, #FBD6E9) !important;
+        border: 2px solid #FFC700 !important;
+        box-shadow: 0 4px 10px rgba(92, 9, 48, 0.12) !important;
+      }
+
+      .categories-section .cat-item span {
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        color: #3F2A33 !important;
       }
 
       /* Horizontal scrolling product carousels on mobile */
@@ -4170,6 +4237,17 @@
       .mobile-dashboard .menu-container {
         padding: 0;
         justify-content: flex-start;
+      }
+
+      .mobile-dashboard .menu-link {
+        background: #fff;
+        border-color: #F3D8E2;
+      }
+
+      .mobile-dashboard .menu-link.active {
+        color: #fff;
+        background: #5C0930;
+        border-color: #5C0930;
       }
 
       .menu-link {

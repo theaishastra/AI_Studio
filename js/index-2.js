@@ -177,8 +177,10 @@
     function cartProductCardHTML(name, price, old, imgUrl, rating, targetHref) {
       // No quick-add "+" here anymore - the card itself now navigates straight to
       // that exact product, so adding to cart happens on the actual product page.
+      // badge matches the "Starting from" label used by the photography section
+      // above, so all four homepage shop-strip sections look the same.
       return productCardHTML({
-        name, price, old, imgUrl, rating,
+        name, price, old, imgUrl, rating, badge: 'Starting from',
         onClick: `location.href='${targetHref}'`
       });
     }
