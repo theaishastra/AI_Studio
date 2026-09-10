@@ -29,6 +29,12 @@ const SETTINGS_PANELS = [
       { name: "zones", label: "Delivery zones (one per line)", type: "list" },
     ],
   },
+  {
+    key: "order_policy", title: "Order Policy",
+    fields: [
+      { name: "default_address_change_window_hours", label: "Default address-change window (hours after ordering) — used for any product that doesn't set its own", type: "number" },
+    ],
+  },
 ];
 
 async function renderSettings() {

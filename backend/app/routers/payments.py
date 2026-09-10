@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from ..config import get_settings
 from ..database import get_db
 from ..deps import audit, get_current_user, require_owner
-from ..models import Order, Payment, Product, User, WebhookEvent
+from ..models import Order, OrderTrackingEvent, Payment, Product, User, WebhookEvent
 from ..schemas import PaymentVerifyIn
 from ..security import verify_razorpay_signature, verify_webhook_signature
 from ..services.notifications import order_event
@@ -33,6 +33,7 @@ def _mark_paid(db: Session, payment: Payment, razorpay_payment_id: str, signatur
             product = products.get(item.product_id)
             if product and product.type == "product" and product.stock is not None:
                 product.stock = max(0, product.stock - item.qty)
+        db.add(OrderTrackingEvent(order_id=order.id, status="paid", title="Payment received"))
         order_event(db, order, "paid")
 
 
@@ -140,6 +141,7 @@ def refund_order(order_id: str, request: Request, admin: User = Depends(require_
                 product.stock += item.qty
     order.status = "refunded"
 
+    db.add(OrderTrackingEvent(order_id=order.id, status="refunded", title="Order refunded"))
     order_event(db, order, "refunded")
     audit(db, admin, "refund", "order", order.id, {"refund_id": refund.get("id")}, request)
     db.commit()

@@ -3,10 +3,14 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import Response
+from starlette.types import Scope
 
 from .config import get_settings
 from .database import Base, engine
+from .migrations import run_column_migrations
 from .routers import addresses, admin, auth, bookings, cart, catalog, orders, payments
 
 settings = get_settings()
@@ -19,6 +23,7 @@ MEDIA_DIR = BACKEND_DIR / "storage" / "media"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    run_column_migrations(engine)
     yield
 
 
@@ -38,6 +43,11 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     allow_headers=["Authorization", "Content-Type"],
 )
+# Compresses every JSON/text response over 1KB - page_bundle() and friends ship
+# a few hundred products' worth of JSON per storefront page load, and gzip
+# shrinks that ~70-80% for free on any client that sends Accept-Encoding: gzip
+# (every browser).
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 app.include_router(auth.router)
 app.include_router(catalog.router)
@@ -52,8 +62,20 @@ app.include_router(admin.router)
 if ADMIN_DIR.exists():
     app.mount("/admin", StaticFiles(directory=ADMIN_DIR, html=True), name="admin")
 
+
+class CachedStaticFiles(StaticFiles):
+    """/media filenames are random tokens minted fresh per upload (media.py's
+    secrets.token_hex) - a given URL's content never changes, so it's safe to tell
+    browsers/CDNs to cache it forever instead of revalidating on every repeat view."""
+
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
+
+
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
-app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
+app.mount("/media", CachedStaticFiles(directory=MEDIA_DIR), name="media")
 
 
 @app.get("/api/health")

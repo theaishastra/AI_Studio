@@ -25,6 +25,17 @@ _PAGE_BUNDLE_CACHE_TTL_SECONDS = 30
 _page_bundle_cache: dict[str, tuple[float, dict]] = {}
 
 
+def cld_optimize(url: str | None) -> str | None:
+    """Would insert Cloudinary's f_auto,q_auto into every Cloudinary-hosted URL -
+    left a no-op because this Cloudinary account has Strict Transformations
+    enabled, so any on-the-fly transform (even a plain resize) 400s instead of
+    serving the image (same constraint js/photography.js's cldOpt() hit
+    client-side). Re-enable by returning the transformed URL once Strict
+    Transformations is turned off in the Cloudinary dashboard, or the specific
+    f_auto,q_auto derivative is added to that account's allowed list."""
+    return url
+
+
 def format_price(product: Product) -> str:
     """Most products show a real price; a quote-based service (equipment add-ons like
     Drone/Traditional Videography) is flagged with extra.price_on_request instead of
@@ -122,7 +133,7 @@ def page_bundle(page_slug: str, db: Session = Depends(get_db)):
             "icon": c.icon or "",
             "name": c.name,
             "description": c.description or "",
-            "image": c.thumb_image_url or "",
+            "image": cld_optimize(c.thumb_image_url) or "",
             "group_label": c.group_label,
         })
 
@@ -145,21 +156,21 @@ def page_bundle(page_slug: str, db: Session = Depends(get_db)):
                 "mrp": format_inr(p.mrp) if p.mrp else None,
                 "featured": p.is_featured,
                 "feat": p.features or [],
-                "images": [m.url for m in p.media],
+                "images": [cld_optimize(m.url) for m in p.media],
                 "rating": ratings.get(p.id),
                 "extra": p.extra or {},
             }
             for p in active_products
         ]
 
-        folio[c.slug] = [{"url": m.url, "caption": m.alt} for m in c.media]
+        folio[c.slug] = [{"url": cld_optimize(m.url), "caption": m.alt} for m in c.media]
         folio_titles[c.slug] = c.folio_title or f"{c.name} Portfolio"
 
         if c.hero_image_url:
-            category_images[c.slug] = c.hero_image_url
+            category_images[c.slug] = cld_optimize(c.hero_image_url)
 
         if c.show_in_hero and c.hero_image_url:
-            hero.append({"id": c.slug, "title": c.name, "tag": c.hero_tagline or "", "img": c.hero_image_url})
+            hero.append({"id": c.slug, "title": c.name, "tag": c.hero_tagline or "", "img": cld_optimize(c.hero_image_url)})
 
     result = {
         "page": page.slug,
@@ -207,7 +218,7 @@ def get_product(product_id: str, db: Session = Depends(get_db)):
         "mrp": format_inr(product.mrp) if product.mrp else None,
         "featured": product.is_featured,
         "feat": product.features or [],
-        "images": [m.url for m in package_media],
+        "images": [cld_optimize(m.url) for m in package_media],
         "rating": round(float(avg_rating), 1) if avg_rating else None,
         "extra": product.extra or {},
     }
@@ -220,6 +231,17 @@ reviews_router = APIRouter(tags=["reviews"])
 
 _homepage_cache: dict[str, tuple[float, dict]] = {}
 _products_cache: dict[str, tuple[float, list]] = {}
+
+
+def invalidate_catalog_cache() -> None:
+    """Clears every storefront cache (page bundles, homepage, flat product list) so
+    an admin's change is live on the next request instead of waiting out the 30s
+    TTL. Admin write endpoints call this right after commit. Clearing is O(1) and
+    always safe - worst case the next visitor's request just pays the one DB round
+    trip that would've happened anyway once the TTL expired, then re-caches."""
+    _page_bundle_cache.clear()
+    _homepage_cache.clear()
+    _products_cache.clear()
 
 
 @reviews_router.get("/api/homepage")
@@ -263,13 +285,13 @@ def public_homepage(db: Session = Depends(get_db)):
 
     result = {
         "categories": [
-            {"id": c.id, "slug": c.slug, "name": c.name, "image": c.thumb_image_url or c.hero_image_url}
+            {"id": c.id, "slug": c.slug, "name": c.name, "image": cld_optimize(c.thumb_image_url or c.hero_image_url)}
             for c in ordered_cats
         ],
         "products": [
             {
                 "id": p.id, "title": p.title,
-                "image": p.media[0].url if p.media else None,
+                "image": cld_optimize(p.media[0].url) if p.media else None,
                 "price": float(p.price), "bestseller": p.is_featured,
             }
             for p in ordered_prods
@@ -299,7 +321,7 @@ def public_products(category_id: str | None = None, page: int = 1, page_size: in
             {
                 "id": p.id, "title": p.title, "slug": p.slug,
                 "price": float(p.price), "mrp": float(p.mrp) if p.mrp else None,
-                "images": [m.url for m in p.media],
+                "images": [cld_optimize(m.url) for m in p.media],
                 "category_id": p.category_id,
                 "category_slug": p.category.slug if p.category else None,
                 "is_featured": p.is_featured,

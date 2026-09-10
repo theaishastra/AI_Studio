@@ -46,12 +46,12 @@ function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-function openModal(html) {
+function openModal(html, wide) {
   closeModal();
   const bg = document.createElement("div");
   bg.className = "modal-backdrop";
   bg.id = "modalBackdrop";
-  bg.innerHTML = `<div class="modal">${html}</div>`;
+  bg.innerHTML = `<div class="modal${wide ? " modal-wide" : ""}">${html}</div>`;
   bg.addEventListener("click", (e) => { if (e.target === bg) closeModal(); });
   document.body.appendChild(bg);
 }

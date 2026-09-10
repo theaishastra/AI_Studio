@@ -262,6 +262,8 @@ function openProductForm(id) {
         <div><label>Advance / deposit amount (₹, optional)</label><input id="f_advance" type="number" step="1" value="${p?.advance_amount ?? ""}"></div>
         <div><label>Stock (physical products only)</label><input id="f_stock" type="number" value="${p?.stock ?? ""}"></div>
       </div>
+      <div><label>Address-change window after ordering (hours, optional — leave blank to use the site-wide default in Settings)</label>
+        <input id="f_addr_window" type="number" min="0" step="1" value="${p?.address_change_window_hours ?? ""}" placeholder="e.g. 24"></div>
       <label>Features / inclusions (one per line)</label>
       <textarea id="f_features" rows="5">${esc((p?.features || []).join("\n"))}</textarea>
       ${cat.pageSlug === "photography" ? `
@@ -334,6 +336,7 @@ function openProductForm(id) {
       mrp: num(document.getElementById("f_mrp").value),
       advance_amount: num(document.getElementById("f_advance").value),
       stock: num(document.getElementById("f_stock").value),
+      address_change_window_hours: num(document.getElementById("f_addr_window").value),
       features: document.getElementById("f_features").value.split("\n").map(s => s.trim()).filter(Boolean),
       is_featured: document.getElementById("f_featured").checked,
       is_active: document.getElementById("f_active").checked,

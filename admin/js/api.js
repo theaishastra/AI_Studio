@@ -87,7 +87,14 @@ const Api = {
 
   orders: (status) => api(`/api/admin/orders${status ? `?status_filter=${encodeURIComponent(status)}` : ""}`),
   updateOrderStatus: (id, status) => api(`/api/admin/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  updateOrderTracking: (id, data) => api(`/api/admin/orders/${id}/tracking`, { method: "PUT", body: JSON.stringify(data) }),
   refundOrder: (orderId) => api(`/api/payments/refund/${orderId}`, { method: "POST" }),
+
+  cancellationRequests: (status) => api(`/api/admin/orders/cancellation-requests${status ? `?status_filter=${encodeURIComponent(status)}` : ""}`),
+  decideCancellationRequest: (id, action, adminNote) => api(`/api/admin/orders/cancellation-requests/${id}`, { method: "PATCH", body: JSON.stringify({ action, admin_note: adminNote || "" }) }),
+
+  addressChangeRequests: (status) => api(`/api/admin/orders/address-change-requests${status ? `?status_filter=${encodeURIComponent(status)}` : ""}`),
+  decideAddressChangeRequest: (id, action, adminNote) => api(`/api/admin/orders/address-change-requests/${id}`, { method: "PATCH", body: JSON.stringify({ action, admin_note: adminNote || "" }) }),
 
   customers: (q, page = 1) => api(`/api/admin/customers?page=${page}${q ? `&q=${encodeURIComponent(q)}` : ""}`),
 

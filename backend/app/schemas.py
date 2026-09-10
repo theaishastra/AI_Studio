@@ -2,6 +2,11 @@ from datetime import datetime, date
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from .models import CANCELLATION_REASONS
+
+_CANCELLATION_REASON_PATTERN = f"^({'|'.join(CANCELLATION_REASONS)})$"
+_REQUEST_ACTION_PATTERN = "^(approve|reject)$"
+
 
 # ---------------------------------------------------------------- auth
 
@@ -179,6 +184,7 @@ class ProductIn(BaseModel):
     mrp: float | None = None
     advance_amount: float | None = None
     stock: int | None = None
+    address_change_window_hours: int | None = Field(default=None, ge=0, le=720)
     features: list[str] = []
     is_active: bool = True
     is_featured: bool = False
@@ -198,6 +204,7 @@ class ProductPatch(BaseModel):
     mrp: float | None = None
     advance_amount: float | None = None
     stock: int | None = None
+    address_change_window_hours: int | None = Field(default=None, ge=0, le=720)
     features: list[str] | None = None
     is_active: bool | None = None
     is_featured: bool | None = None
@@ -218,6 +225,7 @@ class ProductOut(BaseModel):
     mrp: float | None
     advance_amount: float | None
     stock: int | None
+    address_change_window_hours: int | None
     features: list[str]
     is_active: bool
     is_featured: bool
@@ -290,6 +298,7 @@ class CheckoutItemIn(BaseModel):
     price: float
     qty: int = Field(default=1, ge=1)
     image: str | None = None
+    customization: dict | None = None
 
 
 class CheckoutIn(BaseModel):
@@ -320,6 +329,110 @@ class PaymentOut(BaseModel):
     created_at: datetime
 
 
+class OrderCustomerOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    name: str | None
+    email: str
+    phone: str | None
+
+
+class OrderAddressOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    full_name: str
+    phone: str
+    line1: str
+    line2: str | None
+    city: str
+    state: str
+    pincode: str
+
+
+class OrderTrackingEventOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    status: str
+    title: str
+    description: str
+    location: str | None
+    created_at: datetime
+
+
+class TrackingUpdateIn(BaseModel):
+    carrier: str | None = Field(default=None, max_length=80)
+    tracking_number: str | None = Field(default=None, max_length=120)
+    tracking_url: str | None = Field(default=None, max_length=500)
+    expected_delivery: date | None = None
+    event_title: str | None = Field(default=None, max_length=160)
+    event_description: str = Field(default="", max_length=1000)
+    event_location: str | None = Field(default=None, max_length=160)
+
+
+class CancellationRequestIn(BaseModel):
+    reason: str = Field(pattern=_CANCELLATION_REASON_PATTERN)
+    note: str = Field(default="", max_length=500)
+
+
+class CancellationDecisionIn(BaseModel):
+    action: str = Field(pattern=_REQUEST_ACTION_PATTERN)
+    admin_note: str = Field(default="", max_length=500)
+
+
+class CancellationRequestOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    order_id: str
+    reason: str
+    note: str
+    status: str
+    admin_note: str
+    created_at: datetime
+    resolved_at: datetime | None
+
+
+# Flat, cross-order admin listing (Admin > Orders > Cancellation Requests) needs
+# the order number and customer alongside each request - built from a plain
+# dict in the router rather than model_validate(), since those two fields
+# don't live on the OrderCancellationRequest row itself.
+class AdminCancellationRequestOut(CancellationRequestOut):
+    order_number: str | None = None
+    customer_name: str | None = None
+    customer_email: str | None = None
+
+
+class AddressChangeRequestIn(BaseModel):
+    full_name: str = Field(min_length=2, max_length=120)
+    phone: str = Field(pattern=r"^[6-9]\d{9}$")
+    line1: str = Field(min_length=3, max_length=255)
+    line2: str | None = Field(default=None, max_length=255)
+    city: str = Field(min_length=2, max_length=80)
+    state: str = Field(min_length=2, max_length=80)
+    pincode: str = Field(pattern=r"^\d{6}$")
+    note: str = Field(default="", max_length=500)
+
+
+class AddressChangeDecisionIn(BaseModel):
+    action: str = Field(pattern=_REQUEST_ACTION_PATTERN)
+    admin_note: str = Field(default="", max_length=500)
+
+
+class AddressChangeRequestOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    order_id: str
+    requested_address: dict
+    note: str
+    status: str
+    admin_note: str
+    created_at: datetime
+    resolved_at: datetime | None
+
+
+class AdminAddressChangeRequestOut(AddressChangeRequestOut):
+    order_number: str | None = None
+    customer_name: str | None = None
+    customer_email: str | None = None
+
+
 class OrderOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
@@ -331,9 +444,24 @@ class OrderOut(BaseModel):
     coupon_code: str | None
     address_id: str | None
     delivery_slot: str | None
+    carrier: str | None = None
+    tracking_number: str | None = None
+    tracking_url: str | None = None
+    expected_delivery: date | None = None
     created_at: datetime
     items: list[OrderItemOut] = []
     payments: list[PaymentOut] = []
+    customer: OrderCustomerOut | None = None
+    address: OrderAddressOut | None = None
+    tracking_events: list[OrderTrackingEventOut] = []
+    cancellation_requests: list[CancellationRequestOut] = []
+    address_change_requests: list[AddressChangeRequestOut] = []
+    # Computed server-side per request (see services/policy.annotate_order) -
+    # not derivable straight from the ORM row, so these default to a safe
+    # "no" until a router explicitly fills them in.
+    can_cancel: bool = False
+    can_request_address_change: bool = False
+    address_change_deadline: datetime | None = None
 
 
 class OrderStatusUpdate(BaseModel):

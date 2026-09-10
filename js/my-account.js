@@ -11,6 +11,14 @@
       refunded: 'Refunded',
     };
 
+    const ACCT_BOOKING_STATUS_LABELS = {
+      enquiry: 'Enquiry Received',
+      advance_pending: 'Advance Pending',
+      confirmed: 'Confirmed',
+      completed: 'Completed',
+      cancelled: 'Cancelled',
+    };
+
     let acctLoginEmail = '';
     let acctAddresses = [];
 
@@ -109,7 +117,7 @@
     async function showAcctContent() {
       document.getElementById('acctLoginGate').style.display = 'none';
       document.getElementById('acctContent').style.display = 'block';
-      await Promise.all([loadAcctProfile(), loadAcctAddresses(), loadAcctOrdersPreview()]);
+      await Promise.all([loadAcctProfile(), loadAcctAddresses(), loadAcctOrdersPreview(), loadAcctBookingsPreview()]);
     }
 
     /* ---------- profile ---------- */
@@ -336,6 +344,36 @@
             <span>${date} &middot; &#8377;${Math.round(order.total)}</span>
           </div>
           <span class="order-status-badge order-status-${order.status}">${statusLabel}</span>
+        </div>`;
+    }
+
+    /* ---------- photography bookings preview ---------- */
+
+    async function loadAcctBookingsPreview() {
+      const wrap = document.getElementById('acctBookingsPreview');
+      try {
+        const bookings = await CustomerAuth.myBookings();
+        if (!bookings.length) {
+          wrap.innerHTML = '<div class="acct-empty-mini">No photography bookings yet. Book a shoot and it’ll show up here.</div>';
+          return;
+        }
+        wrap.innerHTML = bookings.slice(0, 3).map(bookingMiniHTML).join('');
+      } catch (err) {
+        wrap.innerHTML = `<div class="cart-form-msg" style="display:block;">${err.message || 'Could not load your bookings.'}</div>`;
+      }
+    }
+
+    function bookingMiniHTML(booking) {
+      const date = new Date(booking.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+      const statusLabel = ACCT_BOOKING_STATUS_LABELS[booking.status] || booking.status;
+      const pkg = booking.details && booking.details.package ? booking.details.package : 'Photography Booking';
+      return `
+        <div class="acct-order-mini">
+          <div class="acct-order-mini-info">
+            <b>${escapeAcctHTML(pkg)}</b>
+            <span>Booked on ${date}</span>
+          </div>
+          <span class="order-status-badge order-status-${booking.status}">${statusLabel}</span>
         </div>`;
     }
 

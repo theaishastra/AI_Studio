@@ -16,6 +16,12 @@
       return String(str).replace(/'/g, "\\'");
     }
 
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]));
+    }
+
     // ---------- Cloudinary auto-format/auto-quality helper ----------
     function cldOpt(url) {
       // Cloudinary account has Strict Transformations enabled — any on-the-fly
@@ -198,21 +204,40 @@
       return typeof data === 'string' && data.startsWith('data:image/') ? data : '';
     }
 
+    // Different pages store the customer's custom message under different field
+    // names (gifts.js: text, corporate.js: engravingText) - this picks whichever
+    // is present so the cart can show it regardless of which page added the item.
+    function cartItemCustomText(item) {
+      const cust = item.customization;
+      if (!cust) return '';
+      const text = cust.text || cust.engravingText || cust.message || cust.customText || '';
+      return typeof text === 'string' ? text.trim() : '';
+    }
+
     function cartItemRowHTML(item, key) {
       const safeKey = escapeForAttr(key);
       const priceNum = parsePrice(item.price);
       const lineTotal = priceNum * item.qty;
       const uploadedImage = cartItemUploadedImage(item);
+      const customText = cartItemCustomText(item);
       return `
         <div class="cart-item-row">
           <div class="cart-item-thumb-wrap">
             <img class="cart-item-img" src="${cldOpt(resolveCartImagePath(item.img))}" alt="${item.name}" onerror="this.style.visibility='hidden'">
-            ${uploadedImage ? `<img class="cart-item-upload-badge" src="${uploadedImage}" alt="Your uploaded design" title="Your uploaded design">` : ''}
           </div>
           <div class="cart-item-details">
             <h3>${item.name}</h3>
             <p>${item.price} each</p>
             ${item.customization && Object.values(item.customization).some(Boolean) ? '<span class="cart-item-customized-badge">&#10003; Customized</span>' : ''}
+            ${uploadedImage || customText ? `
+            <div class="cart-item-custom-preview">
+              ${uploadedImage ? `
+              <div class="cart-item-custom-photo-wrap">
+                <img class="cart-item-custom-photo" src="${uploadedImage}" alt="Your uploaded photo" title="Click to view full size" onclick="openImagePreview('${escapeForAttr(uploadedImage)}')">
+                <span class="cart-item-custom-photo-label">Your photo</span>
+              </div>` : ''}
+              ${customText ? `<span class="cart-item-custom-text">&ldquo;${escapeHtml(customText)}&rdquo;</span>` : ''}
+            </div>` : ''}
           </div>
           <div class="cart-qty-selector">
             <button class="cart-qty-btn" onclick="changeQty('${safeKey}', -1)">-</button>
@@ -228,6 +253,16 @@
             </svg>
           </button>
         </div>`;
+    }
+
+    function openImagePreview(src) {
+      document.getElementById('imagePreviewOverlayImg').src = src;
+      document.getElementById('imagePreviewOverlay').style.display = 'flex';
+    }
+
+    function closeImagePreview() {
+      document.getElementById('imagePreviewOverlay').style.display = 'none';
+      document.getElementById('imagePreviewOverlayImg').src = '';
     }
 
     function renderCartPage() {
@@ -532,6 +567,7 @@
             price: parsePrice(item.price),
             qty: item.qty,
             image: resolveCartImagePath(item.img) || null,
+            customization: item.customization || null,
           })),
           address_id: address.id,
         });

@@ -91,4 +91,10 @@ const CustomerAuth = {
   mockPay: (paymentId) => customerApi(`/api/payments/mock-pay/${paymentId}`, { method: "POST" }),
   verifyPayment: (body) => customerApi("/api/payments/verify", { method: "POST", body: JSON.stringify(body) }),
   myOrders: () => customerApi("/api/orders/my"),
+  getOrder: (orderId) => customerApi(`/api/orders/${orderId}`),
+  requestCancellation: (orderId, reason, note) =>
+    customerApi(`/api/orders/${orderId}/cancel`, { method: "POST", body: JSON.stringify({ reason, note: note || "" }) }),
+  requestAddressChange: (orderId, address) =>
+    customerApi(`/api/orders/${orderId}/address-change`, { method: "POST", body: JSON.stringify(address) }),
+  myBookings: () => customerApi("/api/bookings/my"),
 };

@@ -132,6 +132,11 @@ class Product(Base, TimestampMixin):
     mrp: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)  # strike-through price, optional
     advance_amount: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)  # booking deposit
     stock: Mapped[int | None] = mapped_column(Integer, nullable=True)  # physical products only
+    # How many hours after an order is placed a customer may still request a
+    # delivery-address change on it, before this product's production/packing
+    # is assumed to start. Null -> falls back to the site-wide default in
+    # Setting["order_policy"] (see services/policy.py).
+    address_change_window_hours: Mapped[int | None] = mapped_column(Integer, nullable=True)
     features: Mapped[list] = mapped_column(JSON, default=list)  # ["150+ High-Res Photos", ...]
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False)  # "Most Booked" badge
@@ -233,11 +238,30 @@ class Order(Base, TimestampMixin):
     coupon_code: Mapped[str | None] = mapped_column(String(40), nullable=True)
     address_id: Mapped[str | None] = mapped_column(ForeignKey("addresses.id", ondelete="SET NULL"), nullable=True)
     delivery_slot: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    carrier: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    tracking_number: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    tracking_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    expected_delivery: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     user: Mapped["User"] = relationship()
     address: Mapped["Address | None"] = relationship()
     items: Mapped[list["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
     payments: Mapped[list["Payment"]] = relationship(back_populates="order", cascade="all, delete-orphan")
+    tracking_events: Mapped[list["OrderTrackingEvent"]] = relationship(
+        back_populates="order", cascade="all, delete-orphan", order_by="OrderTrackingEvent.created_at"
+    )
+    cancellation_requests: Mapped[list["OrderCancellationRequest"]] = relationship(
+        back_populates="order", cascade="all, delete-orphan", order_by="OrderCancellationRequest.created_at.desc()"
+    )
+    address_change_requests: Mapped[list["OrderAddressChangeRequest"]] = relationship(
+        back_populates="order", cascade="all, delete-orphan", order_by="OrderAddressChangeRequest.created_at.desc()"
+    )
+
+    @property
+    def customer(self) -> "User":
+        # OrderOut.customer reads this instead of `user` directly - "customer" is
+        # the term staff actually use in the admin UI.
+        return self.user
 
 
 class OrderItem(Base):
@@ -278,6 +302,75 @@ class WebhookEvent(Base):
     event_type: Mapped[str] = mapped_column(String(60))
     payload: Mapped[dict] = mapped_column(JSON, default=dict)
     processed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# ---------------------------------------------------------------- order tracking / customer requests
+
+CANCELLATION_REASONS = [
+    "changed_mind", "found_better_price", "ordered_by_mistake",
+    "delivery_time_too_long", "product_defect_expected", "duplicate_order", "other",
+]
+
+REQUEST_STATUSES = ["pending", "approved", "rejected"]
+
+
+class OrderTrackingEvent(Base):
+    """One entry in an order's shipment timeline (order placed / in production /
+    shipped / out for delivery / delivered / cancelled ...). Auto-appended on every
+    admin status change, plus any extra checkpoints staff add manually (courier
+    handoff, out-for-delivery, hub scan, etc.)."""
+    __tablename__ = "order_tracking_events"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=uid)
+    order_id: Mapped[str] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), index=True)
+    status: Mapped[str] = mapped_column(String(20))  # snapshot of Order.status at this point
+    title: Mapped[str] = mapped_column(String(160))
+    description: Mapped[str] = mapped_column(Text, default="")
+    location: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    order: Mapped["Order"] = relationship(back_populates="tracking_events")
+
+
+class OrderCancellationRequest(Base, TimestampMixin):
+    """A customer's request to cancel an order that's past the point of an
+    instant self-serve cancel (already paid / in production / shipped) - staff
+    review and approve or reject it from the admin Orders page."""
+    __tablename__ = "order_cancellation_requests"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=uid)
+    order_id: Mapped[str] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    reason: Mapped[str] = mapped_column(String(40))
+    note: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+    admin_note: Mapped[str] = mapped_column(Text, default="")
+    resolved_by: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    order: Mapped["Order"] = relationship(back_populates="cancellation_requests")
+    user: Mapped["User"] = relationship(foreign_keys=[user_id])
+
+
+class OrderAddressChangeRequest(Base, TimestampMixin):
+    """A customer's request to change the delivery address on an existing order,
+    only offered while the order is inside that order's address-change buffer
+    window (see services/policy.py). Staff approve (which swaps the order's
+    address) or reject it."""
+    __tablename__ = "order_address_change_requests"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=uid)
+    order_id: Mapped[str] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    requested_address: Mapped[dict] = mapped_column(JSON, default=dict)  # full_name/phone/line1/line2/city/state/pincode
+    note: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+    admin_note: Mapped[str] = mapped_column(Text, default="")
+    resolved_by: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    order: Mapped["Order"] = relationship(back_populates="address_change_requests")
+    user: Mapped["User"] = relationship(foreign_keys=[user_id])
 
 
 # ---------------------------------------------------------------- reviews / notifications

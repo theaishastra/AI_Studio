@@ -1,5 +1,6 @@
 import csv
 import io
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
@@ -10,18 +11,44 @@ from sqlalchemy.orm import Session, selectinload
 from ..database import get_db
 from ..deps import audit, require_owner, require_staff
 from ..models import (
-    AuditLog, Booking, Category, Coupon, Media, Order, Product, Review,
-    Setting, SitePage, User,
+    Address, AuditLog, Booking, Category, Coupon, Media, Order,
+    OrderAddressChangeRequest, OrderCancellationRequest, OrderTrackingEvent,
+    Product, Review, Setting, SitePage, User,
 )
 from ..schemas import (
-    ArrangeIn, BookingOut, BookingStatusUpdate, CategoryIn, CategoryOut, CouponIn, CouponOut,
-    CustomerOut, HomepageLayoutIn, MediaIn, MediaOut, OrderOut, OrderStatusUpdate, ProductIn,
-    ProductOut, ProductPatch, SettingIn, SettingOut, SitePageIn, SitePageOut, StaffIn, UserOut,
+    AddressChangeDecisionIn, AdminAddressChangeRequestOut, AdminCancellationRequestOut,
+    ArrangeIn, BookingOut, BookingStatusUpdate, CancellationDecisionIn, CategoryIn, CategoryOut,
+    CouponIn, CouponOut, CustomerOut, HomepageLayoutIn, MediaIn, MediaOut, OrderOut,
+    OrderStatusUpdate, ProductIn, ProductOut, ProductPatch, SettingIn, SettingOut, SitePageIn,
+    SitePageOut, StaffIn, TrackingUpdateIn, UserOut,
 )
 from ..security import hash_password
 from ..services.media import process_image
+from ..services.notifications import notify, order_event
+from ..services.policy import annotate_order
+from .catalog import invalidate_catalog_cache
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
+
+ORDER_STATUS_TRACKING_TITLES = {
+    "created": "Order placed",
+    "payment_pending": "Awaiting payment",
+    "cod_confirmed": "Order confirmed (Cash on Delivery)",
+    "paid": "Payment received",
+    "in_production": "Order in production",
+    "shipped": "Order shipped",
+    "delivered": "Order delivered",
+    "cancelled": "Order cancelled",
+    "refunded": "Order refunded",
+}
+
+ORDER_ADMIN_LOAD = (
+    selectinload(Order.items), selectinload(Order.payments),
+    selectinload(Order.user), selectinload(Order.address),
+    selectinload(Order.tracking_events),
+    selectinload(Order.cancellation_requests),
+    selectinload(Order.address_change_requests),
+)
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 MEDIA_DIR = BACKEND_DIR / "storage" / "media"
@@ -52,6 +79,12 @@ def dashboard_summary(admin: User = Depends(require_staff), db: Session = Depend
             select(sa_func.count()).select_from(Order).scalar_subquery().label("orders_total"),
             select(sa_func.coalesce(sa_func.sum(Order.total), 0))
                 .where(Order.status.in_(paid_statuses)).scalar_subquery().label("revenue"),
+            select(sa_func.count()).select_from(OrderCancellationRequest)
+                .where(OrderCancellationRequest.status == "pending")
+                .scalar_subquery().label("cancellation_requests_pending"),
+            select(sa_func.count()).select_from(OrderAddressChangeRequest)
+                .where(OrderAddressChangeRequest.status == "pending")
+                .scalar_subquery().label("address_change_requests_pending"),
         )
     ).one()
     return {
@@ -64,6 +97,8 @@ def dashboard_summary(admin: User = Depends(require_staff), db: Session = Depend
         "orders_pending": row.orders_pending,
         "orders_total": row.orders_total,
         "revenue": float(row.revenue),
+        "cancellation_requests_pending": row.cancellation_requests_pending,
+        "address_change_requests_pending": row.address_change_requests_pending,
     }
 
 
@@ -119,6 +154,7 @@ def create_category(body: CategoryIn, request: Request,
     audit(db, admin, "create", "category", cat.id, {"name": cat.name}, request)
     db.commit()
     db.refresh(cat)
+    invalidate_catalog_cache()
     return _category_out(cat)
 
 
@@ -140,6 +176,7 @@ def update_category(cat_id: str, body: CategoryIn, request: Request,
     audit(db, admin, "update", "category", cat.id, {"name": cat.name}, request)
     db.commit()
     db.refresh(cat)
+    invalidate_catalog_cache()
     return _category_out(cat)
 
 
@@ -152,6 +189,7 @@ def delete_category(cat_id: str, request: Request,
     audit(db, admin, "delete", "category", cat_id, {"name": cat.name}, request)
     db.delete(cat)
     db.commit()
+    invalidate_catalog_cache()
 
 
 # ---------------------------------------------------------------- category portfolio media
@@ -175,6 +213,7 @@ def add_category_media(cat_id: str, body: MediaIn, request: Request,
     audit(db, admin, "create", "category_media", cat_id, {"url": media.url}, request)
     db.commit()
     db.refresh(media)
+    invalidate_catalog_cache()
     return media
 
 
@@ -187,6 +226,7 @@ def delete_media(media_id: str, request: Request,
     audit(db, admin, "delete", "media", media_id, {}, request)
     db.delete(media)
     db.commit()
+    invalidate_catalog_cache()
 
 
 # ---------------------------------------------------------------- products
@@ -226,6 +266,7 @@ def create_product(body: ProductIn, request: Request,
     audit(db, admin, "create", "product", product.id, {"title": product.title}, request)
     db.commit()
     db.refresh(product)
+    invalidate_catalog_cache()
     return _product_out(product)
 
 
@@ -247,6 +288,7 @@ def update_product(product_id: str, body: ProductPatch, request: Request,
     audit(db, admin, "update", "product", product.id, {"title": product.title}, request)
     db.commit()
     db.refresh(product)
+    invalidate_catalog_cache()
     return _product_out(product)
 
 
@@ -259,6 +301,7 @@ def delete_product(product_id: str, request: Request,
     audit(db, admin, "delete", "product", product_id, {"title": product.title}, request)
     db.delete(product)
     db.commit()
+    invalidate_catalog_cache()
 
 
 @router.post("/products/{product_id}/media", response_model=MediaOut, status_code=status.HTTP_201_CREATED)
@@ -272,6 +315,7 @@ def add_product_media(product_id: str, body: MediaIn, request: Request,
     audit(db, admin, "create", "product_media", product_id, {"url": media.url}, request)
     db.commit()
     db.refresh(media)
+    invalidate_catalog_cache()
     return media
 
 
@@ -450,23 +494,194 @@ def list_activity(admin: User = Depends(require_staff), db: Session = Depends(ge
 @router.get("/orders", response_model=list[OrderOut])
 def list_orders(status_filter: str | None = None,
                 admin: User = Depends(require_staff), db: Session = Depends(get_db)):
-    query = db.query(Order).options(selectinload(Order.items), selectinload(Order.payments))
+    query = db.query(Order).options(*ORDER_ADMIN_LOAD)
     if status_filter:
         query = query.filter(Order.status == status_filter)
-    return query.order_by(Order.created_at.desc()).limit(300).all()
+    orders = query.order_by(Order.created_at.desc()).limit(300).all()
+    return [annotate_order(db, o) for o in orders]
 
 
 @router.patch("/orders/{order_id}/status", response_model=OrderOut)
 def update_order_status(order_id: str, body: OrderStatusUpdate, request: Request,
                         admin: User = Depends(require_staff), db: Session = Depends(get_db)):
-    order = db.query(Order).options(selectinload(Order.items), selectinload(Order.payments)).filter(Order.id == order_id).first()
+    order = db.query(Order).options(*ORDER_ADMIN_LOAD).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Order not found")
     order.status = body.status
+    db.add(OrderTrackingEvent(
+        order_id=order.id, status=body.status,
+        title=ORDER_STATUS_TRACKING_TITLES.get(body.status, body.status.replace("_", " ").title()),
+    ))
+    order_event(db, order, body.status)
     audit(db, admin, "update_status", "order", order_id, {"status": body.status}, request)
     db.commit()
     db.refresh(order)
-    return order
+    return annotate_order(db, order)
+
+
+@router.put("/orders/{order_id}/tracking", response_model=OrderOut)
+def update_order_tracking(order_id: str, body: TrackingUpdateIn, request: Request,
+                          admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    order = db.query(Order).options(*ORDER_ADMIN_LOAD).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Order not found")
+
+    if body.carrier is not None:
+        order.carrier = body.carrier or None
+    if body.tracking_number is not None:
+        order.tracking_number = body.tracking_number or None
+    if body.tracking_url is not None:
+        order.tracking_url = body.tracking_url or None
+    if body.expected_delivery is not None:
+        order.expected_delivery = body.expected_delivery
+    if body.event_title:
+        db.add(OrderTrackingEvent(
+            order_id=order.id, status=order.status, title=body.event_title,
+            description=body.event_description, location=body.event_location,
+        ))
+    audit(db, admin, "update_tracking", "order", order_id,
+          {"carrier": order.carrier, "tracking_number": order.tracking_number}, request)
+    db.commit()
+    db.refresh(order)
+    return annotate_order(db, order)
+
+
+# ---------------------------------------------------------------- order cancellation requests
+
+def _cancellation_out(req: OrderCancellationRequest) -> dict:
+    return {
+        "id": req.id, "order_id": req.order_id, "reason": req.reason, "note": req.note,
+        "status": req.status, "admin_note": req.admin_note,
+        "created_at": req.created_at, "resolved_at": req.resolved_at,
+        "order_number": req.order.number if req.order else None,
+        "customer_name": req.user.name if req.user else None,
+        "customer_email": req.user.email if req.user else None,
+    }
+
+
+@router.get("/orders/cancellation-requests", response_model=list[AdminCancellationRequestOut])
+def list_cancellation_requests(status_filter: str | None = None,
+                               admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    query = db.query(OrderCancellationRequest).options(
+        selectinload(OrderCancellationRequest.order), selectinload(OrderCancellationRequest.user),
+    )
+    if status_filter:
+        query = query.filter(OrderCancellationRequest.status == status_filter)
+    reqs = query.order_by(OrderCancellationRequest.created_at.desc()).limit(200).all()
+    return [_cancellation_out(r) for r in reqs]
+
+
+@router.patch("/orders/cancellation-requests/{request_id}", response_model=AdminCancellationRequestOut)
+def decide_cancellation_request(request_id: str, body: CancellationDecisionIn, request: Request,
+                                admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    req = db.query(OrderCancellationRequest).options(
+        selectinload(OrderCancellationRequest.order).selectinload(Order.items),
+        selectinload(OrderCancellationRequest.user),
+    ).filter(OrderCancellationRequest.id == request_id).first()
+    if not req:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Request not found")
+    if req.status != "pending":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "This request has already been resolved")
+
+    order = req.order
+    req.admin_note = body.admin_note
+    req.resolved_by = admin.id
+    req.resolved_at = datetime.now(timezone.utc)
+
+    if body.action == "approve":
+        req.status = "approved"
+        if order.status in ("cod_confirmed", "paid", "in_production", "shipped"):
+            product_ids = [item.product_id for item in order.items if item.product_id]
+            products = {p.id: p for p in db.query(Product).filter(Product.id.in_(product_ids)).all()} if product_ids else {}
+            for item in order.items:
+                product = products.get(item.product_id)
+                if product and product.type == "product" and product.stock is not None:
+                    product.stock += item.qty
+        order.status = "cancelled"
+        db.add(OrderTrackingEvent(
+            order_id=order.id, status="cancelled", title="Order cancelled",
+            description=f"Cancellation request approved. Reason: {req.reason}",
+        ))
+        order_event(db, order, "cancelled")
+    else:
+        req.status = "rejected"
+        notify(db, req.user_id, "Cancellation request declined",
+               f"Your cancellation request for order {order.number} was declined."
+               + (f" {body.admin_note}" if body.admin_note else ""))
+
+    audit(db, admin, f"{body.action}_cancellation", "order_cancellation_request", req.id, {"order_id": order.id}, request)
+    db.commit()
+    db.refresh(req)
+    return _cancellation_out(req)
+
+
+# ---------------------------------------------------------------- order address-change requests
+
+def _address_change_out(req: OrderAddressChangeRequest) -> dict:
+    return {
+        "id": req.id, "order_id": req.order_id, "requested_address": req.requested_address,
+        "note": req.note, "status": req.status, "admin_note": req.admin_note,
+        "created_at": req.created_at, "resolved_at": req.resolved_at,
+        "order_number": req.order.number if req.order else None,
+        "customer_name": req.user.name if req.user else None,
+        "customer_email": req.user.email if req.user else None,
+    }
+
+
+@router.get("/orders/address-change-requests", response_model=list[AdminAddressChangeRequestOut])
+def list_address_change_requests(status_filter: str | None = None,
+                                 admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    query = db.query(OrderAddressChangeRequest).options(
+        selectinload(OrderAddressChangeRequest.order), selectinload(OrderAddressChangeRequest.user),
+    )
+    if status_filter:
+        query = query.filter(OrderAddressChangeRequest.status == status_filter)
+    reqs = query.order_by(OrderAddressChangeRequest.created_at.desc()).limit(200).all()
+    return [_address_change_out(r) for r in reqs]
+
+
+@router.patch("/orders/address-change-requests/{request_id}", response_model=AdminAddressChangeRequestOut)
+def decide_address_change_request(request_id: str, body: AddressChangeDecisionIn, request: Request,
+                                  admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    req = db.query(OrderAddressChangeRequest).options(
+        selectinload(OrderAddressChangeRequest.order), selectinload(OrderAddressChangeRequest.user),
+    ).filter(OrderAddressChangeRequest.id == request_id).first()
+    if not req:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Request not found")
+    if req.status != "pending":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "This request has already been resolved")
+
+    req.admin_note = body.admin_note
+    req.resolved_by = admin.id
+    req.resolved_at = datetime.now(timezone.utc)
+
+    if body.action == "approve":
+        req.status = "approved"
+        addr = req.requested_address
+        new_address = Address(
+            user_id=req.user_id, label="Order update",
+            full_name=addr.get("full_name", ""), phone=addr.get("phone", ""),
+            line1=addr.get("line1", ""), line2=addr.get("line2"),
+            city=addr.get("city", ""), state=addr.get("state", ""), pincode=addr.get("pincode", ""),
+        )
+        db.add(new_address)
+        db.flush()
+        req.order.address_id = new_address.id
+        db.add(OrderTrackingEvent(
+            order_id=req.order.id, status=req.order.status, title="Delivery address updated",
+            description="The delivery address was changed at the customer's request.",
+        ))
+        notify(db, req.user_id, "Address updated", f"Your new delivery address for order {req.order.number} has been applied.")
+    else:
+        req.status = "rejected"
+        notify(db, req.user_id, "Address change declined",
+               f"Your address change request for order {req.order.number} was declined."
+               + (f" {body.admin_note}" if body.admin_note else ""))
+
+    audit(db, admin, f"{body.action}_address_change", "order_address_change_request", req.id, {"order_id": req.order_id}, request)
+    db.commit()
+    db.refresh(req)
+    return _address_change_out(req)
 
 
 @router.get("/reports/orders.csv")
@@ -527,6 +742,7 @@ def toggle_review(review_id: str, request: Request,
     review.is_approved = not review.is_approved
     audit(db, admin, "toggle_review", "review", review_id, {"approved": review.is_approved}, request)
     db.commit()
+    invalidate_catalog_cache()  # cached page bundles embed each product's avg rating
     return {"id": review.id, "is_approved": review.is_approved}
 
 
@@ -637,6 +853,7 @@ def set_homepage(body: HomepageLayoutIn, request: Request,
         db.add(Setting(key=HOMEPAGE_KEY, value=value))
     audit(db, admin, "set", "setting", HOMEPAGE_KEY, {}, request)
     db.commit()
+    invalidate_catalog_cache()
     return {"ok": True, "layout": value}
 
 
@@ -647,6 +864,7 @@ def reset_homepage(request: Request, admin: User = Depends(require_staff), db: S
         db.delete(setting)
         audit(db, admin, "delete", "setting", HOMEPAGE_KEY, {}, request)
         db.commit()
+        invalidate_catalog_cache()
     return {"ok": True}
 
 
@@ -693,4 +911,5 @@ def set_arrange(body: ArrangeIn, request: Request,
     count = len(mappings)
     audit(db, admin, "arrange", "category", body.category_id, {"count": count}, request)
     db.commit()
+    invalidate_catalog_cache()
     return {"ok": True, "count": count}
