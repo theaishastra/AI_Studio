@@ -83,6 +83,7 @@
                   <a href="bulk-orders.html">Bulk Orders</a>
                   <a href="about-us.html">About Us</a>
                   <a href="contact-us.html">Contact Us</a>
+                  <a href="#wishlist" onclick="event.preventDefault(); openWishlistDrawer();">Wishlist</a>
                 </div>
               </div>
               <a href="cart.html" class="nav-cart-btn">
@@ -399,6 +400,27 @@
             aria-label="Slide 2"></button><button class="hero-dot" onclick="goToHero(2)"
             aria-label="Slide 3"></button><button class="hero-dot" onclick="goToHero(3)" aria-label="Slide 4"></button>
         </div>
+      </div>
+    </section>
+
+    <section class="section gifts-catalog-intro container">
+      <div class="filter-bar">
+        <div class="sort-by-field">
+          <label for="giftsSortFilter">Sort by :</label>
+          <select id="giftsSortFilter" onchange="setSortFilter(this.value)">
+            <option value="popular" selected>Popular</option>
+            <option value="lowToHigh">Price: Low to High</option>
+            <option value="highToLow">Price: High to Low</option>
+          </select>
+          <svg class="filter-chevron-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </div>
+      </div>
+
+      <div class="category-header" id="giftsCategoryHeader">
+        <h1 id="giftsCatTitle">All Gift Products</h1>
+        <p id="giftsCatDesc">Discover our complete range of personalised photo frames, magic mirrors, wall clocks, drinkware, pillows, crystal gifts and home decor, crafted with your photos and memories.</p>
       </div>
     </section>
 

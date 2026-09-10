@@ -160,8 +160,8 @@
 
     window.handleGlobalHeaderSearch = function (e) {
       const query = e.target.value.trim().toLowerCase();
-      const productsGridEl = document.getElementById('productsGrid');
-      if (!productsGridEl) return;
+      const packagesGridEl = document.getElementById('packagesGrid');
+      if (!packagesGridEl) return;
 
       if (!query) {
         renderContent();
@@ -176,17 +176,17 @@
       const filtered = allProds.filter(p => p.name.toLowerCase().includes(query) || (p.subtitle && p.subtitle.toLowerCase().includes(query)));
 
       if (filtered.length === 0) {
-        productsGridEl.innerHTML = `
+        packagesGridEl.innerHTML = `
           <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #64748b;">
             <h3>No products matching "${query}"</h3>
             <p style="margin-top: 8px;">Try searching for "kit", "bottle", "pen", "memento", or "mug"</p>
           </div>
         `;
       } else {
-        productsGridEl.innerHTML = filtered.map(p => {
+        packagesGridEl.innerHTML = filtered.map(p => {
           const cleanName = p.name.replace(/'/g, "\\'");
           return `
-            <div class="p-card fnp-product-card" onclick="orderNowDirect('${cleanName}', '${p.price}', '${p.img}', '${p.id || ''}')">
+            <div class="pkg-card fnp-product-card" onclick="orderNowDirect('${cleanName}', '${p.price}', '${p.img}', '${p.id || ''}')">
               <div class="p-thumb">
                 <img src="${cldOpt(p.img)}" alt="${p.name}" loading="lazy">
                 ${p.oldPrice ? `<span class="p-discount-badge">${Math.round((1 - parsePrice(p.price) / parsePrice(p.oldPrice)) * 100)}% off</span>` : ''}
@@ -195,7 +195,7 @@
                     <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
                   </svg>
                 </button>
-                <div class="p-card-hover-overlay">
+                <div class="pkg-card-hover-overlay">
                   <button class="order-now-hover-btn" onclick="event.stopPropagation(); orderNowDirect('${cleanName}', '${p.price}', '${p.img}', '${p.id || ''}')">
                     Order Now
                   </button>
@@ -216,7 +216,7 @@
 
       if (e.key === 'Enter') {
         const yOffset = -90;
-        const y = productsGridEl.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        const y = packagesGridEl.getBoundingClientRect().top + window.pageYOffset + yOffset;
         window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
       }
     };
@@ -297,7 +297,7 @@
       // Smooth scroll down directly to products catalog
       if (shouldScroll) {
         setTimeout(() => {
-          const targetEl = document.getElementById('catalogContainer') || document.getElementById('productsGrid') || document.querySelector('.content-layout');
+          const targetEl = document.getElementById('catalogContainer') || document.getElementById('packagesGrid') || document.querySelector('.content-layout');
           if (targetEl) {
             const yOffset = getScrollOffset();
             const y = targetEl.getBoundingClientRect().top + window.pageYOffset + yOffset;
@@ -357,7 +357,7 @@
     }
 
     function applyProductSort() {
-      const grid = document.getElementById('productsGrid');
+      const grid = document.getElementById('packagesGrid');
       if (!grid) return;
 
       // Cache the grid's natural render order the first time it's sorted, so
@@ -385,12 +385,12 @@
 
     // --- Render Content Panel ---
     window.renderContent = function () {
-      const productsGridEl = document.getElementById('productsGrid');
-      if (!productsGridEl) return;
-      productsGridEl._naturalOrder = null; // grid content is about to change - drop the stale sort cache
+      const packagesGridEl = document.getElementById('packagesGrid');
+      if (!packagesGridEl) return;
+      packagesGridEl._naturalOrder = null; // grid content is about to change - drop the stale sort cache
 
       // Preserve rich static HTML product cards on 'all' view
-      if (currentCategory === 'all' && productsGridEl.children.length > 0) {
+      if (currentCategory === 'all' && packagesGridEl.children.length > 0) {
         const catTitleEl = document.getElementById('catTitle');
         const catDescEl = document.getElementById('catDesc');
         if (catTitleEl) catTitleEl.textContent = "All Corporate Gifts";
@@ -433,7 +433,7 @@
       const productsHTML = uniqueProducts.map((p) => {
         const cleanName = p.name.replace(/'/g, "\\'");
         return `
-        <div class="p-card fnp-product-card" onclick="orderNowDirect('${cleanName}', '${p.price}', '${p.img}', '${p.id || ''}')">
+        <div class="pkg-card fnp-product-card" onclick="orderNowDirect('${cleanName}', '${p.price}', '${p.img}', '${p.id || ''}')">
           <div class="p-thumb">
             <img src="${cldOpt(p.img)}" alt="${p.name}" loading="lazy">
             ${p.oldPrice ? `<span class="p-discount-badge">${Math.round((1 - parsePrice(p.price) / parsePrice(p.oldPrice)) * 100)}% off</span>` : ''}
@@ -442,7 +442,7 @@
                 <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
               </svg>
             </button>
-            <div class="p-card-hover-overlay">
+            <div class="pkg-card-hover-overlay">
               <button class="order-now-hover-btn" onclick="event.stopPropagation(); orderNowDirect('${cleanName}', '${p.price}', '${p.img}', '${p.id || ''}')">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -454,7 +454,7 @@
             </div>
           </div>
           <div class="p-info">
-            <div class="p-card-tag-row" style="margin-bottom: 4px;">
+            <div class="pkg-card-tag-row" style="margin-bottom: 4px;">
               <span class="card-logo-badge" style="font-size: 10px; font-weight: 800; color: #A67C1E; background: rgba(197, 160, 89, 0.18); border: 1px solid rgba(197, 160, 89, 0.4); padding: 2px 8px; border-radius: 6px;">✨ Custom Logo Engraving</span>
             </div>
             <h4 class="p-title">${p.name}</h4>
@@ -466,7 +466,7 @@
         </div>
       `;
       }).join('');
-      if (productsGridEl) productsGridEl.innerHTML = productsHTML;
+      if (packagesGridEl) packagesGridEl.innerHTML = productsHTML;
     };
 
     window.selectEngraveTechnique = function (btnEl, technique) {
@@ -2297,7 +2297,7 @@
       // does when a category is picked in-page, just missing for the page-load path.
       if (hasCatDeepLink) {
         setTimeout(() => {
-          const targetEl = document.getElementById('catalogContainer') || document.getElementById('productsGrid') || document.querySelector('.content-layout');
+          const targetEl = document.getElementById('catalogContainer') || document.getElementById('packagesGrid') || document.querySelector('.content-layout');
           if (targetEl) {
             const yOffset = getScrollOffset();
             const y = targetEl.getBoundingClientRect().top + window.pageYOffset + yOffset;

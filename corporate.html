@@ -101,6 +101,7 @@
                   <a href="bulk-orders.html">Bulk Orders</a>
                   <a href="about-us.html">About Us</a>
                   <a href="contact-us.html">Contact Us</a>
+                  <a href="#wishlist" onclick="event.preventDefault(); openWishlistDrawer();">Wishlist</a>
                 </div>
               </div>
               <a href="cart.html" class="nav-cart-btn">
@@ -323,6 +324,10 @@
           <line x1="8" y1="23" x2="16" y2="23"></line>
         </svg>
       </div>
+
+      <div class="mobile-hero-text">
+        <p>Premium corporate gifts &amp; welcome kits, delivered on time.</p>
+      </div>
     </div>
 
     <!-- ── Row 3: Category Circles (Second Header) — JS-rendered by initSidebar(), see js/corporate.js ── -->
@@ -412,7 +417,7 @@
             <h1 class="s-title">Branded Ceramic &amp;<br><em>Corporate Mugs</em></h1>
             <p>High-definition custom ceramic mugs printed with corporate logos, personalized names &amp; leadership
               quotes.</p>
-            <a href="#productsGrid" onclick="switchCategory('promotional')" class="btn btn-gold">
+            <a href="#packagesGrid" onclick="switchCategory('promotional')" class="btn btn-gold">
               <span>EXPLORE DRINKWARE</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7" />
@@ -429,7 +434,7 @@
             <h1 class="s-title">Smart Joining Kits &amp;<br><em>Welcome Hampers</em></h1>
             <p>Customized welcome kits with laser-engraved pens, leatherette diaries, flasks &amp; custom logo printed
               gift boxes.</p>
-            <a href="#productsGrid" onclick="switchCategory('kits')" class="btn btn-gold">
+            <a href="#packagesGrid" onclick="switchCategory('kits')" class="btn btn-gold">
               <span>EXPLORE WELCOME KITS</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7" />
@@ -446,7 +451,7 @@
             <h1 class="s-title">Premium Executive Combo<br><em>Gift Sets</em></h1>
             <p>Curated executive combos with laser-engraved metal pens, wallets, temperature LED bottles &amp;
               organizers.</p>
-            <a href="#productsGrid" onclick="switchCategory('sets')" class="btn btn-gold">
+            <a href="#packagesGrid" onclick="switchCategory('sets')" class="btn btn-gold">
               <span>EXPLORE COMBO KITS</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7" />
@@ -462,7 +467,7 @@
             <span class="s-tag">🏆 RECOGNITION &amp; AWARDS</span>
             <h1 class="s-title">Engraved Mementos &amp;<br><em>Achievement Awards</em></h1>
             <p>Honor star performers with 3D optical crystal blocks, mahogany wooden mementos &amp; annual trophies.</p>
-            <a href="#productsGrid" onclick="switchCategory('trophies')" class="btn btn-gold">
+            <a href="#packagesGrid" onclick="switchCategory('trophies')" class="btn btn-gold">
               <span>EXPLORE AWARDS</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7" />
@@ -478,7 +483,7 @@
             <span class="s-tag">🖋️ CUSTOM BRANDING</span>
             <h1 class="s-title">Premium Engraved<br><em>Corporate Pens</em></h1>
             <p>Executive metal pens, rollerballs, and branded writing gifts for every business occasion.</p>
-            <a href="#productsGrid" onclick="switchCategory('pens')" class="btn btn-gold">
+            <a href="#packagesGrid" onclick="switchCategory('pens')" class="btn btn-gold">
               <span>EXPLORE CUSTOM PENS</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7" />
@@ -494,7 +499,7 @@
             <span class="s-tag">📓 EXECUTIVE ESSENTIALS</span>
             <h1 class="s-title">Personalized<br><em>Corporate Diaries</em></h1>
             <p>Premium planners and leatherette diaries made for thoughtful professional gifting.</p>
-            <a href="#productsGrid" onclick="switchCategory('diaries')" class="btn btn-gold">
+            <a href="#packagesGrid" onclick="switchCategory('diaries')" class="btn btn-gold">
               <span>EXPLORE DIARIES</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7" />
@@ -510,7 +515,7 @@
             <span class="s-tag">💧 EVERYDAY UTILITY</span>
             <h1 class="s-title">Branded Steel<br><em>Bottles &amp; Flasks</em></h1>
             <p>Customizable insulated bottles and flasks that keep your brand in daily view.</p>
-            <a href="#productsGrid" onclick="switchCategory('bottles')" class="btn btn-gold">
+            <a href="#packagesGrid" onclick="switchCategory('bottles')" class="btn btn-gold">
               <span>EXPLORE BOTTLES</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7" />
@@ -526,7 +531,7 @@
             <span class="s-tag">👛 EXECUTIVE GIFTS</span>
             <h1 class="s-title">Refined<br><em>Wallets &amp; Holders</em></h1>
             <p>Professional leatherette wallets and card holders that make a polished gift.</p>
-            <a href="#productsGrid" onclick="switchCategory('wallets')" class="btn btn-gold">
+            <a href="#packagesGrid" onclick="switchCategory('wallets')" class="btn btn-gold">
               <span>EXPLORE WALLETS</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7" />
@@ -542,7 +547,7 @@
             <span class="s-tag">💎 RECOGNITION GIFTS</span>
             <h1 class="s-title">Memorable<br><em>Corporate Mementos</em></h1>
             <p>Glass awards, wooden plaques, and commemorative gifts for meaningful recognition.</p>
-            <a href="#productsGrid" onclick="switchCategory('mementos')" class="btn btn-gold">
+            <a href="#packagesGrid" onclick="switchCategory('mementos')" class="btn btn-gold">
               <span>EXPLORE MEMENTOS</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7" />
@@ -559,7 +564,7 @@
             <h1 class="s-title">Achievement &amp; Honor<br><em>Award Shields</em></h1>
             <p>Custom laser-engraved recognition shields with mahogany wooden backing &amp; 24K polished brass citation
               plates.</p>
-            <a href="#productsGrid" onclick="switchCategory('shields')" class="btn btn-gold">
+            <a href="#packagesGrid" onclick="switchCategory('shields')" class="btn btn-gold">
               <span>EXPLORE AWARD SHIELDS</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7" />
@@ -609,14 +614,19 @@
           Select Products
         </h2>
 
-        <div class="products-grid" id="productsGrid">
+        <div class="packages-grid" id="packagesGrid">
 
           <!-- Pen 1 -->
-          <div class="p-card" onclick="orderNowDirect('Premium Metal Pen', '₹399', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/06--pen%20-06.jpg')">
+          <div class="pkg-card" onclick="orderNowDirect('Premium Metal Pen', '₹399', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/06--pen%20-06.jpg')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/06--pen%20-06.jpg" alt="Premium Metal Pen" loading="lazy">
               <span class="p-discount-badge">25% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('Premium Metal Pen', '₹399', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/06--pen%20-06.jpg')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -650,12 +660,17 @@
           </div>
 
           <!-- Pen 2 -->
-          <div class="p-card"
+          <div class="pkg-card"
             onclick="orderNowDirect('Classic Ballpoint Pen', '₹299', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/06-pen-02.jpg')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/06-pen-02.jpg" alt="Classic Ballpoint Pen" loading="lazy">
               <span class="p-discount-badge">20% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('Classic Ballpoint Pen', '₹299', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/06-pen-02.jpg')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -689,11 +704,16 @@
           </div>
 
           <!-- Pen 3 -->
-          <div class="p-card" onclick="orderNowDirect('Executive Gel Pen', '₹349', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/06-pen-03.jpg')">
+          <div class="pkg-card" onclick="orderNowDirect('Executive Gel Pen', '₹349', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/06-pen-03.jpg')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/06-pen-03.jpg" alt="Executive Gel Pen" loading="lazy">
               <span class="p-discount-badge">30% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('Executive Gel Pen', '₹349', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/06-pen-03.jpg')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -727,12 +747,17 @@
           </div>
 
           <!-- Pen 4 -->
-          <div class="p-card"
+          <div class="pkg-card"
             onclick="orderNowDirect('Metal Pen & Keychain Set', '₹499', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/pen_gift_set.jpg')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/pen_gift_set.jpg" alt="Metal Pen & Keychain Set" loading="lazy">
               <span class="p-discount-badge">40% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('Metal Pen & Keychain Set', '₹499', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/pen_gift_set.jpg')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -766,11 +791,16 @@
           </div>
 
           <!-- Bottle 2 -->
-          <div class="p-card" onclick="orderNowDirect('LED Water Bottle', '₹749', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/07-water%20bottle-02.jpg')">
+          <div class="pkg-card" onclick="orderNowDirect('LED Water Bottle', '₹749', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/07-water%20bottle-02.jpg')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/07-water%20bottle-02.jpg" alt="LED Water Bottle" loading="lazy">
               <span class="p-discount-badge">35% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('LED Water Bottle', '₹749', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/07-water%20bottle-02.jpg')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -804,12 +834,17 @@
           </div>
 
           <!-- Bottle 3 -->
-          <div class="p-card"
+          <div class="pkg-card"
             onclick="orderNowDirect('Premium Thermal Flask', '₹899', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/07-water%20bottle-03.jpg')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/07-water%20bottle-03.jpg" alt="Premium Thermal Flask" loading="lazy">
               <span class="p-discount-badge">32% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('Premium Thermal Flask', '₹899', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/07-water%20bottle-03.jpg')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -843,12 +878,17 @@
           </div>
 
           <!-- Bottle 4 -->
-          <div class="p-card"
+          <div class="pkg-card"
             onclick="orderNowDirect('Custom Engraved Flask Set', '₹799', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/water%20bottle%2005.jpg')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/water%20bottle%2005.jpg" alt="Custom Engraved Flask Set" loading="lazy">
               <span class="p-discount-badge">30% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('Custom Engraved Flask Set', '₹799', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/water%20bottle%2005.jpg')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -882,12 +922,17 @@
           </div>
 
           <!-- Diary 1 -->
-          <div class="p-card"
+          <div class="pkg-card"
             onclick="orderNowDirect('Premium Leatherette Diary', '₹599', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/executive_diary_set.jpg')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/executive_diary_set.jpg" alt="Premium Leatherette Diary" loading="lazy">
               <span class="p-discount-badge">33% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('Premium Leatherette Diary', '₹599', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/executive_diary_set.jpg')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -921,12 +966,17 @@
           </div>
 
           <!-- Diary 2 -->
-          <div class="p-card"
+          <div class="pkg-card"
             onclick="orderNowDirect('Ruled Diary with Pen', '₹499', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/dairies%2001.webp')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/dairies%2001.webp" alt="Ruled Diary with Pen" loading="lazy">
               <span class="p-discount-badge">22% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('Ruled Diary with Pen', '₹499', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/dairies%2001.webp')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -960,12 +1010,17 @@
           </div>
 
           <!-- Combo 1 -->
-          <div class="p-card"
+          <div class="pkg-card"
             onclick="orderNowDirect('Executive Combo Set 1', '₹899', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/10--dairy%20combos-06.jpg')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/10--dairy%20combos-06.jpg" alt="Executive Combo Set 1" loading="lazy">
               <span class="p-discount-badge">28% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('Executive Combo Set 1', '₹899', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/10--dairy%20combos-06.jpg')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -999,12 +1054,17 @@
           </div>
 
           <!-- Combo 2 -->
-          <div class="p-card"
+          <div class="pkg-card"
             onclick="orderNowDirect('Executive Combo Set 2', '₹1,099', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/corporate_hamper.jpg')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/corporate_hamper.jpg" alt="Executive Combo Set 2" loading="lazy">
               <span class="p-discount-badge">35% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('Executive Combo Set 2', '₹1,099', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/corporate_hamper.jpg')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -1038,12 +1098,17 @@
           </div>
 
           <!-- Combo 3 -->
-          <div class="p-card"
+          <div class="pkg-card"
             onclick="orderNowDirect('Leather Executive Combo', '₹1,299', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/dairies%2007.avif')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/dairies%2007.avif" alt="Leather Executive Combo" loading="lazy">
               <span class="p-discount-badge">38% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('Leather Executive Combo', '₹1,299', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/dairies%2007.avif')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -1077,11 +1142,16 @@
           </div>
 
           <!-- Mug 1 -->
-          <div class="p-card" onclick="orderNowDirect('Custom Photo Mug', '₹299', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/mugs%2001.jpg')">
+          <div class="pkg-card" onclick="orderNowDirect('Custom Photo Mug', '₹299', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/mugs%2001.jpg')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/mugs%2001.jpg" alt="Custom Photo Mug" loading="lazy">
               <span class="p-discount-badge">40% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('Custom Photo Mug', '₹299', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/mugs%2001.jpg')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -1115,11 +1185,16 @@
           </div>
 
           <!-- Mug 2 -->
-          <div class="p-card" onclick="orderNowDirect('Premium Ceramic Mug', '₹249', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/cups%20%288%29.png')">
+          <div class="pkg-card" onclick="orderNowDirect('Premium Ceramic Mug', '₹249', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/cups%20%288%29.png')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/cups%20%288%29.png" alt="Premium Ceramic Mug" loading="lazy">
               <span class="p-discount-badge">35% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('Premium Ceramic Mug', '₹249', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/cups%20%288%29.png')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -1153,12 +1228,17 @@
           </div>
 
           <!-- Award 1 -->
-          <div class="p-card"
+          <div class="pkg-card"
             onclick="orderNowDirect('Crystal Trophy Memento', '₹999', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/trophies%2001.avif')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/trophies%2001.avif" alt="Crystal Trophy Memento" loading="lazy">
               <span class="p-discount-badge">33% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('Crystal Trophy Memento', '₹999', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/trophies%2001.avif')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -1192,12 +1272,17 @@
           </div>
 
           <!-- Award 2 -->
-          <div class="p-card"
+          <div class="pkg-card"
             onclick="orderNowDirect('Glass Memento Award', '₹799', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/glass%20momentos%2001.png')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/glass%20momentos%2001.png" alt="Glass Memento Award" loading="lazy">
               <span class="p-discount-badge">28% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('Glass Memento Award', '₹799', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/glass%20momentos%2001.png')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -1231,12 +1316,17 @@
           </div>
 
           <!-- Award 3 -->
-          <div class="p-card"
+          <div class="pkg-card"
             onclick="orderNowDirect('Wooden Shield Award', '₹1,199', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/memento_shield.jpg')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/memento_shield.jpg" alt="Wooden Shield Award" loading="lazy">
               <span class="p-discount-badge">30% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('Wooden Shield Award', '₹1,199', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/memento_shield.jpg')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -1270,12 +1360,17 @@
           </div>
 
           <!-- Award 4 -->
-          <div class="p-card"
+          <div class="pkg-card"
             onclick="orderNowDirect('Crystal Memento 3D', '₹899', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/memontos%20%282%29.jpg')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/memontos%20%282%29.jpg" alt="Crystal Memento 3D" loading="lazy">
               <span class="p-discount-badge">26% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('Crystal Memento 3D', '₹899', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/memontos%20%282%29.jpg')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -1309,12 +1404,17 @@
           </div>
 
           <!-- Award 5 -->
-          <div class="p-card"
+          <div class="pkg-card"
             onclick="orderNowDirect('Premium Wooden Memento', '₹749', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/memontos%2003.jpg')">
             <div class="p-thumb">
               <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/memontos%2003.jpg" alt="Premium Wooden Memento" loading="lazy">
               <span class="p-discount-badge">24% OFF</span>
-              <div class="p-card-hover-overlay">
+              <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+              <div class="pkg-card-hover-overlay">
                 <button class="order-now-hover-btn"
                   onclick="event.stopPropagation(); orderNowDirect('Premium Wooden Memento', '₹749', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/memontos%2003.jpg')">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">

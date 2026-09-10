@@ -1375,6 +1375,85 @@ a {
   font-size: 22px;
 }
 
+.gifts-catalog-intro {
+  padding: 24px 0 4px;
+}
+
+.gifts-catalog-intro .filter-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
+.gifts-catalog-intro .sort-by-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 34px 9px 14px;
+  background: #fff;
+  border: 1px solid #E5E0D8;
+  border-radius: 10px;
+}
+
+.gifts-catalog-intro .sort-by-field label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.gifts-catalog-intro .sort-by-field select {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 4px;
+}
+
+.gifts-catalog-intro .filter-chevron-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.gifts-catalog-intro .category-header {
+  margin-bottom: 8px;
+}
+
+.gifts-catalog-intro .category-header h1 {
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: -0.8px;
+}
+
+.gifts-catalog-intro .category-header p {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 6px;
+  line-height: 1.45;
+  max-width: 720px;
+}
+
+@media (max-width: 640px) {
+  .gifts-catalog-intro .category-header h1 {
+    font-size: 20px;
+  }
+
+  .gifts-catalog-intro .category-header p {
+    font-size: 13px;
+  }
+}
+
 .category-showcase {
   height: auto;
   min-height: 0;
@@ -10190,14 +10269,14 @@ body.gifts-module-route .breadcrumb {
 }
 
 body.gifts-module-route .details-page .breadcrumb {
-  /* Desktop-hidden: the main site nav right above already gives full
-     navigation, so this strip was just dead vertical space above the
-     product. Restored on mobile below as a single flush topbar row (icon +
-     "PRODUCT DETAILS") - matching the plain minimal header used on the
-     studio/corporate product-preview pages instead of a filled pill button
-     stacked above a second breadcrumb-links row, which just wasted two rows
-     of vertical space before the gallery image. */
-  display: none !important;
+  /* Studio's product-preview page (css/studio.css's .preview-breadcrumb)
+     shows this "Home / Category / Product" trail on desktop and hides it
+     on mobile (where the "‹ PRODUCT DETAILS" topbar below takes over that
+     role instead) - match that here rather than hiding it everywhere. */
+  display: flex !important;
+  font-size: 11.5px !important;
+  color: #8C7B70 !important;
+  margin: 0 0 10px !important;
 }
 
 body.gifts-module-route .details-page .breadcrumb-back-btn {
@@ -13531,6 +13610,24 @@ html body.gifts-view-category .catalog-main {
   padding-bottom: 0 !important;
 }
 
+/* studio.html's .main-content has nothing sitting inside it but its own
+   padding - no inner max-width "container" and no second padded wrapper.
+   Here .catalog-main and main.container are nested inside .main-content, so
+   without this they'd each add their own width-cap/padding on top of
+   .main-content's, compounding into extra, uneven spacing. Strip both back
+   to full-width/no-padding so .main-content's padding is the only inset,
+   same as studio.html. */
+html body.gifts-view-category main.container {
+  width: 100% !important;
+  max-width: none !important;
+  margin-inline: 0 !important;
+  padding: 0 !important;
+}
+
+html body.gifts-view-category .catalog-main {
+  padding: 0 !important;
+}
+
 html body.gifts-view-category .breadcrumb {
   color: rgba(255, 255, 255, 0.85) !important;
 }
@@ -13538,6 +13635,66 @@ html body.gifts-view-category .breadcrumb {
 html body.gifts-view-category .breadcrumb a {
   color: #ffffff !important;
   font-weight: 600 !important;
+}
+
+/* studio.html's dashboard has no breadcrumb row above its category header -
+   drop it here too (desktop and mobile) to match. */
+html body.gifts-view-category .breadcrumb {
+  display: none !important;
+}
+
+/* studio.html's dashboard goes straight from the category-header text into
+   the product grid - no promo banner image or tab strip in between. Hide
+   both on mobile so the layout matches exactly. */
+@media (max-width: 768px) {
+  html body.gifts-view-category .category-hero,
+  html body.gifts-view-category .category-tabs {
+    display: none !important;
+  }
+
+  html body.gifts-view-category .category-header {
+    margin-top: 0 !important;
+  }
+}
+
+/* Studio-style category header (title + description) above the product grid.
+   Matches studio.html's .category-header: bold white h1 + white description
+   line sitting directly on the maroon background. */
+html body.gifts-view-category .category-header {
+  margin: 14px 0 20px !important;
+}
+
+html body.gifts-view-category .category-header h1 {
+  font-size: 22px !important;
+  font-weight: 900 !important;
+  color: #ffffff !important;
+  letter-spacing: -0.6px !important;
+  margin: 0 0 6px !important;
+}
+
+html body.gifts-view-category .category-header p {
+  font-size: 13px !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  line-height: 1.45 !important;
+  margin: 0 !important;
+  max-width: 640px !important;
+}
+
+@media (max-width: 768px) {
+  html body.gifts-view-category .category-header {
+    margin: 10px 0 14px !important;
+  }
+
+  html body.gifts-view-category .category-header h1 {
+    font-size: 17px !important;
+    font-weight: 850 !important;
+    letter-spacing: -0.3px !important;
+    margin-bottom: 4px !important;
+  }
+
+  html body.gifts-view-category .category-header p {
+    font-size: 12px !important;
+  }
 }
 
 html body.gifts-module-route .catalog-toolbar-header h2,
@@ -13919,10 +14076,11 @@ html body.gifts-module-route .price,
   margin: 0 !important;
 }
 
-/* ── Hide Extra Clutter (Old Price, Discounts, Bottom Button) to Match Screenshot ── */
-html body.gifts-module-route .old-price,
-html body.gifts-module-route .listing-offer,
-html body.gifts-module-route .customize-btn,
+/* ── Hide Extra Clutter (Old Price, Discounts, Bottom Button) to Match Screenshot ──
+   Scoped to the category grid's product cards only - an earlier unscoped version of
+   this rule (html body.gifts-module-route .old-price, with no .product-card
+   ancestor) matched every ".old-price" on the site, including the Product Details
+   page's price row, hiding its strikethrough old price there too. */
 .product-grid .product-card .old-price,
 .product-grid .product-card .listing-offer,
 .product-grid .product-card .customize-btn {
@@ -14089,87 +14247,377 @@ footer .pay-icons .pi {
 }
 
 /* ==========================================================================
-   FULL-SCREEN STUDIO-STYLE SIDEBAR (Category View)
-   Matches studio.html's .studio-dashboard / .sidebar: flush white sidebar,
-   no card/border-radius/shadow, sticky full viewport height, edge-to-edge
-   layout instead of the inset floating-card look. The sidebar now wraps the
-   whole page column (hero/breadcrumb/tabs + catalog) via .gifts-dashboard /
-   .gifts-main-col, not just the old .catalog-shell (kits + hero now sit
-   beside the sidebar from the top of the page instead of only the catalog
-   section further down).
+   STUDIO.HTML DASHBOARD - REUSED VERBATIM (Category View)
+   Same classes as studio.html's dashboard - .studio-dashboard, .sidebar,
+   .sidebar-sticky-inner, .sidebar-item, .main-content, .packages-grid,
+   .pkg-card - copied from css/studio.css (with its CSS variables resolved to
+   literal values, since that :root block isn't loaded on this page) so the
+   gift category page renders with the exact same structure and styling as
+   studio.html's dashboard instead of a parallel re-implementation.
+   .gifts-dashboard/.gifts-main-col/.filters stay as extra classes alongside
+   .studio-dashboard/.main-content/.sidebar so the existing JS hooks
+   (document.querySelector('.filters'), .catalog-main, etc.) keep working.
    ========================================================================== */
+html body.gifts-view-category .studio-dashboard {
+  display: flex;
+  width: 100%;
+  min-height: calc(100vh - 154px);
+}
+
+html body.gifts-view-category .sidebar {
+  width: 280px;
+  border-right: 1px solid #f1f1f1;
+  background: #fff;
+  flex-shrink: 0;
+}
+
 @media (min-width: 769px) {
-  html body.gifts-module-route .gifts-dashboard {
-    display: flex !important;
-    width: 100% !important;
-    align-items: stretch !important;
-    gap: 0 !important;
-  }
-
-  html body.gifts-module-route .gifts-main-col {
-    flex: 1 !important;
-    min-width: 0 !important;
-  }
-
-  html body.gifts-module-route aside.filters,
-  html body.gifts-module-route .filters {
-    position: sticky !important;
-    top: 206px !important;
-    /* Stretch to the full height of the row (not just one viewport) so the
-       white background reaches the footer even when the product grid is
-       taller than the screen - a fixed height:calc(100vh - 206px) here left
-       a gap below the sidebar showing the page's maroon background through
-       once the grid outgrew a single viewport. Sticky still pins it near
-       the top while scrolling. */
-    height: auto !important;
-    max-height: none !important;
-    align-self: stretch !important;
-    width: 280px !important;
-    min-width: 280px !important;
-    max-width: 280px !important;
-    flex: 0 0 280px !important;
-    background: #ffffff !important;
-    border: none !important;
-    border-right: 1px solid #f1f1f1 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    padding: 16px 0 !important;
-    overflow-y: auto !important;
-  }
-
-  html body.gifts-module-route .catalog-main {
-    padding: 32px 40px 60px !important;
+  html body.gifts-view-category .sidebar-sticky-inner {
+    position: sticky;
+    top: 206px;
+    max-height: calc(100vh - 206px);
+    overflow-y: auto;
+    padding: 16px 0;
   }
 }
 
-/* Mobile counterpart: the 78px icon rail squeezed its labels (.category-side-label)
-   into a ~10px sliver, rendering as unreadable icon-only clutter next to the
-   catalog instead of usable navigation - and users already have the bottom-nav
-   "Categories" tab and the breadcrumb for getting around. So on mobile the
-   sidebar is dropped entirely and .gifts-main-col takes the full width. */
+html body.gifts-view-category .sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  color: #475569;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 13.5px;
+  border-left: 4px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+html body.gifts-view-category .sidebar-item:hover {
+  background: #fafafa;
+  color: #000;
+}
+
+html body.gifts-view-category .sidebar-item.active {
+  background: #eef5ff;
+  color: #22C55E;
+  border-left-color: #22C55E;
+  font-weight: 800;
+}
+
+html body.gifts-view-category .sidebar-item img {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #f7f7f7;
+  border: 1px solid #f1f1f1;
+}
+
+html body.gifts-view-category .main-content {
+  flex: 1;
+  padding: 32px 40px 60px;
+  background: #5C0930;
+}
+
+html body.gifts-view-category .packages-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 44px;
+}
+
+html body.gifts-view-category .pkg-card {
+  background: #fff;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  position: relative;
+}
+
+html body.gifts-view-category .pkg-image-wrap {
+  position: relative;
+}
+
+html body.gifts-view-category .pkg-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
+html body.gifts-view-category .pkg-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  max-width: calc(100% - 16px);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  background: #DC2626;
+  color: #fff;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+html body.gifts-view-category .pkg-wishlist-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94A3B8;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  padding: 0;
+}
+
+html body.gifts-view-category .pkg-wishlist-btn.active {
+  color: #DC2626;
+}
+
+html body.gifts-view-category .pkg-body {
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+html body.gifts-view-category .pkg-card h3 {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 4px;
+  line-height: 1.35;
+  height: 36px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+html body.gifts-view-category .pkg-price {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #111;
+  white-space: nowrap;
+}
+
+html body.gifts-view-category .pkg-old-price {
+  font-size: 11.5px;
+  color: #CBD5E1;
+  text-decoration: line-through;
+  font-weight: 500;
+  margin-right: 4px;
+  white-space: nowrap;
+}
+
+html body.gifts-view-category .pkg-discount-badge {
+  font-size: 11px;
+  color: #16A34A;
+  font-weight: 800;
+  margin-left: 2px;
+  white-space: nowrap;
+}
+
+html body.gifts-view-category .pkg-ribbon,
+html body.gifts-view-category .pkg-actions,
+html body.gifts-view-category .pkg-turnaround {
+  display: none;
+}
+
+html body.gifts-view-category .pkg-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px;
+  margin-top: auto;
+}
+
+@media (min-width: 1024px) {
+  html body.gifts-view-category .pkg-badge {
+    display: none;
+  }
+
+  html body.gifts-view-category .pkg-ribbon {
+    display: block;
+    position: absolute;
+    top: 10px;
+    left: 0;
+    font-size: 10.5px;
+    font-weight: 800;
+    padding: 4px 12px 4px 10px;
+    color: #fff;
+    border-radius: 0 20px 20px 0;
+  }
+
+  html body.gifts-view-category .pkg-ribbon-bestseller {
+    background: #DC2626;
+  }
+
+  html body.gifts-view-category .pkg-ribbon-popular {
+    background: #16A34A;
+  }
+
+  html body.gifts-view-category .pkg-price {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 1024px) {
+  html body.gifts-view-category .packages-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Mobile (<768px): sidebar collapses into a 90px icon rail beside
+   .main-content - exactly studio.html's mobile layout, just without its
+   fixed-height app-shell rules (body/height:100vh/overflow:hidden), since
+   gifts.html scrolls normally rather than as a single-viewport app shell. */
 @media (max-width: 768px) {
-  html body.gifts-module-route .gifts-dashboard {
-    display: block !important;
+  html body.gifts-view-category .gifts-dashboard,
+  html body.gifts-view-category .studio-dashboard {
+    display: flex !important;
+    flex-direction: row !important;
     width: 100% !important;
+    align-items: stretch !important;
   }
 
-  html body.gifts-module-route .gifts-main-col {
-    width: 100% !important;
+  html body.gifts-view-category .gifts-main-col,
+  html body.gifts-view-category .main-content {
+    flex: 1 !important;
+    width: auto !important;
     min-width: 0 !important;
+    padding: 14px 10px 80px !important;
   }
 
-  html body.gifts-module-route aside.filters,
-  html body.gifts-module-route .filters {
+  html body.gifts-view-category aside.filters,
+  html body.gifts-view-category .filters,
+  html body.gifts-view-category .sidebar {
+    display: block !important;
+    width: 90px !important;
+    flex-shrink: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    position: static !important;
+    background: #f7f8f9 !important;
+    border: 0 !important;
+    border-right: 1px solid #f1f1f1 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    overflow-y: visible !important;
+    scrollbar-width: none !important;
+  }
+
+  html body.gifts-view-category .filters::-webkit-scrollbar {
     display: none !important;
   }
 
-  html body.gifts-module-route .catalog-main {
-    width: auto !important;
-    padding: 16px 12px 40px !important;
+  html body.gifts-view-category .filters h2 {
+    display: none !important;
   }
 
-  html body.gifts-module-route #productSearch,
-  html body.gifts-module-route #sortProducts {
+  html body.gifts-view-category .sidebar-sticky-inner {
+    padding: 0 !important;
+  }
+
+  html body.gifts-view-category .sidebar-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 12px 6px !important;
+    gap: 6px !important;
+    border-left: 3px solid transparent !important;
+    border-bottom: 1px solid #eef0f2 !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    background: #f7f8f9 !important;
+    width: 100% !important;
+  }
+
+  html body.gifts-view-category .sidebar-item span {
+    font-size: 10.5px !important;
+    line-height: 1.25 !important;
+    font-weight: 600 !important;
+    color: #475569 !important;
+    word-break: break-word !important;
+  }
+
+  html body.gifts-view-category .sidebar-item img {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    background: #fff !important;
+    border: 1px solid #e2e8f0 !important;
+    padding: 2px !important;
+  }
+
+  html body.gifts-view-category .sidebar-item:hover {
+    background: #f7fafc !important;
+  }
+
+  html body.gifts-view-category .sidebar-item.active span {
+    color: #000 !important;
+    font-weight: 800 !important;
+  }
+
+  html body.gifts-view-category .sidebar-item.active img {
+    border-color: #22C55E !important;
+    background: #fff !important;
+  }
+
+  html body.gifts-view-category .packages-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+    margin-bottom: 20px !important;
+  }
+
+  html body.gifts-view-category .pkg-body {
+    padding: 8px 10px 10px !important;
+  }
+
+  html body.gifts-view-category .pkg-badge {
+    font-size: 9px !important;
+    padding: 2px 6px !important;
+  }
+
+  html body.gifts-view-category .pkg-price {
+    font-size: 13px !important;
+  }
+
+  html body.gifts-view-category .pkg-old-price {
+    font-size: 10.5px !important;
+  }
+
+  html body.gifts-view-category .pkg-discount-badge {
+    font-size: 10px !important;
+  }
+
+  html body.gifts-view-category .catalog-main {
+    width: auto !important;
+  }
+
+  html body.gifts-view-category #productSearch,
+  html body.gifts-view-category #sortProducts {
     width: 100% !important;
     min-width: 0 !important;
     box-sizing: border-box !important;
@@ -14181,5 +14629,46 @@ html body.gifts-module-route .catalog-toolbar {
   display: none !important;
 }
 
+/* ── Hide "Shop by Category" (curator-category-content) strip on mobile ── */
+@media (max-width: 767px) {
+  .category-showcase {
+    display: none !important;
+  }
+}
+
+/* ── Category-view sidebar: remove border-radius ──
+   The <aside> here carries both "filters" and "sidebar" classes, so it also
+   picks up several older, unscoped ".filters"/"aside.filters" rules
+   elsewhere in this file that round its corners (16-20px). Studio's own
+   sidebar has square corners (just a 1px border-right) - flatten this one
+   to match, placed last so it wins those earlier !important rules. */
+html body.gifts-view-category .filters,
+html body.gifts-view-category aside.filters,
+html body.gifts-view-category .sidebar {
+  border-radius: 0 !important;
+}
+
+/* ── Category-view sidebar: stretch flush to the footer, no gap ──
+   The same unscoped "aside.filters" rules above also set align-self:
+   flex-start plus their own max-height/overflow-y/position:sticky directly
+   on this <aside> - that stops it from stretching to match .main-content's
+   height (the flex row's default align-items:stretch), so its white
+   background/border-right stopped short of the footer with a visible gap
+   below it, and gave the aside its own separate scrollbar on top of the
+   page's. Studio's real pattern never puts any of that on the outer
+   <aside> - only the inner .sidebar-sticky-inner is sticky/scrollable, so
+   reset the outer element back to a plain stretched box here to match. */
+@media (min-width: 769px) {
+  html body.gifts-view-category .filters,
+  html body.gifts-view-category aside.filters,
+  html body.gifts-view-category .sidebar {
+    position: static !important;
+    top: auto !important;
+    align-self: stretch !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+  }
+}
 
 

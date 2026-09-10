@@ -829,6 +829,19 @@ body {
   color: #0f172a;
 }
 
+.mobile-hero-text {
+  text-align: center;
+  padding: 0 10px;
+}
+
+.mobile-hero-text p {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+  opacity: 0.75;
+  line-height: 1.4;
+}
+
 /* ==========================================================================
    USER-PROVIDED PHOTOREALISTIC HERO SLIDER (PERFECT 45:55 LIGHT LAYOUT)
    ========================================================================== */
@@ -1257,14 +1270,14 @@ body {
 }
 
 /* --- Image-Only Minimal Product Cards (Compact & Elegant) --- */
-.products-grid {
+.packages-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
   margin-bottom: 44px;
 }
 
-.p-card {
+.pkg-card {
   position: relative;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -1278,7 +1291,7 @@ body {
   width: 100%;
 }
 
-.p-card:hover {
+.pkg-card:hover {
   box-shadow: var(--shadow-elevated);
   transform: translateY(-3px);
   border-color: var(--color-accent);
@@ -1303,12 +1316,12 @@ body {
   transition: transform 0.4s ease;
 }
 
-.p-card:hover .p-thumb img {
+.pkg-card:hover .p-thumb img {
   transform: scale(1.06);
 }
 
 /* Hover Overlay with Order Now Button */
-.p-card-hover-overlay {
+.pkg-card-hover-overlay {
   position: absolute;
   top: 0;
   left: 0;
@@ -1325,7 +1338,7 @@ body {
   z-index: 10;
 }
 
-.p-card:hover .p-card-hover-overlay {
+.pkg-card:hover .pkg-card-hover-overlay {
   opacity: 1;
   visibility: visible;
 }
@@ -1350,7 +1363,7 @@ body {
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.p-card:hover .order-now-hover-btn {
+.pkg-card:hover .order-now-hover-btn {
   transform: translateY(0);
 }
 
@@ -3310,7 +3323,7 @@ body.theme-corporate .submit-btn:hover {
    ========================================================================== */
 
 /* Base transitions & card polish */
-html body .p-card,
+html body .pkg-card,
 html body .product-card,
 html body .pkg-card,
 html body .corp-card {
@@ -3319,42 +3332,42 @@ html body .corp-card {
   overflow: hidden !important;
 }
 
-html body .p-card .p-thumb,
+html body .pkg-card .p-thumb,
 html body .product-card .p-thumb {
   background: transparent !important;
 }
 
 /* Uniform Off-White Cards with Crisp White Borders Across All Cards */
-html body .p-card,
+html body .pkg-card,
 html body .product-card,
 html body .pkg-card,
 html body .corp-card,
-html body .p-card:nth-child(6n+1),
+html body .pkg-card:nth-child(6n+1),
 html body .product-card:nth-child(6n+1),
 html body .pkg-card:nth-child(6n+1),
 html body .corp-card:nth-child(6n+1),
 html body .card-color-1,
-html body .p-card:nth-child(6n+2),
+html body .pkg-card:nth-child(6n+2),
 html body .product-card:nth-child(6n+2),
 html body .pkg-card:nth-child(6n+2),
 html body .corp-card:nth-child(6n+2),
 html body .card-color-2,
-html body .p-card:nth-child(6n+3),
+html body .pkg-card:nth-child(6n+3),
 html body .product-card:nth-child(6n+3),
 html body .pkg-card:nth-child(6n+3),
 html body .corp-card:nth-child(6n+3),
 html body .card-color-3,
-html body .p-card:nth-child(6n+4),
+html body .pkg-card:nth-child(6n+4),
 html body .product-card:nth-child(6n+4),
 html body .pkg-card:nth-child(6n+4),
 html body .corp-card:nth-child(6n+4),
 html body .card-color-4,
-html body .p-card:nth-child(6n+5),
+html body .pkg-card:nth-child(6n+5),
 html body .product-card:nth-child(6n+5),
 html body .pkg-card:nth-child(6n+5),
 html body .corp-card:nth-child(6n+5),
 html body .card-color-5,
-html body .p-card:nth-child(6n+6),
+html body .pkg-card:nth-child(6n+6),
 html body .product-card:nth-child(6n+6),
 html body .pkg-card:nth-child(6n+6),
 html body .corp-card:nth-child(6n+6),
@@ -3364,21 +3377,21 @@ html body .card-color-6 {
   border-color: #FFFFFF !important;
 }
 
-html body .p-card:hover,
+html body .pkg-card:hover,
 html body .product-card:hover,
 html body .pkg-card:hover,
 html body .corp-card:hover,
-html body .p-card:nth-child(6n+1):hover,
+html body .pkg-card:nth-child(6n+1):hover,
 html body .product-card:nth-child(6n+1):hover,
-html body .p-card:nth-child(6n+2):hover,
+html body .pkg-card:nth-child(6n+2):hover,
 html body .product-card:nth-child(6n+2):hover,
-html body .p-card:nth-child(6n+3):hover,
+html body .pkg-card:nth-child(6n+3):hover,
 html body .product-card:nth-child(6n+3):hover,
-html body .p-card:nth-child(6n+4):hover,
+html body .pkg-card:nth-child(6n+4):hover,
 html body .product-card:nth-child(6n+4):hover,
-html body .p-card:nth-child(6n+5):hover,
+html body .pkg-card:nth-child(6n+5):hover,
 html body .product-card:nth-child(6n+5):hover,
-html body .p-card:nth-child(6n+6):hover,
+html body .pkg-card:nth-child(6n+6):hover,
 html body .product-card:nth-child(6n+6):hover {
   border: 2px solid #FFFFFF !important;
   border-color: #FFFFFF !important;
@@ -3630,7 +3643,7 @@ html body .product-card:nth-child(6n+6):hover {
     flex-shrink: 0;
   }
 
-  html body .products-grid {
+  html body .packages-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 16px !important;
   }
@@ -3819,13 +3832,13 @@ body {
     font-weight: 800 !important;
   }
 
-  html body .products-grid {
+  html body .packages-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 12px 10px !important;
     margin-bottom: 24px !important;
   }
 
-  html body .p-card {
+  html body .pkg-card {
     border-radius: 14px !important;
     display: flex !important;
     flex-direction: column !important;
@@ -3856,7 +3869,7 @@ body {
     object-fit: contain !important;
   }
 
-  html body .p-card .badge {
+  html body .pkg-card .badge {
     position: absolute !important;
     top: 6px !important;
     left: 6px !important;
@@ -3899,7 +3912,7 @@ body {
     overflow: hidden !important;
   }
 
-  html body .p-card-footer {
+  html body .pkg-card-footer {
     margin-top: auto !important;
     display: flex !important;
     align-items: center !important;
@@ -3928,7 +3941,7 @@ body {
     display: inline-block !important;
   }
 
-  html body .p-card-btn {
+  html body .pkg-card-btn {
     background: linear-gradient(135deg, #10b981, #059669) !important;
     color: #ffffff !important;
     border: none !important;
@@ -3981,7 +3994,7 @@ body {
 
 /* Small Mobile Screens (< 480px) */
 @media (max-width: 480px) {
-  html body .products-grid {
+  html body .packages-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 10px 8px !important;
   }
@@ -3998,7 +4011,7 @@ body {
     font-size: 13px !important;
   }
 
-  html body .p-card-btn {
+  html body .pkg-card-btn {
     font-size: 10px !important;
     padding: 4px 8px !important;
   }
@@ -5186,8 +5199,8 @@ body {
 
 
 
-.products-grid .category-header,
-#productsGrid .category-header {
+.packages-grid .category-header,
+#packagesGrid .category-header {
   display: none !important;
 }
 
@@ -5890,13 +5903,13 @@ footer,
 /* ==========================================================================
    CLEAN CARD + SLIDE-UP "ORDER NOW" BUTTON ON BOTTOM OF IMAGE ON HOVER
    ========================================================================== */
-.p-card .p-thumb,
+.pkg-card .p-thumb,
 .fnp-product-card .p-thumb {
   position: relative !important;
   overflow: hidden !important;
 }
 
-.p-card-hover-overlay {
+.pkg-card-hover-overlay {
   position: absolute !important;
   bottom: 0 !important;
   left: 0 !important;
@@ -5916,9 +5929,9 @@ footer,
 }
 
 /* Slide up Order Now button bar on mouse hover */
-.p-card:hover .p-card-hover-overlay,
-.fnp-product-card:hover .p-card-hover-overlay,
-.p-thumb:hover .p-card-hover-overlay {
+.pkg-card:hover .pkg-card-hover-overlay,
+.fnp-product-card:hover .pkg-card-hover-overlay,
+.p-thumb:hover .pkg-card-hover-overlay {
   opacity: 1 !important;
   visibility: visible !important;
   transform: translateY(0) !important;
@@ -6290,7 +6303,7 @@ body.theme-corporate {
 }
 
 /* 6. Product Cards Grid (Off-White Cards with Crisp White Borders) */
-.p-card,
+.pkg-card,
 .fnp-product-card {
   background: #ECE7E0 !important;
   border-radius: 20px !important;
@@ -6300,7 +6313,7 @@ body.theme-corporate {
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease !important;
 }
 
-.p-card:hover,
+.pkg-card:hover,
 .fnp-product-card:hover {
   transform: translateY(-5px) !important;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.14) !important;
@@ -7055,8 +7068,8 @@ footer,
     transition: none !important;
   }
 
-  html body .products-grid,
-  html body #productsGrid {
+  html body .packages-grid,
+  html body #packagesGrid {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 20px !important;
@@ -8126,7 +8139,7 @@ footer,
 /* ==========================================================================
    STRICT 1:1 SQUARE ASPECT RATIO PRODUCT CARDS
    ========================================================================== */
-html body .p-card .p-thumb,
+html body .pkg-card .p-thumb,
 html body .product-card .p-thumb,
 html body .fnp-product-card .p-thumb,
 html body .p-thumb {
@@ -8140,7 +8153,7 @@ html body .p-thumb {
   justify-content: center !important;
 }
 
-html body .p-card .p-thumb img,
+html body .pkg-card .p-thumb img,
 html body .product-card .p-thumb img,
 html body .fnp-product-card .p-thumb img,
 html body .p-thumb img {
@@ -8154,7 +8167,7 @@ html body .p-thumb img {
 
 /* ================= PRODUCT CARD INFO PANEL ================= */
 /* Make the card a flex column so the info section sits below the image */
-html body .p-card {
+html body .pkg-card {
   display: flex !important;
   flex-direction: column !important;
   background: #ffffff !important;
@@ -8165,7 +8178,7 @@ html body .p-card {
   cursor: pointer !important;
 }
 
-html body .p-card:hover {
+html body .pkg-card:hover {
   box-shadow: 0 8px 28px rgba(15,23,42,0.16) !important;
   transform: translateY(-4px) !important;
 }
@@ -8345,7 +8358,7 @@ html body .p-card:hover {
 /* ==========================================================================
    STRICT 1:1 SQUARE ASPECT RATIO PRODUCT CARDS
    ========================================================================== */
-html body .p-card .p-thumb,
+html body .pkg-card .p-thumb,
 html body .product-card .p-thumb,
 html body .fnp-product-card .p-thumb,
 html body .p-thumb {
@@ -8359,7 +8372,7 @@ html body .p-thumb {
   justify-content: center !important;
 }
 
-html body .p-card .p-thumb img,
+html body .pkg-card .p-thumb img,
 html body .product-card .p-thumb img,
 html body .fnp-product-card .p-thumb img,
 html body .p-thumb img {
@@ -8373,7 +8386,7 @@ html body .p-thumb img {
 
 /* ================= PRODUCT CARD INFO PANEL ================= */
 /* Make the card a flex column so the info section sits below the image */
-html body .p-card {
+html body .pkg-card {
   display: flex !important;
   flex-direction: column !important;
   background: #ffffff !important;
@@ -8384,7 +8397,7 @@ html body .p-card {
   cursor: pointer !important;
 }
 
-html body .p-card:hover {
+html body .pkg-card:hover {
   box-shadow: 0 8px 28px rgba(15,23,42,0.16) !important;
   transform: translateY(-4px) !important;
 }
@@ -8534,7 +8547,7 @@ html body .p-card:hover {
 }
 
 /* Ensure p-thumb still behaves as relative container for the badge */
-html body .p-card .p-thumb {
+html body .pkg-card .p-thumb {
   position: relative !important;
 }
 
@@ -8578,7 +8591,7 @@ html body .p-card .p-thumb {
      2. Address + Search (.mobile-header-bar)       ← Second sticky header row 1
      3. Category Strip   (#mobileCatScroll)         ← JS-rendered, kept hidden (icon-rail sidebar drives category switching, same as studio.html)
      4. Hero Banners     (.hero-zone)               ← Full-width slider
-     5. Product Cards    (.products-grid)            ← 2-column card grid
+     5. Product Cards    (.packages-grid)            ← 2-column card grid
 
    DESKTOP NOT AFFECTED: Every rule here is scoped inside @media (max-width:767px)
    or targets .mobile-sticky-header which is display:none on desktop.
@@ -8707,6 +8720,21 @@ html body .p-card .p-thumb {
     color: #0f172a !important;
   }
 
+  /* Tagline text below search bar */
+  .mobile-hero-text {
+    display: block !important;
+    text-align: center !important;
+    padding: 0 10px !important;
+  }
+
+  .mobile-hero-text p {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #e2e8f0 !important;
+    opacity: 0.75 !important;
+    line-height: 1.4 !important;
+  }
+
   /* Search/mic SVG icons */
   .mobile-search-bar svg {
     color: #64748b !important;
@@ -8729,12 +8757,7 @@ html body .p-card .p-thumb {
   }
 
   .hero-zone {
-    display: block !important;
-    width: 100% !important;
-    padding: 0 12px !important;      /* Side gutters for card-like appearance */
-    margin-top: 0 !important;        /* No extra margin: body padding handles offset */
-    margin-bottom: 8px !important;   /* Reduce 32px desktop gap */
-    box-sizing: border-box !important;
+    display: none !important;
   }
 
   /* Hero rail: slightly rounded on mobile */
@@ -8838,7 +8861,7 @@ html body .p-card .p-thumb {
   }
 
   /* 2-column product grid */
-  html body .products-grid {
+  html body .packages-grid {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 12px 10px !important;
@@ -8846,7 +8869,7 @@ html body .p-card .p-thumb {
   }
 
   /* Product card: white card with rounded corners */
-  html body .p-card {
+  html body .pkg-card {
     display: flex !important;
     flex-direction: column !important;
     border-radius: 14px !important;
@@ -8857,7 +8880,7 @@ html body .p-card .p-thumb {
   }
 
   /* Card hover lift */
-  html body .p-card:hover {
+  html body .pkg-card:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 6px 18px rgba(0,0,0,0.1) !important;
   }
@@ -9001,7 +9024,7 @@ html body .p-card .p-thumb {
     margin-top: 8px !important;
     margin-bottom: 12px !important;
   }
-  html body .products-grid {
+  html body .packages-grid {
     margin-top: 8px !important;
   }
 
@@ -9247,10 +9270,10 @@ body .btn-buy:hover,
    EXPLICIT 4-PRODUCT ROW AT 100% ZOOM (DESKTOP) & 1:1 SQUARE PRODUCT CARDS
    ========================================================================== */
 @media (min-width: 992px) {
-  html body .products-grid,
-  html body #productsGrid,
-  .products-grid,
-  #productsGrid {
+  html body .packages-grid,
+  html body #packagesGrid,
+  .packages-grid,
+  #packagesGrid {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 20px !important;
@@ -9259,10 +9282,10 @@ body .btn-buy:hover,
 }
 
 @media (min-width: 768px) and (max-width: 991px) {
-  html body .products-grid,
-  html body #productsGrid,
-  .products-grid,
-  #productsGrid {
+  html body .packages-grid,
+  html body #packagesGrid,
+  .packages-grid,
+  #packagesGrid {
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 16px !important;
@@ -9271,10 +9294,10 @@ body .btn-buy:hover,
 }
 
 @media (max-width: 767px) {
-  html body .products-grid,
-  html body #productsGrid,
-  .products-grid,
-  #productsGrid {
+  html body .packages-grid,
+  html body #packagesGrid,
+  .packages-grid,
+  #packagesGrid {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 12px 10px !important;
@@ -9283,7 +9306,7 @@ body .btn-buy:hover,
 }
 
 /* Strict 1:1 Aspect Ratio on Product Cards & Thumbnails */
-html body .p-card,
+html body .pkg-card,
 html body .product-card,
 html body .fnp-product-card {
   display: flex !important;
@@ -9295,7 +9318,7 @@ html body .fnp-product-card {
   background: #ffffff !important;
 }
 
-html body .p-card .p-thumb,
+html body .pkg-card .p-thumb,
 html body .product-card .p-thumb,
 html body .fnp-product-card .p-thumb,
 html body .p-thumb {
@@ -9310,7 +9333,7 @@ html body .p-thumb {
   background: #f8fafc !important;
 }
 
-html body .p-card .p-thumb img,
+html body .pkg-card .p-thumb img,
 html body .product-card .p-thumb img,
 html body .fnp-product-card .p-thumb img,
 html body .p-thumb img {
@@ -9429,7 +9452,7 @@ body.theme-corporate,
 }
 
 /* Product Cards matching the screenshot */
-html body .p-card,
+html body .pkg-card,
 html body .product-card,
 html body .fnp-product-card {
   display: flex !important;
@@ -9444,7 +9467,7 @@ html body .fnp-product-card {
   transition: transform 0.25s ease, box-shadow 0.25s ease !important;
 }
 
-html body .p-card:hover,
+html body .pkg-card:hover,
 html body .product-card:hover,
 html body .fnp-product-card:hover {
   transform: translateY(-4px) !important;
@@ -9452,7 +9475,7 @@ html body .fnp-product-card:hover {
 }
 
 /* 1:1 Square Product Image */
-html body .p-card .p-thumb,
+html body .pkg-card .p-thumb,
 html body .product-card .p-thumb,
 html body .fnp-product-card .p-thumb,
 html body .p-thumb {
@@ -9467,7 +9490,7 @@ html body .p-thumb {
   background: #ffffff !important;
 }
 
-html body .p-card .p-thumb img,
+html body .pkg-card .p-thumb img,
 html body .product-card .p-thumb img,
 html body .fnp-product-card .p-thumb img,
 html body .p-thumb img {
@@ -9492,7 +9515,7 @@ html body .p-thumb img {
 
 /* Custom Logo Engraving Badge */
 .card-logo-badge,
-.p-card-tag-row {
+.pkg-card-tag-row {
   display: inline-block !important;
 }
 
@@ -9664,10 +9687,10 @@ html body .sidebar-item.active .sidebar-item-icon,
 
 /* 4 Products in Row & 1:1 Aspect Ratio on Cards */
 @media (min-width: 992px) {
-  html body .products-grid,
-  html body #productsGrid,
-  .products-grid,
-  #productsGrid {
+  html body .packages-grid,
+  html body #packagesGrid,
+  .packages-grid,
+  #packagesGrid {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 20px !important;
@@ -9675,7 +9698,7 @@ html body .sidebar-item.active .sidebar-item-icon,
   }
 }
 
-html body .p-card,
+html body .pkg-card,
 html body .product-card,
 html body .fnp-product-card {
   display: flex !important;
@@ -9690,7 +9713,7 @@ html body .fnp-product-card {
   transition: transform 0.25s ease, box-shadow 0.25s ease !important;
 }
 
-html body .p-card:hover,
+html body .pkg-card:hover,
 html body .product-card:hover,
 html body .fnp-product-card:hover {
   transform: translateY(-4px) !important;
@@ -9698,7 +9721,7 @@ html body .fnp-product-card:hover {
 }
 
 /* 1:1 Square Product Image */
-html body .p-card .p-thumb,
+html body .pkg-card .p-thumb,
 html body .product-card .p-thumb,
 html body .fnp-product-card .p-thumb,
 html body .p-thumb {
@@ -9713,7 +9736,7 @@ html body .p-thumb {
   background: #ffffff !important;
 }
 
-html body .p-card .p-thumb img,
+html body .pkg-card .p-thumb img,
 html body .product-card .p-thumb img,
 html body .fnp-product-card .p-thumb img,
 html body .p-thumb img {
@@ -9740,9 +9763,9 @@ html body .p-info,
 
 /* Custom Logo Engraving Badge */
 html body .card-logo-badge,
-html body .p-card-tag-row,
+html body .pkg-card-tag-row,
 .card-logo-badge,
-.p-card-tag-row {
+.pkg-card-tag-row {
   display: inline-block !important;
   visibility: visible !important;
   opacity: 1 !important;
@@ -9818,7 +9841,7 @@ html body .p-info::before,
 
 /* Avoid duplicate if tag exists in DOM */
 html body .p-info .card-logo-badge,
-html body .p-info .p-card-tag-row {
+html body .p-info .pkg-card-tag-row {
   display: none !important;
 }
 
@@ -10207,10 +10230,10 @@ html body .sidebar-list,
   overflow-y: visible !important;
 }
 
-html body.theme-corporate .products-grid,
-html body .products-grid,
-.products-grid,
-#productsGrid {
+html body.theme-corporate .packages-grid,
+html body .packages-grid,
+.packages-grid,
+#packagesGrid {
   margin-bottom: 0 !important;
   padding-bottom: 0 !important;
 }
@@ -10381,25 +10404,30 @@ html, body, body.theme-corporate {
 /* Category Header Banner */
 body.theme-corporate .category-header,
 .category-header {
-  background: linear-gradient(135deg, #5C0930 0%, #8A1249 55%, #C2185B 100%) !important;
-  border: 1.5px solid rgba(255, 199, 0, 0.35) !important;
-  border-left: 6px solid #FFC700 !important;
-  border-radius: 16px !important;
-  padding: 22px 26px !important;
-  margin-bottom: 24px !important;
-  color: #FFFFFF !important;
-  box-shadow: 0 10px 24px rgba(92, 9, 48, 0.18) !important;
+  display: block !important;
+  background: none !important;
+  border: none !important;
+  border-left: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin-bottom: 28px !important;
+  box-shadow: none !important;
 }
 
 body.theme-corporate .category-header h1,
 .category-header h1 {
+  font-size: 26px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.8px !important;
   color: #FFFFFF !important;
-  font-weight: 850 !important;
 }
 
 body.theme-corporate .category-header p,
 .category-header p {
-  color: #FDE7F0 !important;
+  font-size: 14px !important;
+  margin-top: 6px !important;
+  line-height: 1.45 !important;
+  color: #FFFFFF !important;
 }
 
 /* AI Studio Hero Banner Zone */
@@ -10468,7 +10496,7 @@ body.theme-corporate .sidebar-item.active .sidebar-item-label,
 /* Section Titles & Badges */
 body.theme-corporate .section-title,
 .section-title {
-  color: #5C0930 !important;
+  color: #FFFFFF !important;
   font-weight: 850 !important;
 }
 
@@ -10567,22 +10595,40 @@ html body #catalogContainer,
 html body.theme-corporate .sidebar,
 html body .sidebar,
 .sidebar {
-  position: sticky !important;
-  top: 154px !important;
-  width: 255px !important;
-  min-width: 255px !important;
-  max-width: 255px !important;
-  height: calc(100vh - 154px) !important;
-  overflow-y: auto !important;
-  align-self: flex-start !important;
+  position: static !important;
+  width: 280px !important;
+  min-width: 280px !important;
+  max-width: 280px !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow-y: visible !important;
+  align-self: stretch !important;
   flex-shrink: 0 !important;
   background: #FFFFFF !important;
-  border: 1px solid #F2D8E5 !important;
-  border-radius: 18px !important;
-  padding: 16px !important;
-  box-shadow: 0 4px 16px rgba(92, 9, 48, 0.06) !important;
+  border: none !important;
+  border-right: 1px solid #f1f1f1 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
   margin: 0 !important;
   z-index: 10 !important;
+}
+
+/* .sidebar itself no longer has its own padding, position, or scroll -
+   matching studio's flat .sidebar, which never sets any of those on the
+   outer <aside> and just lets it stretch (align-items:stretch on the row)
+   to reach the footer with no gap. The sticky/scroll behavior instead
+   lives on the inner list, exactly like studio.html's .sidebar-sticky-inner. */
+@media (min-width: 993px) {
+  html body.theme-corporate .sidebar-sticky-inner,
+  html body .sidebar-sticky-inner,
+  .sidebar-sticky-inner {
+    position: sticky !important;
+    top: 154px !important;
+    max-height: calc(100vh - 154px) !important;
+    overflow-y: auto !important;
+    padding: 16px 0 !important;
+  }
 }
 
 html body.theme-corporate .sidebar-list,
@@ -10961,10 +11007,11 @@ html body .sidebar-title,
 
 html body.theme-corporate .sidebar-list,
 html body .sidebar-list,
+html body #desktopSidebar,
 .sidebar-list {
   display: flex !important;
   flex-direction: column !important;
-  gap: 18px !important;
+  gap: 0 !important;
 }
 
 html body.theme-corporate .sidebar-item,
@@ -10973,7 +11020,7 @@ html body .sidebar-item,
   display: flex !important;
   align-items: center !important;
   gap: 14px !important;
-  padding: 16px 20px !important;
+  padding: 14px 20px !important;
   min-height: 0 !important;
   color: #475569 !important;
   text-decoration: none !important;
@@ -11308,15 +11355,15 @@ html body .section-title svg,
    equivalent grid was already a 4-up 1:1-image layout but with a wider gap
    and much more rounded (24px) corners - tighten both to match.
    ========================================================================== */
-html body.theme-corporate .products-grid,
-html body .products-grid,
-.products-grid {
+html body.theme-corporate .packages-grid,
+html body .packages-grid,
+.packages-grid {
   gap: 16px !important;
 }
 
-html body.theme-corporate .p-card,
-html body .p-card,
-.p-card {
+html body.theme-corporate .pkg-card,
+html body .pkg-card,
+.pkg-card {
   border-radius: 12px !important;
 }
 
@@ -11484,7 +11531,7 @@ html body .p-card,
    columns/gaps were already matching studio's per-breakpoint counts, so
    only the card shell/typography needed changing). Placed last so it
    wins source-order ties against the older un-gated rules above. */
-html body .p-card,
+html body .pkg-card,
 html body .product-card,
 html body .fnp-product-card {
   border-radius: 12px !important;
@@ -11493,7 +11540,7 @@ html body .fnp-product-card {
   background: #ffffff !important;
 }
 
-html body .p-card:hover,
+html body .pkg-card:hover,
 html body .product-card:hover,
 html body .fnp-product-card:hover {
   transform: none !important;
@@ -11501,7 +11548,7 @@ html body .fnp-product-card:hover {
   border-color: #E2E8F0 !important;
 }
 
-html body .p-card:hover .p-thumb img,
+html body .pkg-card:hover .p-thumb img,
 html body .product-card:hover .p-thumb img,
 html body .fnp-product-card:hover .p-thumb img {
   transform: none !important;
@@ -11523,9 +11570,9 @@ html body .p-info::before,
 }
 
 html body .card-logo-badge,
-html body .p-card-tag-row,
+html body .pkg-card-tag-row,
 .card-logo-badge,
-.p-card-tag-row {
+.pkg-card-tag-row {
   display: none !important;
 }
 
@@ -11623,29 +11670,46 @@ html body .p-old-price,
     transform: none !important;
   }
 
-  /* ── Category banner: was a squeezed left/right flex row (title and
-     description fighting for the same line on a narrow screen). Stack
-     it instead so both are fully readable. ── */
+  /* ── Category banner: matched to studio's .category-header spacing
+     (css/studio.css, ~line 3142) so both pages look the same on mobile. ── */
   body.theme-corporate .category-header,
   .category-header {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    justify-content: flex-start !important;
-    gap: 6px !important;
-    padding: 14px 16px !important;
+    padding: 0 !important;
+    background: none !important;
+    border: none !important;
+    border-left: none !important;
+    box-shadow: none !important;
+    margin-bottom: 14px !important;
   }
 
   body.theme-corporate .category-header h1,
   .category-header h1 {
-    font-size: 17px !important;
+    font-size: 18px !important;
+    font-weight: 850 !important;
+    letter-spacing: -0.3px !important;
+    margin-bottom: 4px !important;
     line-height: 1.3 !important;
+    color: #FFFFFF !important;
   }
 
   body.theme-corporate .category-header p,
   .category-header p {
-    font-size: 12.5px !important;
-    line-height: 1.45 !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    color: #64748B !important;
+  }
+
+  html body.theme-corporate .corp-main-col,
+  html body .corp-main-col,
+  .corp-main-col {
+    padding: 14px 10px 80px !important;
+  }
+
+  /* Studio hides its "Select Option" section-title on mobile (space is
+     tight beside the icon-rail sidebar) - match that here too. */
+  body.theme-corporate .section-title,
+  .section-title {
+    display: none !important;
   }
 
   /* ── Sidebar icon-rail, "SHELL" LAYOUT — same pattern as photography.html's
@@ -11714,8 +11778,8 @@ html body .p-old-price,
     -webkit-overflow-scrolling: touch !important;
   }
 
-  html body .products-grid,
-  #productsGrid {
+  html body .packages-grid,
+  #packagesGrid {
     padding-left: 0 !important;
   }
 
@@ -11768,4 +11832,16 @@ html body .p-old-price,
     font-size: 8px !important;
     line-height: 1.15 !important;
   }
+}
+
+/* Product cards: drop the "Order Now" hover overlay entirely (studio's own
+   cards never had it) - placed last so it beats every earlier
+   !important rule that shows it on :hover. */
+html body.theme-corporate .pkg-card-hover-overlay,
+html body .pkg-card-hover-overlay,
+.pkg-card-hover-overlay,
+html body.theme-corporate .pkg-card:hover .pkg-card-hover-overlay,
+html body .pkg-card:hover .pkg-card-hover-overlay,
+.pkg-card:hover .pkg-card-hover-overlay {
+  display: none !important;
 }

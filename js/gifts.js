@@ -22,9 +22,9 @@ function cldOpt(url) {
 const GiftsModule = (() => {
   const params = new URLSearchParams(window.location.search);
   const requested = params.get('view');
-  const view = ['category', 'product', 'checkout', 'customise'].includes(requested) ? requested : 'home';
-  const category = params.get('category') || 'frames';  const fragments = {
-    category: "<div class=\"gifts-dashboard\"><aside class=\"filters\"><h2>Shop Filters</h2><div class=\"filter-group\"><strong>Delivery</strong><label><input type=\"checkbox\"> Same-day delivery</label><label><input type=\"checkbox\"> Ready to ship</label></div><div class=\"filter-group\"><strong>Benefits</strong><label>✓ Secure checkout</label><label>✓ Quality printing</label><label>✓ Easy support</label></div></aside><div class=\"gifts-main-col\"><main class=\"container\">\n    <div class=\"breadcrumb\"><a href=\"index.html\">Home</a> / <a href=\"gifts.html\">Customised Gifts</a> / <span id=\"breadcrumbTitle\"></span></div>\n    <section class=\"category-hero\">\n      <img id=\"categoryHeroBanner\" class=\"category-hero-banner-img\" src=\"\" alt=\"\">\n    </section>\n    <nav class=\"category-tabs\" id=\"categoryTabs\" aria-label=\"Gift categories\"></nav>\n    <section class=\"catalog-main\"><div class=\"catalog-toolbar\"><div class=\"catalog-toolbar-header\"><h2 id=\"resultsTitle\"></h2><small id=\"resultCount\"></small></div><div class=\"catalog-toolbar-fields\"><input id=\"productSearch\" type=\"search\" placeholder=\"Search products\" aria-label=\"Search products\"><select id=\"sortProducts\" aria-label=\"Sort products\"><option value=\"featured\">Featured</option><option value=\"price-low\">Price: Low to High</option><option value=\"price-high\">Price: High to Low</option><option value=\"rating\">Top Rated</option></select></div></div><div class=\"product-grid\" id=\"productGrid\"></div></section>\n  </main></div></div>\n  <div class=\"modal-backdrop\" id=\"productModal\" aria-hidden=\"true\"><article class=\"product-modal\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"modalTitle\"><button class=\"close-button\" id=\"closeModal\" aria-label=\"Close product details\">×</button><div class=\"modal-image\"><img id=\"modalImage\" src=\"\" alt=\"\"></div><div class=\"modal-copy\"><span class=\"eyebrow\">Personalised gift</span><h2 id=\"modalTitle\"></h2><div class=\"rating\" id=\"modalRating\"></div><div class=\"prices\"><span class=\"price\" id=\"modalPrice\"></span><span class=\"old-price\" id=\"modalOldPrice\"></span></div><p>Made to preserve your special memories with careful finishing and premium-quality printing.</p><ul class=\"features\"><li>Personalised with your photo or text</li><li>Quality checked before dispatch</li><li>Responsive order support</li><li>Secure WhatsApp checkout</li></ul><div class=\"modal-actions\"><button class=\"btn btn-cart\" id=\"modalAdd\">Add to Cart</button><button class=\"btn btn-buy\" id=\"modalBuy\">Buy Now</button></div></div></article></div>\n  <div class=\"cart-backdrop\" id=\"cartDrawer\" aria-hidden=\"true\"><aside class=\"cart-panel\"><div class=\"cart-head\"><h2>My Cart</h2><button id=\"closeCart\" aria-label=\"Close cart\">×</button></div><div id=\"cartItems\"></div><div class=\"cart-footer\"><div class=\"cart-total\"><span>Subtotal</span><span id=\"cartTotal\">₹0</span></div><button class=\"btn btn-buy\" id=\"checkoutCart\">Checkout on WhatsApp</button></div></aside></div>\n  <div class=\"toast\" id=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n  <footer><div class=\"container\"><div class=\"footer-grid\"><div class=\"footer-col\"><div class=\"footer-brand\"><img src=\"https://res.cloudinary.com/ismg8jfl/image/upload/v1787808150/Sai_digital_lab_logo.png\" alt=\"Sai Kumar Digital Lab & Studio Logo\" style=\"height: 65px; object-fit: contain;\"></div><p class=\"desc\">Capturing your moments, beautifully and creating memories forever.</p><div class=\"socials\"><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M13 22v-9h3l1-4h-4V7c0-1 .3-2 2-2h2V1h-3c-3 0-5 2-5 5v3H6v4h3v9z\" /></svg></a><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"5\" /><circle cx=\"12\" cy=\"12\" r=\"4\" /><circle cx=\"17.5\" cy=\"6.5\" r=\"1\" /></svg></a><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"2\" y=\"5\" width=\"20\" height=\"14\" rx=\"3\" /><path d=\"M10 9l6 3-6 3z\" fill=\"currentColor\" stroke=\"none\" /></svg></a><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M17 2H7a5 5 0 0 0-5 5v10a5 5 0 0 0 5 5h10a5 5 0 0 0 5-5V7a5 5 0 0 0-5-5zM8.5 8.5C7 7 5 8 5 10c0 3 4 5 4 8\" /></svg></a></div></div><div class=\"footer-col\"><h4>Company</h4><ul><li><a href=\"about-us.html\">About Us</a></li><li><a href=\"photography.html\">Gallery</a></li><li><a href=\"#testimonials\">Testimonials</a></li><li><a href=\"#\">Careers</a></li><li><a href=\"#\">Blog</a></li></ul></div><div class=\"footer-col\"><h4>Services</h4><ul><li><a href=\"photography.html\">Photography</a></li><li><a href=\"gifts.html\">Customised Gift Shop</a></li><li><a href=\"studio.html\">Studio Services</a></li><li><a href=\"corporate.html\">Corporate Gifts</a></li><li><a href=\"bulk-orders.html\">Bulk Orders</a></li></ul></div><div class=\"footer-col\"><h4>Help &amp; Support</h4><ul><li><a href=\"#\">Track Order</a></li><li><a href=\"#\">Shipping Policy</a></li><li><a href=\"#\">Returns &amp; Refunds</a></li><li><a href=\"#\">Privacy Policy</a></li><li><a href=\"#\">Terms &amp; Conditions</a></li><li><a href=\"#\">FAQs</a></li></ul></div><div class=\"footer-col\"><h4>Contact Us</h4><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.5 2.1L8 9.7a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.7 2z\" /></svg><span>+91 98765 43210</span></div><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"2\" /><path d=\"M22 6l-10 7L2 6\" /></svg><span>saikumardigitallab@gmail.com</span></div><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z\" /><circle cx=\"12\" cy=\"10\" r=\"2.5\" /></svg><span>7-2-227 Srt 6, Bhagat Singh Nagar, Sanath Nagar, Hyderabad, Telangana 500018</span></div><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\" /><path d=\"M12 6v6l4 2\" /></svg><span>Mon - Sun: 9:00 AM - 9:00 PM</span></div></div></div><div class=\"footer-bottom\"><p>© 2025 Sai Kumar Digital Lab &amp; Studio. All Rights Reserved.</p><div class=\"pay-icons\"><span class=\"pi\">VISA</span><span class=\"pi\">Mastercard</span><span class=\"pi\">RuPay</span><span class=\"pi\">UPI</span></div></div></div></footer>",
+  const view = ['category', 'product', 'checkout', 'customise', 'home'].includes(requested) ? requested : 'category';
+  const category = params.get('category') || 'all';  const fragments = {
+    category: "<div class=\"gifts-dashboard studio-dashboard\"><aside class=\"filters sidebar\"><div class=\"sidebar-sticky-inner\"></div></aside><div class=\"gifts-main-col main-content\"><main class=\"container\">\n    <div class=\"breadcrumb\"><a href=\"index.html\">Home</a> / <a href=\"gifts.html\">Customised Gifts</a> / <span id=\"breadcrumbTitle\"></span></div>\n    <div class=\"category-header\"><h1 id=\"categoryTitle\"></h1><p id=\"categorySubtitle\"></p></div>\n    <section class=\"category-hero\">\n      <img id=\"categoryHeroBanner\" class=\"category-hero-banner-img\" src=\"\" alt=\"\">\n    </section>\n    <nav class=\"category-tabs\" id=\"categoryTabs\" aria-label=\"Gift categories\"></nav>\n    <section class=\"catalog-main\"><div class=\"catalog-toolbar\"><div class=\"catalog-toolbar-header\"><h2 id=\"resultsTitle\"></h2><small id=\"resultCount\"></small></div><div class=\"catalog-toolbar-fields\"><input id=\"productSearch\" type=\"search\" placeholder=\"Search products\" aria-label=\"Search products\"><select id=\"sortProducts\" aria-label=\"Sort products\"><option value=\"featured\">Featured</option><option value=\"price-low\">Price: Low to High</option><option value=\"price-high\">Price: High to Low</option><option value=\"rating\">Top Rated</option></select></div></div><div class=\"product-grid packages-grid\" id=\"productGrid\"></div></section>\n  </main></div></div>\n  <div class=\"modal-backdrop\" id=\"productModal\" aria-hidden=\"true\"><article class=\"product-modal\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"modalTitle\"><button class=\"close-button\" id=\"closeModal\" aria-label=\"Close product details\">×</button><div class=\"modal-image\"><img id=\"modalImage\" src=\"\" alt=\"\"></div><div class=\"modal-copy\"><span class=\"eyebrow\">Personalised gift</span><h2 id=\"modalTitle\"></h2><div class=\"rating\" id=\"modalRating\"></div><div class=\"prices\"><span class=\"price\" id=\"modalPrice\"></span><span class=\"old-price\" id=\"modalOldPrice\"></span></div><p>Made to preserve your special memories with careful finishing and premium-quality printing.</p><ul class=\"features\"><li>Personalised with your photo or text</li><li>Quality checked before dispatch</li><li>Responsive order support</li><li>Secure WhatsApp checkout</li></ul><div class=\"modal-actions\"><button class=\"btn btn-cart\" id=\"modalAdd\">Add to Cart</button><button class=\"btn btn-buy\" id=\"modalBuy\">Buy Now</button></div></div></article></div>\n  <div class=\"cart-backdrop\" id=\"cartDrawer\" aria-hidden=\"true\"><aside class=\"cart-panel\"><div class=\"cart-head\"><h2>My Cart</h2><button id=\"closeCart\" aria-label=\"Close cart\">×</button></div><div id=\"cartItems\"></div><div class=\"cart-footer\"><div class=\"cart-total\"><span>Subtotal</span><span id=\"cartTotal\">₹0</span></div><button class=\"btn btn-buy\" id=\"checkoutCart\">Checkout on WhatsApp</button></div></aside></div>\n  <div class=\"toast\" id=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n  <footer><div class=\"container\"><div class=\"footer-grid\"><div class=\"footer-col\"><div class=\"footer-brand\"><img src=\"https://res.cloudinary.com/ismg8jfl/image/upload/v1787808150/Sai_digital_lab_logo.png\" alt=\"Sai Kumar Digital Lab & Studio Logo\" style=\"height: 65px; object-fit: contain;\"></div><p class=\"desc\">Capturing your moments, beautifully and creating memories forever.</p><div class=\"socials\"><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M13 22v-9h3l1-4h-4V7c0-1 .3-2 2-2h2V1h-3c-3 0-5 2-5 5v3H6v4h3v9z\" /></svg></a><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"5\" /><circle cx=\"12\" cy=\"12\" r=\"4\" /><circle cx=\"17.5\" cy=\"6.5\" r=\"1\" /></svg></a><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"2\" y=\"5\" width=\"20\" height=\"14\" rx=\"3\" /><path d=\"M10 9l6 3-6 3z\" fill=\"currentColor\" stroke=\"none\" /></svg></a><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M17 2H7a5 5 0 0 0-5 5v10a5 5 0 0 0 5 5h10a5 5 0 0 0 5-5V7a5 5 0 0 0-5-5zM8.5 8.5C7 7 5 8 5 10c0 3 4 5 4 8\" /></svg></a></div></div><div class=\"footer-col\"><h4>Company</h4><ul><li><a href=\"about-us.html\">About Us</a></li><li><a href=\"photography.html\">Gallery</a></li><li><a href=\"#testimonials\">Testimonials</a></li><li><a href=\"#\">Careers</a></li><li><a href=\"#\">Blog</a></li></ul></div><div class=\"footer-col\"><h4>Services</h4><ul><li><a href=\"photography.html\">Photography</a></li><li><a href=\"gifts.html\">Customised Gift Shop</a></li><li><a href=\"studio.html\">Studio Services</a></li><li><a href=\"corporate.html\">Corporate Gifts</a></li><li><a href=\"bulk-orders.html\">Bulk Orders</a></li></ul></div><div class=\"footer-col\"><h4>Help &amp; Support</h4><ul><li><a href=\"#\">Track Order</a></li><li><a href=\"#\">Shipping Policy</a></li><li><a href=\"#\">Returns &amp; Refunds</a></li><li><a href=\"#\">Privacy Policy</a></li><li><a href=\"#\">Terms &amp; Conditions</a></li><li><a href=\"#\">FAQs</a></li></ul></div><div class=\"footer-col\"><h4>Contact Us</h4><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.5 2.1L8 9.7a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.7 2z\" /></svg><span>+91 98765 43210</span></div><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"2\" /><path d=\"M22 6l-10 7L2 6\" /></svg><span>saikumardigitallab@gmail.com</span></div><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z\" /><circle cx=\"12\" cy=\"10\" r=\"2.5\" /></svg><span>7-2-227 Srt 6, Bhagat Singh Nagar, Sanath Nagar, Hyderabad, Telangana 500018</span></div><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\" /><path d=\"M12 6v6l4 2\" /></svg><span>Mon - Sun: 9:00 AM - 9:00 PM</span></div></div></div><div class=\"footer-bottom\"><p>© 2025 Sai Kumar Digital Lab &amp; Studio. All Rights Reserved.</p><div class=\"pay-icons\"><span class=\"pi\">VISA</span><span class=\"pi\">Mastercard</span><span class=\"pi\">RuPay</span><span class=\"pi\">UPI</span></div></div></div></footer>",
     product: "<main class=\"details-page container\"><div class=\"breadcrumb\"><button type=\"button\" class=\"breadcrumb-back-btn\" onclick=\"history.length>1?history.back():location.assign('gifts.html')\">‹ PRODUCT DETAILS</button><div class=\"breadcrumb-links\"><a href=\"index.html\">Home</a> / <a href=\"gifts.html\">Customised Gifts</a> / <a id=\"categoryBreadcrumb\" href=\"#\">Category</a> / <span id=\"breadcrumbProduct\">Product</span></div></div><section class=\"details-main\"><div class=\"details-gallery\"><div class=\"gallery-thumbs\" id=\"galleryThumbs\" aria-label=\"Product gallery\"></div><div class=\"gallery-main\" id=\"galleryMain\"><img id=\"galleryImage\" src=\"\" alt=\"\"><button type=\"button\" class=\"gallery-arrow-btn prev\" id=\"galleryPrev\" aria-label=\"Previous image\" onclick=\"event.stopPropagation()\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path fill-rule=\"evenodd\" d=\"M11.03 3.97a.75.75 0 010 1.06l-6.22 6.22H21a.75.75 0 010 1.5H4.81l6.22 6.22a.75.75 0 11-1.06 1.06l-7.5-7.5a.75.75 0 010-1.06l7.5-7.5a.75.75 0 011.06 0z\" clip-rule=\"evenodd\" /></svg></button><button type=\"button\" class=\"gallery-arrow-btn next\" id=\"galleryNext\" aria-label=\"Next image\" onclick=\"event.stopPropagation()\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path fill-rule=\"evenodd\" d=\"M12.97 3.97a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 11-1.06-1.06l6.22-6.22H3a.75.75 0 010-1.5h16.19l-6.22-6.22a.75.75 0 010-1.06z\" clip-rule=\"evenodd\" /></svg></button><button type=\"button\" class=\"gallery-wishlist-btn\" aria-label=\"Save\" onclick=\"event.stopPropagation();this.classList.toggle('active')\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"><path d=\"M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z\"></path></svg></button><button type=\"button\" class=\"gallery-share-btn\" aria-label=\"Share\" onclick=\"event.stopPropagation();shareGiftProduct()\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"22\" y1=\"2\" x2=\"11\" y2=\"13\"></line><polygon points=\"22 2 15 22 11 13 2 9 22 2\"></polygon></svg></button></div></div><section class=\"details-copy\"><span class=\"eyebrow\" id=\"productCategoryLabel\">Personalised gift</span><h1 id=\"productName\">Product Title</h1><div class=\"rating-bar\"><span class=\"stars\" id=\"productStars\">★★★★★</span><span class=\"review-count\" id=\"productRating\">4.8 (120 reviews)</span></div></section><aside class=\"details-buy-card\"><div class=\"details-price-row\"><span class=\"price\" id=\"productPrice\">₹0</span><span class=\"old-price\" id=\"productOldPrice\">₹0</span><span class=\"discount-badge\" id=\"productDiscount\">0% OFF</span></div><div class=\"stock-badge\">In Stock</div><div class=\"personalise-box\"><div class=\"personalise-box-header\"><span class=\"personalise-box-title\">PERSONALISE THIS GIFT</span><span class=\"personalise-free-tag\">Free Customisation</span></div><div class=\"personalise-field\"><label for=\"productCustomText\">Name or message to add</label><input type=\"text\" id=\"productCustomText\" placeholder=\"e.g. Happy Birthday, Priya\" maxlength=\"60\"></div><div class=\"personalise-field\"><label>Upload your photo</label><div class=\"photo-upload-dropzone\" id=\"productUploadBtn\"><input type=\"file\" id=\"productPhotoInput\" accept=\"image/*\" hidden><svg class=\"dropzone-upload-icon\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"></path><polyline points=\"17 8 12 3 7 8\"></polyline><line x1=\"12\" y1=\"3\" x2=\"12\" y2=\"15\"></line></svg><div class=\"dropzone-text-group\"><span class=\"dropzone-title\">Click to upload photo</span><span class=\"dropzone-sub\" id=\"productUploadStatus\">JPG or PNG, up to 10MB</span></div></div></div></div><div class=\"gift-action-bar\"><div class=\"quantity-picker\"><label for=\"productQuantity\">Quantity</label><div class=\"qty-controls\"><button type=\"button\" class=\"qty-btn\" id=\"qtyMinus\">-</button><input type=\"number\" id=\"productQuantity\" value=\"1\" min=\"1\" max=\"99\"><button type=\"button\" class=\"qty-btn\" id=\"qtyPlus\">+</button></div></div><div class=\"gift-action-buttons\"><button class=\"btn btn-cart\" id=\"detailAddToCart\">Add to Cart</button><button class=\"btn btn-buy\" id=\"detailBuyNow\">Buy Now</button></div></div><section class=\"gift-details-accordion\" aria-labelledby=\"giftDetailsTitle\"><h3 id=\"giftDetailsTitle\">About the Product</h3><div class=\"gift-accordion-item\"><button type=\"button\" class=\"gift-accordion-trigger\" aria-expanded=\"true\"><span><span class=\"gift-accordion-icon\">ⓘ</span>Description</span><span class=\"gift-accordion-chevron\">⌄</span></button><div class=\"gift-accordion-content\"><p class=\"details-description\" id=\"productDescription\"></p></div></div><div class=\"gift-accordion-item\"><button type=\"button\" class=\"gift-accordion-trigger\" aria-expanded=\"false\"><span><span class=\"gift-accordion-icon\">▣</span>Instructions</span><span class=\"gift-accordion-chevron\">⌄</span></button><div class=\"gift-accordion-content\"><p>Handle with care and keep away from direct sunlight or moisture to preserve the print and finish. Please double-check your uploaded name/photo before ordering, as personalised items go into production right away and cannot be changed afterwards.</p></div></div><div class=\"gift-accordion-item\"><button type=\"button\" class=\"gift-accordion-trigger\" aria-expanded=\"false\"><span><span class=\"gift-accordion-icon\">▣</span>Delivery Info</span><span class=\"gift-accordion-chevron\">⌄</span></button><div class=\"gift-accordion-content\"><p id=\"productDeliveryEst\">Standard delivery available.</p></div></div></section></aside></section><section class=\"related-section\" aria-labelledby=\"relatedTitle\"><div class=\"related-heading\"><div><span class=\"eyebrow\">More to explore</span><h2 id=\"relatedTitle\">You May Also Like</h2></div><p>Similar personalised gifts from this collection.</p></div><div class=\"related-grid\" id=\"relatedProducts\"></div></section></main><div class=\"cart-backdrop\" id=\"cartDrawer\" aria-hidden=\"true\"><aside class=\"cart-panel\"><div class=\"cart-head\"><h2>My Cart</h2><button id=\"closeCart\" aria-label=\"Close cart\">×</button></div><div id=\"cartItems\"></div><div class=\"cart-footer\"><div class=\"cart-total\"><span>Subtotal</span><span id=\"cartTotal\">₹0</span></div><button class=\"btn btn-buy\" id=\"checkoutCart\">Proceed to Checkout</button></div></aside></div><div class=\"toast\" id=\"toast\" role=\"status\" aria-live=\"polite\"></div><footer class=\"site-footer\"><div class=\"container footer-row\"><div><strong>Sai Kumar Digital Lab & Studio</strong><br><small>Personalised memories, made with care.</small></div><a href=\"contact-us.html\">Need help? Contact us →</a></div></footer>",
     checkout: "<main class=\"checkout-page container\">\n    <div class=\"breadcrumb\"><a href=\"index.html\">Home</a> / <a href=\"gifts.html\">Customised Gifts</a> / Checkout</div>\n    <h1 class=\"checkout-title\">Secure Gift Checkout</h1>\n    <div class=\"checkout-layout\">\n      <section class=\"checkout-card\">\n        <h2>Delivery information</h2>\n        <form id=\"checkoutForm\" novalidate>\n          <div class=\"checkout-form-grid\">\n            <div class=\"checkout-field\"><label for=\"customerName\">Full name *</label><input id=\"customerName\" name=\"name\" autocomplete=\"name\" required></div>\n            <div class=\"checkout-field\"><label for=\"customerPhone\">Mobile number *</label><input id=\"customerPhone\" name=\"phone\" inputmode=\"tel\" autocomplete=\"tel\" required pattern=\"[0-9+\\s-]{8,15}\"></div>\n            <div class=\"checkout-field full\"><label for=\"customerEmail\">Email address</label><input id=\"customerEmail\" name=\"email\" type=\"email\" autocomplete=\"email\"></div>\n            <div class=\"checkout-field full\"><label for=\"customerAddress\">Delivery address *</label><textarea id=\"customerAddress\" name=\"address\" autocomplete=\"street-address\" required></textarea></div>\n            <div class=\"checkout-field\"><label for=\"customerCity\">City *</label><input id=\"customerCity\" name=\"city\" autocomplete=\"address-level2\" required></div>\n            <div class=\"checkout-field\"><label for=\"customerPincode\">PIN code *</label><input id=\"customerPincode\" name=\"pincode\" inputmode=\"numeric\" autocomplete=\"postal-code\" required pattern=\"[0-9]{6}\"></div>\n            <div class=\"checkout-field full\"><label for=\"orderNotes\">Order notes</label><textarea id=\"orderNotes\" name=\"notes\" placeholder=\"Delivery timing, print instructions or other details\"></textarea></div>\n          </div>\n          <p class=\"upload-status\" id=\"checkoutStatus\" role=\"status\" aria-live=\"polite\"></p>\n        </form>\n      </section>\n      <aside class=\"checkout-card checkout-summary\">\n        <h2>Order summary</h2>\n        <div id=\"checkoutItems\"></div>\n        <div class=\"checkout-total\"><span>Total</span><span id=\"checkoutTotal\">₹0</span></div>\n        <button class=\"btn btn-buy place-order\" id=\"placeOrder\" type=\"submit\" form=\"checkoutForm\">Place Order on WhatsApp</button>\n        <p class=\"checkout-note\">No online payment is collected here. WhatsApp opens with your complete order details for final confirmation.</p>\n      </aside>\n    </div>\n  </main>\n  <footer class=\"site-footer\"><div class=\"container footer-row\"><div><strong>Sai Kumar Digital Lab & Studio</strong><br><small>Personalised memories, made with care.</small></div><a href=\"contact-us.html\">Need help? Contact us →</a></div></footer>"
   };
@@ -709,6 +709,22 @@ if (GiftsModule.view === 'home') {
   ];
 
   let activeBestsellerCategory = 'all';
+  let giftsSortOrder = 'popular';
+
+  function setSortFilter(value) {
+    giftsSortOrder = value;
+    renderBestsellerProducts();
+  }
+
+  function applyGiftsSort(items) {
+    const result = items.slice();
+    if (giftsSortOrder === 'lowToHigh') {
+      result.sort((a, b) => a.price - b.price);
+    } else if (giftsSortOrder === 'highToLow') {
+      result.sort((a, b) => b.price - a.price);
+    }
+    return result;
+  }
 
   function renderBestsellerTabs() {
     const tabsContainer = document.getElementById('bestsellerTabs');
@@ -733,9 +749,9 @@ if (GiftsModule.view === 'home') {
     const track = document.getElementById('bestsellerProductsTrack');
     if (!track) return;
 
-    const filtered = categoryId === 'all'
+    const filtered = applyGiftsSort(categoryId === 'all'
       ? products
-      : products.filter(p => p.category === categoryId);
+      : products.filter(p => p.category === categoryId));
 
     track.innerHTML = filtered.map(p => `
       <article class="bestseller-card" data-product="${p.name}" onclick="navigateToBestsellerProduct('${encodeURIComponent(p.name)}')">
@@ -2905,6 +2921,11 @@ else if (GiftsModule.view === 'category') {
     const breadcrumbTitleEl = document.getElementById('breadcrumbTitle');
     if (breadcrumbTitleEl) breadcrumbTitleEl.textContent = meta.title;
 
+    const categoryTitleEl = document.getElementById('categoryTitle');
+    if (categoryTitleEl) categoryTitleEl.textContent = meta.title;
+    const categorySubtitleEl = document.getElementById('categorySubtitle');
+    if (categorySubtitleEl) categorySubtitleEl.textContent = meta.subtitle || '';
+
     const heroBannerEl = document.getElementById('categoryHeroBanner');
     if (heroBannerEl) {
       heroBannerEl.src = CONSTANT_HERO_BANNER;
@@ -2916,8 +2937,8 @@ else if (GiftsModule.view === 'category') {
 
     const sidebar = document.querySelector('.filters');
     if (sidebar) {
-      sidebar.querySelectorAll('.category-side-link').forEach(link => {
-        const isActive = link.dataset.categoryId === targetCat;
+      sidebar.querySelectorAll('.sidebar-item').forEach(link => {
+        const isActive = link.dataset.key === targetCat;
         link.classList.toggle('active', isActive);
         if (isActive) link.setAttribute('aria-current', 'page');
         else link.removeAttribute('aria-current');
@@ -2964,6 +2985,10 @@ else if (GiftsModule.view === 'category') {
     document.title = `${meta.title} | Sai Kumar Digital Lab & Studio`;
     const breadcrumbTitleEl = document.getElementById('breadcrumbTitle');
     if (breadcrumbTitleEl) breadcrumbTitleEl.textContent = meta.title;
+    const categoryTitleEl = document.getElementById('categoryTitle');
+    if (categoryTitleEl) categoryTitleEl.textContent = meta.title;
+    const categorySubtitleEl = document.getElementById('categorySubtitle');
+    if (categorySubtitleEl) categorySubtitleEl.textContent = meta.subtitle || '';
     const heroBannerEl = document.getElementById('categoryHeroBanner');
     if (heroBannerEl) {
       heroBannerEl.src = CONSTANT_HERO_BANNER;
@@ -2993,17 +3018,12 @@ else if (GiftsModule.view === 'category') {
     }
     const sidebar = document.querySelector('.filters');
     sidebar.setAttribute('aria-label', 'Gift categories');
-    sidebar.innerHTML = `
-    <h2>Gift Categories</h2>
-    <nav class="category-sidebar">
-      ${Object.entries(CATEGORY_META).map(([id, item]) => `
-        <div class="category-side-wrapper">
-          <a class="category-side-link${id === activeCategory ? ' active' : ''}" href="${PAGE_MAP[id]}" data-category-id="${id}" ${id === activeCategory ? 'aria-current="page"' : ''}>
-            <span class="category-side-icon"><img src="${cldOpt(item.icon)}" alt="" loading="lazy"></span>
-            <span class="category-side-label">${escapeText(item.title)}</span>
-          </a>
-        </div>`).join('')}
-    </nav>`;
+    const sidebarStickyInner = sidebar.querySelector('.sidebar-sticky-inner') || sidebar;
+    sidebarStickyInner.innerHTML = Object.entries(CATEGORY_META).map(([id, item]) => `
+        <div class="sidebar-item${id === activeCategory ? ' active' : ''}" data-key="${id}" role="button" tabindex="0" ${id === activeCategory ? 'aria-current="page"' : ''}>
+          <img src="${cldOpt(item.icon)}" alt="" loading="lazy">
+          <span>${escapeText(item.title)}</span>
+        </div>`).join('');
 
     document.querySelectorAll('.category-menu-bar .menu-link').forEach(link => {
       const href = link.getAttribute('href') || '';
@@ -3013,30 +3033,9 @@ else if (GiftsModule.view === 'category') {
     });
 
     sidebar.addEventListener('click', event => {
-      const subLink = event.target.closest('[data-sub-filter]');
-      if (subLink) {
-        event.preventDefault();
-        event.stopPropagation();
-        const subFilter = subLink.dataset.subFilter;
-        document.querySelectorAll('.sub-category-item').forEach(el => el.classList.remove('active'));
-        subLink.classList.add('active');
-        const searchInput = document.getElementById('productSearch');
-        if (searchInput) {
-          searchInput.value = subFilter;
-          renderProducts();
-        }
-        return;
-      }
-      const link = event.target.closest('[data-category-id]');
+      const link = event.target.closest('[data-key]');
       if (!link) return;
-      event.preventDefault();
-      const catId = link.dataset.categoryId;
-      if (catId === 'frames') {
-        const subMenu = document.getElementById('framesSidebarSubMenu');
-        if (subMenu) {
-          subMenu.classList.toggle('is-open');
-        }
-      }
+      const catId = link.dataset.key;
       if (catId && catId !== activeCategory) {
         switchCategory(catId);
       }
@@ -3088,25 +3087,28 @@ else if (GiftsModule.view === 'category') {
     const isMobileOrTablet = window.innerWidth <= 991;
 
     document.getElementById('productGrid').innerHTML = visible.length ? visible.map(product => {
+      const hasDiscount = product.old && product.old > product.price;
       return `
-    <article class="product-card" tabindex="0" role="button" aria-label="View ${escapeText(product.name)}" data-name="${escapeText(product.name)}" onclick="openProductPageByName('${encodeURIComponent(product.name)}')">
-      <div class="product-media">
-        <img src="${cldOpt(product.image)}" alt="${escapeText(product.name)}" loading="lazy">
-        <button class="card-order-btn" type="button" onclick="event.stopPropagation(); openProductPageByName('${encodeURIComponent(product.name)}')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-          Order Now
+    <div class="pkg-card" tabindex="0" role="button" aria-label="View ${escapeText(product.name)}" data-name="${escapeText(product.name)}" onclick="openProductPageByName('${encodeURIComponent(product.name)}')">
+      <div class="pkg-image-wrap">
+        <img class="pkg-image" src="${cldOpt(product.image)}" alt="${escapeText(product.name)}" loading="lazy">
+        <span class="pkg-badge">${escapeText((CATEGORY_META[product.category] && CATEGORY_META[product.category].title) || 'Gift')}</span>
+        ${product.off ? `<span class="pkg-ribbon pkg-ribbon-bestseller">${escapeText(product.off)}</span>` : ''}
+        <button type="button" class="pkg-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+          </svg>
         </button>
       </div>
-      <div class="product-info">
-        <div class="badge-wrapper">
-          <span class="card-logo-badge">✨ Custom Logo Engraving</span>
-        </div>
-        <h3 class="product-title">${escapeText(product.name)}</h3>
-        <div class="prices">
-          <span class="price">${money(product.price)}</span>
+      <div class="pkg-body">
+        <h3>${escapeText(product.name)}</h3>
+        <div class="pkg-meta-row">
+          ${hasDiscount
+            ? `<span class="pkg-price">${money(product.price)}</span><span class="pkg-old-price">${money(product.old)}</span><span class="pkg-discount-badge">${escapeText(product.off || '')}</span>`
+            : `<span class="pkg-price">${money(product.price)}</span>`}
         </div>
       </div>
-    </article>`;
+    </div>`;
     }).join('') : `<div class="empty-results"><h3>No products found</h3><p>Try a different search term or select another category.</p></div>`;
   }
   function openProductPage(product) {
