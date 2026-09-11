@@ -121,12 +121,13 @@
     );
   }
 
-  function emailStepHTML() {
+  function emailStepHTML(reason) {
     return (
       brandBlock() +
       '<div class="sk-auth-head">' +
-        '<h2>Sign in</h2>' +
-        '<p>We only ever ask for your email - a 6-digit code takes it from there. Track orders and check out faster next time.</p>' +
+        '<h2>' + escapeHTML((reason && reason.title) || 'Sign in') + '</h2>' +
+        '<p>' + escapeHTML((reason && reason.body) ||
+          'We only ever ask for your email - a 6-digit code takes it from there. Track orders and check out faster next time.') + '</p>' +
       '</div>' +
       '<div id="skAuthMsg" class="sk-auth-msg" style="display:none;"></div>' +
       '<form id="skEmailForm" novalidate>' +
@@ -212,8 +213,25 @@
   var overlay, body;
   var pendingEmail = '';
   var pendingName = '';
+  // Set by openModal(options) when something other than the nav "Login" link
+  // asks for a sign-in (e.g. the wishlist heart): {title, body} replaces the
+  // modal's generic copy, and onSuccess runs once the customer is signed in.
+  var pendingReason = null;
+  var pendingOnSuccess = null;
 
-  function openModal() {
+  function openModal(options) {
+    pendingReason = (options && options.reason) || null;
+    pendingOnSuccess = (options && typeof options.onSuccess === 'function') ? options.onSuccess : null;
+
+    // Already signed in - the caller wanted the action, not the sign-in form.
+    if (pendingOnSuccess && isCustomerLoggedIn()) {
+      var done = pendingOnSuccess;
+      pendingOnSuccess = null;
+      pendingReason = null;
+      done();
+      return;
+    }
+
     if (isCustomerLoggedIn()) {
       body.innerHTML = accountHTML(getCustomerEmail(), getCustomerName());
       overlay.classList.add('show');
@@ -225,7 +243,7 @@
     } else {
       pendingEmail = '';
       pendingName = '';
-      body.innerHTML = emailStepHTML();
+      body.innerHTML = emailStepHTML(pendingReason);
       overlay.classList.add('show');
       document.body.style.overflow = 'hidden';
       var firstInput = body.querySelector('input');
@@ -236,6 +254,8 @@
   function closeModal() {
     overlay.classList.remove('show');
     document.body.style.overflow = '';
+    pendingReason = null;
+    pendingOnSuccess = null;
   }
 
   function showAuthMsg(text) {
@@ -286,7 +306,7 @@
 
     var back = document.getElementById('skBackToEmailBtn');
     if (back) back.addEventListener('click', function () {
-      body.innerHTML = emailStepHTML();
+      body.innerHTML = emailStepHTML(pendingReason);
       wireEmailForm();
       var emailInput = document.getElementById('skEmail');
       if (emailInput) emailInput.value = pendingEmail;
@@ -310,9 +330,20 @@
         // never pull in whatever's saved on the account, making the cart look
         // empty even though the server has it.
         if (window.syncCartWithServer) window.syncCartWithServer();
+        // Same reasoning for the wishlist: saving is login-gated, so the moment
+        // someone signs in we pull the account's saved items down into this tab.
+        if (window.syncWishlistWithServer) window.syncWishlistWithServer();
         return CustomerAuth.getMe().catch(function () { return { name: pendingName }; });
       }).then(function (me) {
         body.innerHTML = successHTML(me && me.name);
+        // Whatever the customer was trying to do when the gate appeared - e.g.
+        // tapping the wishlist heart on a product - now runs for real, so they
+        // don't have to hunt down the product and click it a second time.
+        if (pendingOnSuccess) {
+          var done = pendingOnSuccess;
+          pendingOnSuccess = null;
+          try { done(); } catch (_) {}
+        }
         var cont = document.getElementById('skSuccessContinue');
         if (cont) cont.addEventListener('click', function () {
           closeModal();
@@ -366,8 +397,99 @@
     return { first: first, initials: initials };
   }
 
+  // Site-wide hamburger drawer (#mobileMenuDrawer, present on every page -
+  // see js/shared/wishlist-menu.js's openMobileMenuDrawer). Logged in, it
+  // gets a profile card (name/email/phone) up top and a Logout link pinned
+  // to the bottom of the list; logged out, it falls back to the drawer's
+  // own static "Login / Account" link.
+  var mePhoneFetchAttempted = false;
+
+  function refreshMobileMenuDrawer() {
+    var drawer = document.getElementById('mobileMenuDrawer');
+    if (!drawer) return;
+    var header = drawer.querySelector('.cart-drawer-header');
+    var linksWrap = drawer.querySelector('.mobile-menu-links');
+    if (!header || !linksWrap) return;
+
+    var loggedIn = isCustomerLoggedIn();
+    var authLink = linksWrap.querySelector('a[href="#signin"]');
+    var profile = drawer.querySelector('.mobile-menu-profile');
+
+    if (loggedIn) {
+      var email = getCustomerEmail();
+      var phone = getCustomerPhone();
+      var t = triggerLabel();
+      var displayName = getCustomerName() || (email ? email.split('@')[0] : 'My Account');
+
+      if (!profile) {
+        profile = document.createElement('div');
+        profile.className = 'mobile-menu-profile';
+        header.insertAdjacentElement('afterend', profile);
+      }
+      profile.innerHTML =
+        '<span class="mobile-menu-avatar">' + escapeHTML(t.initials) + '</span>' +
+        '<span class="mobile-menu-profile-info">' +
+          '<span class="mobile-menu-profile-name">' + escapeHTML(displayName) + '</span>' +
+          (email ? '<span class="mobile-menu-profile-detail">' + escapeHTML(email) + '</span>' : '') +
+          (phone ? '<span class="mobile-menu-profile-detail">' + escapeHTML(phone) + '</span>' : '') +
+        '</span>';
+      profile.style.display = 'flex';
+
+      // Phone isn't part of the login response - fetch it once so the card
+      // fills in without waiting on some other page to call getMe() first.
+      if (!phone && !mePhoneFetchAttempted) {
+        mePhoneFetchAttempted = true;
+        CustomerAuth.getMe().then(function () { refreshMobileMenuDrawer(); }).catch(function () {});
+      }
+    } else {
+      mePhoneFetchAttempted = false;
+      if (profile) profile.style.display = 'none';
+    }
+
+    if (authLink) authLink.style.display = loggedIn ? 'none' : '';
+
+    var detailsLink = linksWrap.querySelector('.mobile-menu-details-link');
+    if (loggedIn) {
+      if (!detailsLink) {
+        detailsLink = document.createElement('a');
+        detailsLink.className = 'mobile-menu-details-link';
+        detailsLink.href = 'my-account.html';
+        detailsLink.innerHTML =
+          '<svg class="mobile-menu-link-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>' +
+          '<span>My Details</span>';
+        // Pinned to the top of the list, right under the profile card -
+        // unlike Logout (bottom), this is somewhere people look for it first.
+        linksWrap.insertBefore(detailsLink, linksWrap.firstChild);
+      }
+    } else if (detailsLink) {
+      detailsLink.remove();
+    }
+
+    var logoutLink = linksWrap.querySelector('.mobile-menu-logout');
+    if (loggedIn) {
+      if (!logoutLink) {
+        logoutLink = document.createElement('a');
+        logoutLink.href = '#';
+        logoutLink.className = 'mobile-menu-logout';
+        logoutLink.innerHTML =
+          '<svg class="mobile-menu-link-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>' +
+          '<span>Logout</span>';
+        logoutLink.addEventListener('click', function (e) {
+          e.preventDefault();
+          CustomerAuth.logout();
+          refreshTriggers();
+          if (typeof closeMobileMenuDrawer === 'function') closeMobileMenuDrawer();
+        });
+        linksWrap.appendChild(logoutLink);
+      }
+    } else if (logoutLink) {
+      logoutLink.remove();
+    }
+  }
+
   function refreshTriggers() {
     var loggedIn = isCustomerLoggedIn();
+    refreshMobileMenuDrawer();
     findTriggers().forEach(function (el) {
       if (el.classList.contains('nav-login-link')) {
         if (loggedIn) {
@@ -402,7 +524,7 @@
       el.style.cursor = 'pointer';
       el.addEventListener('click', function (e) {
         e.preventDefault();
-        openModal();
+        openModal();  // no options - the plain nav sign-in, not a gated action
       });
     });
   }
@@ -426,6 +548,15 @@
   // checkout gate, my-orders.js's login gate) instead of this modal - they need
   // a way to tell this shared header nav to update after doing so.
   window.SaiAuthNav = { refresh: function () { refreshTriggers(); } };
+
+  // Lets any page open this modal to gate an action behind sign-in:
+  //   SaiAuth.open({ reason: {title, body}, onSuccess: fn })
+  // If the customer is already signed in, onSuccess runs immediately and no
+  // modal is shown. Used by the site-wide wishlist heart (wishlist-menu.js).
+  window.SaiAuth = {
+    open: function (options) { openModal(options); },
+    close: function () { closeModal(); },
+  };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

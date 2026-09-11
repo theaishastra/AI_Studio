@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import or_
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from ..database import get_db
 from ..deps import audit, require_owner, require_staff
@@ -25,7 +25,8 @@ from ..schemas import (
 from ..security import hash_password
 from ..services.media import process_image
 from ..services.notifications import notify, order_event
-from ..services.policy import annotate_order
+from ..services.policy import annotate_order, annotate_orders
+from ..services.storage import CUSTOM_UPLOAD_FIELDS
 from .catalog import invalidate_catalog_cache
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -44,7 +45,10 @@ ORDER_STATUS_TRACKING_TITLES = {
 
 ORDER_ADMIN_LOAD = (
     selectinload(Order.items), selectinload(Order.payments),
-    selectinload(Order.user), selectinload(Order.address),
+    # user/address are many-to-one (exactly one row per order) - joinedload
+    # folds them into the main query instead of costing their own DB round
+    # trip, which matters when the DB is remote and latency-bound.
+    joinedload(Order.user), joinedload(Order.address),
     selectinload(Order.tracking_events),
     selectinload(Order.cancellation_requests),
     selectinload(Order.address_change_requests),
@@ -53,6 +57,33 @@ ORDER_ADMIN_LOAD = (
 BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 MEDIA_DIR = BACKEND_DIR / "storage" / "media"
 HOMEPAGE_KEY = "homepage_layout"
+
+# Checkout now uploads these fields to Supabase Storage and stores a URL
+# instead of base64 (see services/storage.py) - this stripping is a safety
+# net for the fallback path (upload failed, base64 kept inline) and for any
+# order placed before that change, so the list endpoint never ships a
+# multi-MB blob regardless of which shape ends up in a given row.
+
+
+def _strip_uploads(snapshot: dict) -> tuple[dict, int]:
+    customization = snapshot.get("customization")
+    if not isinstance(customization, dict):
+        return snapshot, 0
+    upload_count = sum(
+        1 for f in CUSTOM_UPLOAD_FIELDS
+        if isinstance(customization.get(f), str) and customization[f].startswith("data:")
+    )
+    if not upload_count:
+        return snapshot, 0
+    trimmed = dict(snapshot)
+    trimmed["customization"] = {k: v for k, v in customization.items() if k not in CUSTOM_UPLOAD_FIELDS}
+    return trimmed, upload_count
+
+
+def _strip_order_uploads(order_out: OrderOut) -> OrderOut:
+    for item in order_out.items:
+        item.product_snapshot, item.upload_count = _strip_uploads(item.product_snapshot)
+    return order_out
 
 
 # ---------------------------------------------------------------- dashboard
@@ -498,7 +529,7 @@ def list_orders(status_filter: str | None = None,
     if status_filter:
         query = query.filter(Order.status == status_filter)
     orders = query.order_by(Order.created_at.desc()).limit(300).all()
-    return [annotate_order(db, o) for o in orders]
+    return [_strip_order_uploads(o) for o in annotate_orders(db, orders)]
 
 
 @router.patch("/orders/{order_id}/status", response_model=OrderOut)
@@ -684,19 +715,73 @@ def decide_address_change_request(request_id: str, body: AddressChangeDecisionIn
     return _address_change_out(req)
 
 
+@router.get("/orders/{order_id}", response_model=OrderOut)
+def get_order(order_id: str, admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    """Full order detail, including uploaded artwork - the list endpoint
+    strips that out for size, so the admin UI's order modal fetches this
+    on demand when staff open one order."""
+    order = db.query(Order).options(*ORDER_ADMIN_LOAD).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Order not found")
+    return annotate_order(db, order)
+
+
 @router.get("/reports/orders.csv")
 def export_orders_csv(admin: User = Depends(require_staff), db: Session = Depends(get_db)):
-    orders = db.query(Order).order_by(Order.created_at.desc()).limit(1000).all()
+    orders = (
+        db.query(Order)
+        .options(joinedload(Order.user), joinedload(Order.address), selectinload(Order.items))
+        .order_by(Order.created_at.desc())
+        .limit(1000)
+        .all()
+    )
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["Number", "Status", "Subtotal", "Discount", "Total", "Coupon", "Created At"])
+    writer.writerow([
+        "Order Number", "Status", "Customer Name", "Customer Email", "Customer Phone",
+        "Items", "Item Count", "City", "Subtotal", "Discount", "Total", "Coupon",
+        "Tracking Number", "Created At",
+    ])
     for o in orders:
-        writer.writerow([o.number, o.status, o.subtotal, o.discount, o.total, o.coupon_code or "", o.created_at.isoformat()])
+        item_titles = "; ".join((i.product_snapshot or {}).get("title", "Item") for i in o.items)
+        writer.writerow([
+            o.number, o.status,
+            o.user.name if o.user else "", o.user.email if o.user else "", o.user.phone if o.user else "",
+            item_titles, len(o.items), o.address.city if o.address else "",
+            o.subtotal, o.discount, o.total, o.coupon_code or "",
+            o.tracking_number or "", o.created_at.isoformat(),
+        ])
     buffer.seek(0)
     return StreamingResponse(
         iter([buffer.getvalue()]),
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=orders.csv"},
+    )
+
+
+@router.get("/reports/bookings.csv")
+def export_bookings_csv(admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    bookings = db.query(Booking).order_by(Booking.created_at.desc()).limit(1000).all()
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow([
+        "Customer Name", "Phone", "Email", "Package", "Category", "Event Date", "Slot",
+        "Venue", "Price", "Advance Paid", "Status", "Created At",
+    ])
+    for b in bookings:
+        details = b.details or {}
+        writer.writerow([
+            b.customer_name, b.customer_phone, b.customer_email or "",
+            details.get("package", ""), details.get("category", ""),
+            b.event_date.isoformat() if b.event_date else "", b.slot or "",
+            details.get("venue", ""), details.get("price", ""), b.advance_paid,
+            b.status, b.created_at.isoformat(),
+        ])
+    buffer.seek(0)
+    return StreamingResponse(
+        iter([buffer.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=bookings.csv"},
     )
 
 

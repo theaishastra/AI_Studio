@@ -2,7 +2,7 @@ import secrets
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from ..config import get_settings
 from ..database import get_db
@@ -15,19 +15,41 @@ from ..schemas import AddressChangeRequestIn, CancellationRequestIn, CheckoutIn,
 from ..services.notifications import order_event
 from ..services.policy import (
     IMMEDIATE_CANCEL_STATUSES, REQUESTABLE_CANCEL_STATUSES,
-    address_change_deadline, annotate_order,
+    address_change_deadline, annotate_order, annotate_orders,
 )
 from ..services.pricing import money, price_cart
 from ..services.razorpay_service import create_rzp_order
+from ..services.storage import CUSTOM_UPLOAD_FIELDS, upload_data_uri
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
 settings = get_settings()
 
+
+def _externalize_customization(customization: dict | None, order_number: str) -> dict | None:
+    """Swaps any uploaded photo/logo in a cart line's customization from an
+    inline base64 data: URI to a small Supabase Storage URL before it's
+    persisted - keeps the order (and every admin/customer list that reads it
+    back) out of multi-MB-per-item territory. Falls back to the original
+    base64 field-by-field if a given upload can't be externalized."""
+    if not isinstance(customization, dict):
+        return customization
+    out = dict(customization)
+    for field in CUSTOM_UPLOAD_FIELDS:
+        value = out.get(field)
+        if isinstance(value, str) and value.startswith("data:"):
+            url = upload_data_uri(value, subfolder=order_number)
+            if url:
+                out[field] = url
+    return out
+
 ORDER_LOAD = (
     selectinload(Order.items),
     selectinload(Order.payments),
-    selectinload(Order.user),
-    selectinload(Order.address),
+    # user/address are many-to-one (exactly one row per order) - joinedload
+    # folds them into the main query instead of costing their own DB round
+    # trip, which matters when the DB is remote and latency-bound.
+    joinedload(Order.user),
+    joinedload(Order.address),
     selectinload(Order.tracking_events),
     selectinload(Order.cancellation_requests),
     selectinload(Order.address_change_requests),
@@ -99,7 +121,10 @@ def checkout(body: CheckoutIn, user: User = Depends(get_current_user), db: Sessi
         db.add(OrderItem(
             order_id=order.id,
             product_id=line.get("product_id"),
-            product_snapshot={"title": line["title"], "image": line.get("image"), "customization": line.get("customization")},
+            product_snapshot={
+                "title": line["title"], "image": line.get("image"),
+                "customization": _externalize_customization(line.get("customization"), order.number),
+            },
             unit_price=line["unit_price"],
             qty=line["qty"],
         ))
@@ -155,7 +180,7 @@ def my_orders(user: User = Depends(get_current_user), db: Session = Depends(get_
         .limit(100)
         .all()
     )
-    return [annotate_order(db, o) for o in orders]
+    return annotate_orders(db, orders)
 
 
 @router.get("/{order_id}", response_model=OrderOut)

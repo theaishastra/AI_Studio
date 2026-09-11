@@ -11416,9 +11416,9 @@ html body .pkg-card,
   .corp-dashboard > .sidebar {
     display: block !important;
     position: static !important;
-    width: 76px !important;
-    min-width: 76px !important;
-    max-width: 76px !important;
+    width: 90px !important;
+    min-width: 90px !important;
+    max-width: 90px !important;
     height: auto !important;
     max-height: none !important;
     align-self: stretch !important;
@@ -11455,8 +11455,8 @@ html body .pkg-card,
     justify-content: center !important;
     text-align: center !important;
     width: 100% !important;
-    padding: 10px 4px !important;
-    gap: 5px !important;
+    padding: 12px 6px !important;
+    gap: 6px !important;
     border-left: 3px solid transparent !important;
     border-bottom: 1px solid #eef0f2 !important;
     background: #f7f8f9 !important;
@@ -11472,8 +11472,8 @@ html body .pkg-card,
   html body.theme-corporate .corp-dashboard .sidebar-item-icon,
   html body .corp-dashboard .sidebar-item-icon,
   .corp-dashboard .sidebar-item-icon {
-    width: 38px !important;
-    height: 38px !important;
+    width: 44px !important;
+    height: 44px !important;
   }
 
   html body.theme-corporate .corp-dashboard .sidebar-item-icon img,
@@ -11488,8 +11488,8 @@ html body .pkg-card,
   html body.theme-corporate .corp-dashboard .sidebar-item-label,
   html body .corp-dashboard .sidebar-item-label,
   .corp-dashboard .sidebar-item-label {
-    font-size: 9.5px !important;
-    line-height: 1.2 !important;
+    font-size: 10.5px !important;
+    line-height: 1.25 !important;
     font-weight: 700 !important;
     word-break: break-word !important;
   }
@@ -11746,9 +11746,9 @@ html body .p-old-price,
     position: static !important;
     left: auto !important;
     top: auto !important;
-    width: 76px !important;
-    min-width: 76px !important;
-    max-width: 76px !important;
+    width: 90px !important;
+    min-width: 90px !important;
+    max-width: 90px !important;
     height: 100% !important;
     /* An earlier, unguarded "stretch sidebar to footer" rule elsewhere in
        this file sets `.sidebar { min-height: 100% !important }` sized for
@@ -11783,55 +11783,60 @@ html body .p-old-price,
     padding-left: 0 !important;
   }
 
-  /* Shrink the rail's items (they inherit a larger tablet size from the
-     shared @media(max-width:992px) rule above) so all ~11 categories fit
-     within the shell's own height without needing to scroll independently
-     of the content column. Without this, scrolling the narrow rail on its
-     own (it's a separate scroll box from the grid, see .corp-dashboard >
-     .sidebar above) visibly scrolled earlier categories like "All Items"
-     out of view while the grid on the right stayed put - which reads as
-     content randomly disappearing rather than as two independent lists.
-     overflow-y:auto stays on as a safety net for unusually long category
-     names or very short viewports; it just shouldn't be needed normally. */
+  /* Sized to match studio.html's mobile icon-rail exactly (css/studio.css,
+     ~line 3057 onward: 90px rail, 44px round icons, 10.5px labels, 12px 6px
+     padding, 6px gap, 1px row dividers). The rail already has its own
+     overflow-y:auto (see .corp-dashboard > .sidebar above), so if the ~11
+     categories don't all fit in the viewport height it scrolls
+     independently, exactly like studio's rail does - no need to squeeze
+     icons/text down to illegible sizes just to avoid that scroll. */
   html body.theme-corporate .corp-dashboard .sidebar-item,
   html body .corp-dashboard .sidebar-item,
   .corp-dashboard .sidebar-item {
-    padding: 4px 3px !important;
-    gap: 1px !important;
-    border-bottom: none !important;
+    padding: 12px 6px !important;
+    gap: 6px !important;
+    border-bottom: 1px solid #eef0f2 !important;
   }
 
   html body.theme-corporate .corp-dashboard .sidebar-item-icon,
   html body .corp-dashboard .sidebar-item-icon,
   .corp-dashboard .sidebar-item-icon {
-    width: 24px !important;
-    height: 24px !important;
-    min-width: 24px !important;
-    min-height: 24px !important;
-    max-width: 24px !important;
-    max-height: 24px !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    max-width: 44px !important;
+    max-height: 44px !important;
     overflow: hidden !important;
   }
 
   /* A same-specificity, unguarded rule elsewhere sizes this img to a fixed
-     42px (not a percentage of its parent), so shrinking the icon box above
+     42px (not a percentage of its parent), so the icon box size above
      isn't enough on its own - pin the image itself down to match, instead
-     of depending on it resolving against the icon's new size. */
+     of depending on it resolving against the icon's size. */
   html body.theme-corporate .corp-dashboard .sidebar-item-icon img,
   html body .corp-dashboard .sidebar-item-icon img,
   .corp-dashboard .sidebar-item-icon img {
-    width: 24px !important;
-    height: 24px !important;
-    max-width: 24px !important;
-    max-height: 24px !important;
+    width: 44px !important;
+    height: 44px !important;
+    max-width: 44px !important;
+    max-height: 44px !important;
   }
 
   html body.theme-corporate .corp-dashboard .sidebar-item-label,
   html body .corp-dashboard .sidebar-item-label,
   .corp-dashboard .sidebar-item-label {
-    font-size: 8px !important;
-    line-height: 1.15 !important;
+    font-size: 10.5px !important;
+    line-height: 1.25 !important;
   }
+
+  /* Same pattern as photography.html's mobile .shell: .corp-dashboard only
+     fixes the HEIGHT of the icon rail + product grid row (each scrolls
+     internally within that box, via the .sidebar-wrap/.sidebar and
+     .corp-dashboard > main.main rules above) - the page itself is never
+     overflow:hidden, so the canonical <footer> below, as a normal sibling
+     after .corp-dashboard, is simply the next thing you reach by scrolling
+     the page past that box. No duplicate footer needed. */
 }
 
 /* Product cards: drop the "Order Now" hover overlay entirely (studio's own
@@ -11844,4 +11849,239 @@ html body.theme-corporate .pkg-card:hover .pkg-card-hover-overlay,
 html body .pkg-card:hover .pkg-card-hover-overlay,
 .pkg-card:hover .pkg-card-hover-overlay {
   display: none !important;
+}
+
+/* ==========================================================================
+   SIDEBAR-WRAP / MAIN LAYOUT — matches photography.html's
+   .shell > .sidebar-wrap > aside.sidebar + main.main pattern exactly
+   (css/photography.css: desktop sticky sidebar ~line 974, mobile icon-rail
+   shell ~line 2465). corporate.html now nests the sidebar inside a
+   <div class="sidebar-wrap"> the same way, and the old <div
+   class="corp-main-col"> wrapper has been removed from the markup entirely
+   - main.main-wrapper#mainContent is a direct sibling of .sidebar-wrap
+   inside .corp-dashboard, same as photography's <main class="main">
+   sitting directly beside <div class="sidebar-wrap">.
+
+   Every earlier rule above still targeting the old ".corp-dashboard >
+   .sidebar" / ".corp-main-col" shapes either no longer matches (the ">"
+   direct-child selectors - .sidebar is now a grandchild, nested inside
+   .sidebar-wrap) or is superseded here by placing this block last in the
+   file, so it wins every source-order tie. Nothing above needed to be
+   deleted; it simply stopped applying once the markup changed.
+   ========================================================================== */
+
+html body.theme-corporate .corp-dashboard,
+html body .corp-dashboard,
+.corp-dashboard {
+  display: flex !important;
+  align-items: stretch !important;
+  width: 100% !important;
+}
+
+/* Shrink-wrap column around <aside class="sidebar"> - same role as
+   photography's .sidebar-wrap. All the sidebar's own width/position/
+   background/scroll behavior lives on .sidebar itself below; this wrapper
+   only needs to not stretch or shrink oddly in the flex row. */
+html body.theme-corporate .sidebar-wrap,
+html body .sidebar-wrap,
+.sidebar-wrap {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-self: stretch !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* The nav list (#desktopSidebar / .sidebar-list.sidebar-sticky-inner) no
+   longer needs its own sticky/scroll behavior - .sidebar itself is now the
+   single sticky+scrolling frame (photography's simpler one-box model),
+   so this is just a plain block flowing inside it. Several older,
+   higher-specificity rules earlier in this file (e.g. "html
+   body.theme-corporate .sidebar, html body .sidebar, .sidebar { width:
+   280px !important; ... }" around line 10002) are NOT scoped to any media
+   query, so without repeating that same "html body.theme-corporate X,
+   html body X, X" prefix here too, this block would lose to them on
+   specificity even though it comes later in the file - source order only
+   breaks ties between rules of EQUAL specificity. */
+html body.theme-corporate .sidebar-wrap .sidebar-sticky-inner,
+html body .sidebar-wrap .sidebar-sticky-inner,
+.sidebar-wrap .sidebar-sticky-inner,
+html body.theme-corporate .sidebar-wrap #desktopSidebar,
+html body .sidebar-wrap #desktopSidebar,
+.sidebar-wrap #desktopSidebar {
+  position: static !important;
+  overflow: visible !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+html body.theme-corporate .sidebar-wrap .sidebar-title,
+html body .sidebar-wrap .sidebar-title,
+.sidebar-wrap .sidebar-title {
+  display: none !important;
+}
+
+/* ---------- Desktop / tablet (≥768px): sticky category column ---------- */
+@media (min-width: 768px) {
+  html body.theme-corporate .sidebar-wrap .sidebar,
+  html body .sidebar-wrap .sidebar,
+  .sidebar-wrap .sidebar {
+    display: block !important;
+    position: sticky !important;
+    top: 154px !important;
+    left: auto !important;
+    width: 280px !important;
+    min-width: 280px !important;
+    max-width: 280px !important;
+    height: calc(100vh - 154px) !important;
+    /* An older, unguarded rule earlier in this file sets ".sidebar {
+       min-height: 100% !important }" so the sidebar always matches the
+       height of the product grid beside it - on a short category (few
+       products) that squeezed this box shorter than its own item list,
+       clipping the last category(ies) inside a barely-visible internal
+       scrollbar, and on a tall category it stretched the sidebar far past
+       its content, misaligning it with the grid. min-height isn't set
+       anywhere else in this block, so without this override that old rule
+       silently wins on the min-height property alone even though every
+       other property here already overrides it. Resetting it to 0 lets
+       height/max-height above be the only thing sizing this box, so it's
+       always exactly one viewport tall with its own internal scroll,
+       independent of how tall the product grid next to it is. */
+    min-height: 0 !important;
+    max-height: calc(100vh - 154px) !important;
+    overflow-y: auto !important;
+    overflow-x: visible !important;
+    align-self: flex-start !important;
+    flex-shrink: 0 !important;
+    background: #FFFFFF !important;
+    border: none !important;
+    border-right: 1px solid #f1f1f1 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    z-index: 10 !important;
+  }
+
+  html body.theme-corporate .sidebar-wrap .sidebar-sticky-inner,
+  html body .sidebar-wrap .sidebar-sticky-inner,
+  .sidebar-wrap .sidebar-sticky-inner,
+  html body.theme-corporate .sidebar-wrap #desktopSidebar,
+  html body .sidebar-wrap #desktopSidebar,
+  .sidebar-wrap #desktopSidebar {
+    padding: 16px 0 !important;
+  }
+
+  html body.theme-corporate .corp-dashboard > main.main,
+  html body .corp-dashboard > main.main,
+  .corp-dashboard > main.main {
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
+    width: auto !important;
+    max-width: 100% !important;
+    background: #5C0930 !important;
+  }
+}
+
+/* ---------- Mobile (≤767px): icon-rail + independently-scrolling content,
+   same shell pattern as photography.html's mobile .shell/.sidebar-wrap/
+   .main (css/photography.css ~line 2465). ---------- */
+@media (max-width: 767px) {
+  html body.theme-corporate .corp-dashboard,
+  html body .corp-dashboard,
+  .corp-dashboard {
+    flex-direction: row !important;
+    width: 100% !important;
+    height: calc(100vh - var(--corp-mobile-header-h, 210px)) !important;
+    height: calc(100dvh - var(--corp-mobile-header-h, 210px)) !important;
+    min-height: 320px !important;
+    overflow: hidden !important;
+    position: static !important;
+  }
+
+  html body.theme-corporate .sidebar-wrap,
+  html body .sidebar-wrap,
+  .sidebar-wrap {
+    width: 90px !important;
+    min-width: 90px !important;
+    max-width: 90px !important;
+    align-self: stretch !important;
+    position: relative !important;
+  }
+
+  /* The icon rail (.sidebar, below) scrolls internally to reach categories
+     past "Trophies"/"Mugs" (Wallets is last), but its scrollbar is hidden
+     site-wide (".sidebar::-webkit-scrollbar { display:none }" above) and
+     most mobile browsers auto-hide native scrollbars regardless - so there
+     was no visual cue at all that the list continues below the fold, and
+     "Wallets" read as simply missing/cut off instead of one swipe away.
+     This fixed fade sits on top of the rail (a sibling overlay on the wrap,
+     not inside .sidebar's own scroll box, so it never scrolls away) as a
+     static "more below" hint. It doesn't need to detect scroll position -
+     with 10+ categories this rail overflows on every phone size, so the
+     hint is always relevant. */
+  html body.theme-corporate .sidebar-wrap::after,
+  html body .sidebar-wrap::after,
+  .sidebar-wrap::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 28px;
+    background: linear-gradient(to bottom, rgba(247, 248, 249, 0), rgba(247, 248, 249, 0.95));
+    pointer-events: none;
+    z-index: 11;
+  }
+
+  html body.theme-corporate .sidebar-wrap .sidebar,
+  html body .sidebar-wrap .sidebar,
+  .sidebar-wrap .sidebar {
+    display: flex !important;
+    flex-direction: column !important;
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: 90px !important;
+    min-width: 90px !important;
+    max-width: 90px !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    align-self: stretch !important;
+    flex-shrink: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    background: #f7f8f9 !important;
+    border: none !important;
+    border-right: 1px solid #f1f1f1 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    z-index: auto !important;
+  }
+
+  html body.theme-corporate .sidebar-wrap .sidebar-sticky-inner,
+  html body .sidebar-wrap .sidebar-sticky-inner,
+  .sidebar-wrap .sidebar-sticky-inner,
+  html body.theme-corporate .sidebar-wrap #desktopSidebar,
+  html body .sidebar-wrap #desktopSidebar,
+  .sidebar-wrap #desktopSidebar {
+    padding: 0 !important;
+  }
+
+  html body.theme-corporate .corp-dashboard > main.main,
+  html body .corp-dashboard > main.main,
+  .corp-dashboard > main.main {
+    width: auto !important;
+    max-width: 100% !important;
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
 }

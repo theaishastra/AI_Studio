@@ -386,7 +386,13 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
           ${m.alt ? `<div class="cap">${esc(m.alt)}</div>` : ""}
         </div>`).join("") || `<div style="color:var(--text-dim);font-size:13px;">No photos yet.</div>`}
     </div>
-    <form id="mediaForm" style="margin-top:16px;">
+    <form id="mediaUploadForm" style="margin-top:16px;">
+      <label>Upload a photo</label>
+      <input type="file" id="m_file" accept="image/*">
+      <span id="mediaUploadStatus" style="color:var(--text-dim);font-size:12px;"></span>
+    </form>
+    <p style="color:var(--text-dim);font-size:12px;margin:12px 0 4px;">— or add by URL —</p>
+    <form id="mediaForm">
       <label>Image URL</label><input id="m_url" required placeholder="https://res.cloudinary.com/...">
       <label>Caption ${kind === "portfolio" ? "(shown under the photo)" : "(optional)"}</label><input id="m_alt">
       <div class="modal-actions">
@@ -395,6 +401,23 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
       </div>
     </form>
   `);
+  document.getElementById("m_file").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const status = document.getElementById("mediaUploadStatus");
+    status.textContent = "Uploading…";
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const uploaded = await Api.uploadMedia(fd);
+      await addFn({ url: uploaded.url, alt: uploaded.alt || "", kind, sort: media.length });
+      closeModal();
+      afterChange();
+    } catch (err) {
+      status.textContent = "";
+      document.getElementById("formMsg").innerHTML = `<div class="msg error">${esc(err.message)}</div>`;
+    }
+  });
   document.getElementById("mediaForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     try {

@@ -27,17 +27,18 @@
         });
       }
 
-      // On mobile, .corp-main-col is its own independently-scrolling column
-      // (see css/corporate.css) rather than the page itself scrolling past
-      // it. switchCategory(key, shouldScroll=true)'s own "scroll to the
-      // grid" step calls window.scrollTo() on the whole PAGE - but the page
-      // barely scrolls at all now (the shell has a fixed viewport-height
-      // footprint), so that call just yanks the entire shell up by whatever
-      // offset it computed, shoving the fixed header/rail out of sync with
-      // the footer sliding into view underneath - the "everything jumps and
-      // looks broken" effect clicking a hero slide or sidebar item produced.
+      // On mobile, main.main (formerly .corp-main-col) is its own
+      // independently-scrolling column (see css/corporate.css) rather than
+      // the page itself scrolling past it. switchCategory(key,
+      // shouldScroll=true)'s own "scroll to the grid" step calls
+      // window.scrollTo() on the whole PAGE - but the page barely scrolls at
+      // all now (the shell has a fixed viewport-height footprint), so that
+      // call just yanks the entire shell up by whatever offset it computed,
+      // shoving the fixed header/rail out of sync with the footer sliding
+      // into view underneath - the "everything jumps and looks broken"
+      // effect clicking a hero slide or sidebar item produced.
       // Fix: run the original with scrolling suppressed, then do the
-      // equivalent scroll inside .corp-main-col itself so the grid scrolls
+      // equivalent scroll inside main.main itself so the grid scrolls
       // into view within its own box instead of moving the page.
       if (typeof window.switchCategory === 'function') {
         var _switchCategory = window.switchCategory;
@@ -47,7 +48,7 @@
             var result = _switchCategory.call(this, key, false);
             if (wantsScroll) {
               setTimeout(function () {
-                var mainCol = document.querySelector('.corp-main-col');
+                var mainCol = document.querySelector('.corp-dashboard .main');
                 var targetEl = document.getElementById('catalogContainer') || document.getElementById('productsGrid') || document.querySelector('.content-layout');
                 if (!mainCol || !targetEl) return;
                 var mainRect = mainCol.getBoundingClientRect();

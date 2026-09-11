@@ -5,6 +5,16 @@ const cat=params.get("category")||"";
 const pkg=params.get("package")||"Selected Package";
 const tier=(params.get("tier")||"").toLowerCase();
 const price=params.get("price")||"";
+/* Handed over by booking.js so the saved booking keeps the package's own photo and
+   the service's display label — "My Photography Bookings" renders both. */
+const catLabel=params.get("catlabel")||"";
+const packageImage=params.get("image")||"";
+/* [{name, price, icon}] for the Equipment & Coverage add-ons picked on booking.html —
+   the `equipments` param below is the same list as a plain names string, kept for the
+   existing summary line and the confirmation page. */
+let addons=[];
+try{ addons=JSON.parse(params.get("addons")||"[]"); }catch(e){ addons=[]; }
+if(!Array.isArray(addons)) addons=[];
 
 /* "Change package" must return to this same service's packages on the Photography page,
    not always the default Wedding view */
@@ -178,7 +188,8 @@ function submitBooking(){
       customer_email:email,
       event_date:usesEventSchedule?(document.querySelector(".evDate")?.value||null):(date||null),
       slot:usesEventSchedule?null:time,
-      details:{category:cat,package:pkg,tier,price,venue,message:msg,equipments:equipments||null,event_schedule:eventSchedule},
+      details:{category:cat,category_label:catLabel||null,package:pkg,tier,price,image:packageImage||null,
+               venue,message:msg,equipments:equipments||null,addons,event_schedule:eventSchedule},
     },
   };
 

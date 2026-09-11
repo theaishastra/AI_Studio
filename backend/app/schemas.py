@@ -120,6 +120,29 @@ class CartSyncOut(BaseModel):
     items: list[CartItemOut] = []
 
 
+# ---------------------------------------------------------------- wishlist
+
+class WishlistItemIn(BaseModel):
+    key: str
+    product_id: str | None = None
+    name: str
+    price: str = ""
+    img: str | None = None
+    url: str | None = None
+
+
+class WishlistItemOut(WishlistItemIn):
+    pass
+
+
+class WishlistSyncIn(BaseModel):
+    items: list[WishlistItemIn] = []
+
+
+class WishlistSyncOut(BaseModel):
+    items: list[WishlistItemOut] = []
+
+
 # ---------------------------------------------------------------- site pages
 
 class SitePageIn(BaseModel):
@@ -316,6 +339,12 @@ class OrderItemOut(BaseModel):
     unit_price: float
     qty: int
     notes: str
+    # Set only by the admin order LIST endpoint, which strips uploaded artwork
+    # (customer photos/logos can be several MB each as base64) out of
+    # product_snapshot to keep the list response small; the count lets the
+    # list still show a "N files" badge. Always 0 on every other endpoint,
+    # where product_snapshot is left intact.
+    upload_count: int = 0
 
 
 class PaymentOut(BaseModel):

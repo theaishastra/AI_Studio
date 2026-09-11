@@ -2833,14 +2833,6 @@ footer .container {
   padding: 0 24px;
 }
 
-/* Duplicate footer living inside .main-content for mobile's app-shell
-   layout (see studio.html and the mobile media query below) - hidden by
-   default so it never shows on desktop, where the canonical footer above
-   is used instead. */
-.mobile-only-footer {
-  display: none;
-}
-
 .footer-grid {
   display: grid;
   grid-template-columns: 1.5fr 1fr 1fr 1fr 1.2fr;
@@ -2984,11 +2976,25 @@ footer .container {
 /* --- Mobile Breakpoint (<768px): swap desktop nav for the mobile header/bottom-nav chrome --- */
 @media (max-width: 767px) {
   body {
-    height: 100vh !important;
-    overflow: hidden !important;
+    background-color: #F8FAFC !important;
+  }
+
+  /* The fixed-height "app shell" box (see studio.html) - everything from the
+     mobile header rows through the icon-rail/product-grid dashboard lives in
+     here and is capped to one screen's height, with .studio-dashboard below
+     given the remaining space via flex:1 1 auto (unchanged) same as before
+     when <body> itself played this role. 100dvh (falls back to 100vh where
+     unsupported) tracks the CURRENTLY visible viewport as the mobile
+     browser's address bar shows/hides, so this box doesn't over/undershoot
+     as that happens. <body> is no longer capped/hidden-overflow itself, so
+     it scrolls normally past this box to whatever comes after it (the
+     bottom nav, then the canonical footer). */
+  .mobile-app-shell {
     display: flex !important;
     flex-direction: column !important;
-    background-color: #F8FAFC !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    overflow: hidden !important;
   }
 
   .desktop-nav {
@@ -3171,25 +3177,10 @@ footer .container {
     padding: 8px 10px 10px !important;
   }
 
-  /* The canonical <footer> (sibling after .studio-dashboard) sits outside
-     .main-content - the only element that actually scrolls in this mobile
-     app-shell layout - so it's unreachable here and stays hidden.
-     #mobileFooter is a duplicate of the same footer content living inside
-     .main-content instead (see studio.html), shown here so mobile gets the
-     same footer index.html/corporate.html show, without disturbing the
-     desktop layout (which continues to use the canonical footer below). */
-  footer {
-    display: none !important;
-  }
-
-  #mobileFooter.mobile-only-footer {
-    display: block !important;
-    margin-top: 20px !important;
-    padding: 24px 0 0 !important;
-  }
-
-  #mobileFooter .footer-grid {
-    grid-template-columns: 1fr !important;
-    gap: 24px !important;
-  }
+  /* The canonical <footer> (a sibling after .mobile-app-shell, see
+     studio.html) is no longer hidden here - .mobile-app-shell (not <body>)
+     is what's capped to one screen's height now, so <body> scrolls normally
+     past it and reaches the real footer, same as photography.html/
+     corporate.html. Its own general responsive rules (@media max-width:640px
+     above) already give it a mobile-appropriate 2-column grid. */
 }

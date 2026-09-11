@@ -6,11 +6,21 @@
 <title>Sai Studio Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/admin.css">
+<!-- Cache-busting query string ("v=N") on every admin asset below - bump it
+     whenever admin/css or admin/js changes, so staff browsers fetch the new
+     file instead of quietly reusing yesterday's cached copy (StaticFiles sets
+     Last-Modified/ETag, but browsers can still serve a heuristically "fresh"
+     cached response without revalidating). -->
+<link rel="stylesheet" href="css/admin.css?v=9">
 </head>
 <body>
+  <div class="mobile-topbar">
+    <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Open menu">☰</button>
+    <h2>Sai Kumar Studio</h2>
+  </div>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
   <div class="app-shell">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <h2>Sai Kumar Studio</h2>
       <nav>
         <a href="#/dashboard" data-route="dashboard">Dashboard</a>
@@ -34,19 +44,19 @@
     <main class="main" id="view"></main>
   </div>
 
-  <script src="js/api.js"></script>
-  <script src="js/core.js"></script>
-  <script src="js/catalog.js"></script>
-  <script src="js/coupons.js"></script>
-  <script src="js/bookings.js"></script>
-  <script src="js/staff.js"></script>
-  <script src="js/orders.js"></script>
-  <script src="js/customers.js"></script>
-  <script src="js/reviews.js"></script>
-  <script src="js/media.js"></script>
-  <script src="js/settings.js"></script>
-  <script src="js/homepage.js"></script>
-  <script src="js/arrange.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/api.js?v=9"></script>
+  <script src="js/core.js?v=9"></script>
+  <script src="js/catalog.js?v=9"></script>
+  <script src="js/coupons.js?v=9"></script>
+  <script src="js/bookings.js?v=9"></script>
+  <script src="js/staff.js?v=9"></script>
+  <script src="js/orders.js?v=9"></script>
+  <script src="js/customers.js?v=9"></script>
+  <script src="js/reviews.js?v=9"></script>
+  <script src="js/media.js?v=9"></script>
+  <script src="js/settings.js?v=9"></script>
+  <script src="js/homepage.js?v=9"></script>
+  <script src="js/arrange.js?v=9"></script>
+  <script src="js/app.js?v=9"></script>
 </body>
 </html>

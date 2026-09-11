@@ -172,25 +172,163 @@
       CustomerAuth.syncCart(cartToServerItems(getCart())).catch(() => {});
     }
 
-    // Best-effort: pull the account's saved default address (if any) into the
-    // delivery form, same way the cart itself gets pulled in on login.
+    // Saved-address book (account addresses, recommended at checkout) -----
+    let savedAddresses = [];
+    let selectedSavedAddressId = null;
+
+    // Addresses are stored as one free-text line1 (see addresses.py) - split
+    // it back into the form's separate D.No / Street fields the same way on
+    // every read, so a round trip through "save this address" and back
+    // reproduces what the customer typed.
+    function addressToFormFields(addr) {
+      const [dno, ...rest] = String(addr.line1 || '').split(',');
+      return {
+        name: addr.full_name, phone: addr.phone,
+        dno: (dno || '').trim(), street: rest.join(',').trim(),
+        landmark: addr.line2 || '', city: addr.city,
+        state: addr.state, pincode: addr.pincode,
+      };
+    }
+
+    function applyAddressToForm(fields) {
+      const map = {
+        custName: fields.name, custPhone: fields.phone, custDno: fields.dno, custStreet: fields.street,
+        custLandmark: fields.landmark, custCity: fields.city, custState: fields.state, custPincode: fields.pincode,
+      };
+      Object.entries(map).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value || '';
+      });
+    }
+
+    function savedAddressCardHTML(addr) {
+      const f = addressToFormFields(addr);
+      const addressLine = [f.dno, f.street, f.landmark].filter(Boolean).join(', ');
+      const selected = addr.id === selectedSavedAddressId;
+      return `
+        <button type="button" class="saved-address-card${selected ? ' selected' : ''}" onclick="selectSavedAddress('${escapeForAttr(addr.id)}')">
+          <div class="saved-address-card-top">
+            <span class="saved-address-card-label">${escapeHtml(addr.label || 'Address')}</span>
+            ${addr.is_default ? '<span class="saved-address-card-default">Default</span>' : ''}
+          </div>
+          <div class="saved-address-card-name">${escapeHtml(addr.full_name)} &middot; ${escapeHtml(addr.phone)}</div>
+          <div class="saved-address-card-text">${escapeHtml(addressLine)}, ${escapeHtml(addr.city)}, ${escapeHtml(addr.state)} - ${escapeHtml(addr.pincode)}</div>
+        </button>`;
+    }
+
+    function renderSavedAddressPicker() {
+      const section = document.getElementById('savedAddressSection');
+      if (!section) return;
+      if (!savedAddresses.length) {
+        section.style.display = 'none';
+        return;
+      }
+      section.style.display = 'block';
+      document.getElementById('savedAddressList').innerHTML = savedAddresses.map(savedAddressCardHTML).join('');
+    }
+
+    // A saved card was picked - fill the form from it and hide the "save this
+    // address" checkbox, since it's already in the account.
+    function selectSavedAddress(id) {
+      const addr = savedAddresses.find(a => a.id === id);
+      if (!addr) return;
+      selectedSavedAddressId = id;
+      applyAddressToForm(addressToFormFields(addr));
+      renderSavedAddressPicker();
+      const saveRow = document.getElementById('saveAddressRow');
+      if (saveRow) saveRow.style.display = 'none';
+    }
+
+    // "+ Enter a new address" (or editing any field of a selected saved
+    // address) - clears the selection and, if logged in, re-offers the "save
+    // this address" checkbox so the new entry can be added to the account.
+    function useNewAddressForm() {
+      selectedSavedAddressId = null;
+      renderSavedAddressPicker();
+      if (typeof isCustomerLoggedIn === 'function' && isCustomerLoggedIn()) {
+        const saveRow = document.getElementById('saveAddressRow');
+        if (saveRow) saveRow.style.display = 'block';
+      }
+    }
+
+    // Best-effort: pull the account's saved addresses in as recommendations
+    // for the delivery form (same way the cart itself gets pulled in on
+    // login) - the default (or most recent) is applied automatically, the
+    // rest are offered as one-click alternatives.
     async function prefillAddressFromServer() {
       if (typeof isCustomerLoggedIn !== 'function' || !isCustomerLoggedIn()) return;
       try {
-        const addresses = await CustomerAuth.getAddresses();
-        const primary = addresses.find(a => a.is_default) || addresses[0];
-        if (!primary) return;
-        const [dno, ...rest] = String(primary.line1 || '').split(',');
-        saveDeliveryDetails({
-          name: primary.full_name, phone: primary.phone,
-          dno: (dno || '').trim(), street: rest.join(',').trim(),
-          landmark: primary.line2 || '', city: primary.city,
-          state: primary.state, pincode: primary.pincode,
-        });
-        prefillDeliveryDetails();
+        savedAddresses = await CustomerAuth.getAddresses();
+        renderSavedAddressPicker();
+        const primary = savedAddresses.find(a => a.is_default) || savedAddresses[0];
+        if (primary) {
+          selectSavedAddress(primary.id);
+          saveDeliveryDetails(addressToFormFields(primary));
+        } else if (typeof getCustomerPhone === 'function' && getCustomerPhone() && !document.getElementById('custPhone').value) {
+          // No saved address yet, but the profile has a mobile number on file
+          // (see js/shared/customer-api.js) - recommend it for the field.
+          document.getElementById('custPhone').value = getCustomerPhone();
+        }
       } catch (e) {
         // best-effort - keep whatever was already in the form
       }
+      // Logged in with nothing selected yet (new customer, or they haven't
+      // saved an address before) - offer to save whatever they type.
+      if (!selectedSavedAddressId) {
+        const saveRow = document.getElementById('saveAddressRow');
+        if (saveRow) saveRow.style.display = 'block';
+      }
+    }
+
+    // Editing the form after a saved card was applied means the customer is
+    // customizing it for this order - stop treating it as "already saved".
+    function wireDeliveryFormDirtyTracking() {
+      ['custName', 'custPhone', 'custDno', 'custStreet', 'custLandmark', 'custCity', 'custState', 'custPincode'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el || el.dataset.dirtyWired) return;
+        el.dataset.dirtyWired = '1';
+        el.addEventListener('input', () => {
+          if (selectedSavedAddressId) useNewAddressForm();
+        });
+        el.addEventListener('change', () => {
+          if (selectedSavedAddressId) useNewAddressForm();
+        });
+      });
+    }
+
+    // The order's address_id (backend/app/schemas.py CheckoutIn) always has to
+    // point at a real row in the address book, so every order needs one - but
+    // that shouldn't mean creating a fresh duplicate every time:
+    //  - picked a saved address and didn't touch it -> reuse its id, no request.
+    //  - typed a new/edited one -> save it for next time only if the "Save
+    //    this address" checkbox (checked by default) is still checked; either
+    //    way it becomes the order's address, but only a saved one can ever
+    //    become the account default, and only when it's the very first one -
+    //    a one-off checkout address should never silently displace whatever
+    //    the customer already had marked default.
+    async function resolveOrderAddressId(d) {
+      if (selectedSavedAddressId) return selectedSavedAddressId;
+
+      // Note: the checkbox row can be hidden at this point (e.g. a guest who
+      // only logs in at this final step never saw step 2's address picker) -
+      // its *checked* state (defaults to true) still reflects intent either way.
+      const checkbox = document.getElementById('custSaveAddress');
+      const saveToAccount = (!checkbox || checkbox.checked)
+        && typeof isCustomerLoggedIn === 'function' && isCustomerLoggedIn();
+
+      const created = await CustomerAuth.createAddress({
+        label: 'Home',
+        full_name: d.name,
+        phone: d.phone,
+        line1: [d.dno, d.street].filter(Boolean).join(', '),
+        line2: d.landmark || null,
+        city: d.city,
+        state: d.state,
+        pincode: d.pincode,
+        is_default: saveToAccount && savedAddresses.length === 0,
+      });
+      if (saveToAccount) savedAddresses.push(created);
+      return created.id;
     }
 
     // Different pages store the customer's uploaded artwork under different
@@ -547,17 +685,7 @@
         // same number used to sign up separately, shouldn't block checkout).
         try { await CustomerAuth.updateMe({ name: d.name, phone: d.phone }); } catch (_) {}
 
-        const address = await CustomerAuth.createAddress({
-          label: 'Home',
-          full_name: d.name,
-          phone: d.phone,
-          line1: [d.dno, d.street].filter(Boolean).join(', '),
-          line2: d.landmark || null,
-          city: d.city,
-          state: d.state,
-          pincode: d.pincode,
-          is_default: true,
-        });
+        const addressId = await resolveOrderAddressId(d);
 
         const { items } = cartTotals();
         const result = await CustomerAuth.checkout({
@@ -569,7 +697,7 @@
             image: resolveCartImagePath(item.img) || null,
             customization: item.customization || null,
           })),
-          address_id: address.id,
+          address_id: addressId,
         });
 
         cartOrder = result.order;
@@ -693,6 +821,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       renderCartPage();
       prefillDeliveryDetails();
+      wireDeliveryFormDirtyTracking();
       // Already logged in from a previous visit (token lives in localStorage) -
       // pull in whatever's saved on the account (cart items + default address)
       // before the user starts reviewing/editing anything.

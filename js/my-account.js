@@ -118,6 +118,25 @@
       document.getElementById('acctLoginGate').style.display = 'none';
       document.getElementById('acctContent').style.display = 'block';
       await Promise.all([loadAcctProfile(), loadAcctAddresses(), loadAcctOrdersPreview(), loadAcctBookingsPreview()]);
+      scrollToHashSection();
+    }
+
+    // The mobile menu's "My Addresses" link (js/shared/auth-modal.js) and any
+    // other deep link into this page point at #acctAddressesSection - jump
+    // there once the section actually has content, instead of relying on the
+    // browser's own anchor scroll, which fires too early while #acctContent
+    // is still display:none on first load. Plain scrollIntoView would tuck
+    // the section right under the sticky header (.header-sticky-wrap, same
+    // one cart.js's goToCartStep offsets for), hiding it - so offset by its
+    // height instead.
+    function scrollToHashSection() {
+      const hash = (location.hash || '').replace('#', '');
+      if (!hash) return;
+      const el = document.getElementById(hash);
+      if (!el) return;
+      const header = document.querySelector('.header-sticky-wrap');
+      const offset = (header ? header.offsetHeight : 0) + 16;
+      window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - offset, behavior: 'smooth' });
     }
 
     /* ---------- profile ---------- */

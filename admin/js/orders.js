@@ -14,10 +14,25 @@ const CANCELLATION_REASON_LABELS = {
 
 let _ordersTab = "orders";
 
+/* The order LIST response has its uploaded artwork stripped out server-side
+   (see backend's _strip_uploads) to keep it small - it only carries an
+   upload_count per item. Viewing one order, or downloading its artwork,
+   needs the real data, so those fetch the full order on demand and cache it
+   here per id; the cache is cleared whenever the list is reloaded, since
+   that's the point at which the underlying data may have changed. */
+const _ORDER_DETAIL_CACHE = new Map();
+
+async function getOrderDetail(id) {
+  if (_ORDER_DETAIL_CACHE.has(id)) return _ORDER_DETAIL_CACHE.get(id);
+  const order = await Api.order(id);
+  _ORDER_DETAIL_CACHE.set(id, order);
+  return order;
+}
+
 async function renderOrders() {
   const view = document.getElementById("view");
   view.innerHTML = `
-    <header class="page-head"><h1>Orders</h1><a class="btn secondary" href="${API_BASE}/api/admin/reports/orders.csv" target="_blank">Export CSV</a></header>
+    <header class="page-head"><h1>Orders</h1><button type="button" class="btn secondary" onclick="downloadCsvReport('/api/admin/reports/orders.csv', 'orders.csv')">Export CSV</button></header>
     <div class="tabs" id="ordersTabs"></div>
     <div id="ordersTabBody">${LOADING}</div>
   `;
@@ -75,21 +90,28 @@ async function loadOrders(statusFilter) {
   const wrap = document.getElementById("ordersWrap");
   const orders = await Api.orders(statusFilter);
   window._ORDERS_CACHE = orders;
+  _ORDER_DETAIL_CACHE.clear();
   if (!orders.length) {
     wrap.innerHTML = `<div class="empty-state">No orders yet.</div>`;
     return;
   }
   wrap.innerHTML = `
     <table>
-      <thead><tr><th>Order #</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Requests</th><th>Created</th><th></th></tr></thead>
+      <thead><tr><th>Order #</th><th>Items</th><th>Artwork</th><th>Total</th><th>Payment</th><th>Status</th><th>Requests</th><th>Created</th><th></th></tr></thead>
       <tbody>
-        ${orders.map(o => `
+        ${orders.map(o => {
+          const uploadCount = orderUploadCount(o);
+          return `
           <tr>
             <td><b>${esc(o.number)}</b></td>
-            <td>${o.items.length} item${o.items.length === 1 ? "" : "s"}</td>
+            <td>${orderItemsCellHTML(o)}</td>
+            <td>${uploadCount
+              ? `<button class="btn secondary otr-dl" title="Download all customer artwork on this order"
+                         onclick="downloadAllOrderArtwork('${o.id}')">&#11015; ${uploadCount} file${uploadCount === 1 ? "" : "s"}</button>`
+              : "—"}</td>
             <td>${fmtINR(o.total)}</td>
             <td><span class="badge ${o.payments.some(p => p.status === "captured") ? "on" : "off"}">${o.status === "cod_confirmed" ? "cod" : (o.payments[0]?.status || "—")}</span></td>
-            <td><select onchange="updateOrderStatus('${o.id}', this.value)">
+            <td><select class="order-status-select order-status-${esc(o.status)}" onchange="updateOrderStatus('${o.id}', this.value, this)">
               ${ORDER_STATUSES.map(s => `<option value="${s}" ${s === o.status ? "selected" : ""}>${s.replace("_", " ")}</option>`).join("")}
             </select></td>
             <td>${orderRequestBadges(o)}</td>
@@ -98,11 +120,35 @@ async function loadOrders(statusFilter) {
               <button class="btn secondary" onclick="viewOrder('${o.id}')">View</button>
               ${o.status === "paid" ? `<button class="btn danger owner-only" onclick="refundOrder('${o.id}')">Refund</button>` : ""}
             </td>
-          </tr>`).join("")}
+          </tr>`;
+        }).join("")}
       </tbody>
     </table>
   `;
   document.body.classList.toggle("is-owner", CURRENT_USER.role === "owner");
+}
+
+/* The Items column shows what was actually ordered — up to three product
+   thumbnails plus the first title — so staff can recognise an order from the
+   list instead of having to open every "3 items" row to find out. */
+function orderItemsCellHTML(order) {
+  const items = order.items || [];
+  const shown = items.slice(0, 3);
+  const first = (items[0] || {}).product_snapshot || {};
+  const extra = items.length - shown.length;
+  return `
+    <div class="otr-items">
+      <div class="otr-thumbs">
+        ${shown.map(i => {
+          const image = ((i.product_snapshot || {}).image) || "";
+          return image
+            ? `<img src="${esc(image)}" alt="" class="otr-thumb" onerror="this.style.visibility='hidden'">`
+            : `<span class="otr-thumb otr-thumb-blank"></span>`;
+        }).join("")}
+        ${extra > 0 ? `<span class="otr-thumb otr-thumb-more">+${extra}</span>` : ""}
+      </div>
+      <span class="otr-items-label">${esc(first.title || "—")}${items.length > 1 ? ` +${items.length - 1} more` : ""}</span>
+    </div>`;
 }
 
 function orderRequestBadges(o) {
@@ -112,26 +158,268 @@ function orderRequestBadges(o) {
   return bits.join(" ") || "—";
 }
 
-async function updateOrderStatus(id, status) {
-  try { await Api.updateOrderStatus(id, status); }
+async function updateOrderStatus(id, status, selectEl) {
+  try {
+    await Api.updateOrderStatus(id, status);
+    if (selectEl) selectEl.className = `order-status-select order-status-${status}`;
+    _ORDER_DETAIL_CACHE.delete(id);
+  }
   catch (err) { alert(err.message); renderOrdersTabBody(); }
 }
 
-// Different storefront pages save the customer's uploaded artwork/photo and
-// custom message under different customization field names (gifts.js:
-// photoData/text, corporate.js: logoData/engravingText) — this picks
-// whichever is present so the order detail shows it regardless of which page
-// the item was ordered from.
-function orderItemUploadedImage(customization) {
-  if (!customization) return "";
-  const data = customization.logoData || customization.photoData || "";
-  return typeof data === "string" && data.startsWith("data:image/") ? data : "";
+/* ---------- customer artwork & personalisation ----------
+   Different storefront pages save the customer's uploaded artwork and custom
+   message under different customization field names (gifts.js/studio.js:
+   photoData/text, corporate.js: logoData/engravingText) and every one of them
+   lands verbatim in product_snapshot.customization. Production staff need ALL
+   of it — the artwork file itself, the message, and every option the customer
+   picked (finish, technique, colour, size, print placement) — so the artwork
+   is matched by known aliases and every other value is listed generically
+   rather than from a fixed per-page list. */
+
+const CUSTOM_IMAGE_FIELDS = ["photoData", "logoData", "imageData", "artworkData"];
+const CUSTOM_TEXT_FIELDS = ["text", "engravingText", "message", "customText"];
+const CUSTOM_NAME_FIELDS = ["photoName", "logoName", "fileName"];
+
+// Rendered on their own (artwork, message, print-placement geometry) or pure
+// internal/live-preview state with nothing production needs (which rendering
+// path the 3D preview used, echoing the product name back, etc).
+const CUSTOM_HIDDEN_FIELDS = new Set([
+  ...CUSTOM_IMAGE_FIELDS, ...CUSTOM_TEXT_FIELDS,
+  "photoCrop", "rotationX", "rotationY", "zoom",
+  "photoZoom", "photoX", "photoY", "photoFit",
+  "previewTemplate", "previewMode",
+]);
+
+const CUSTOM_FIELD_LABELS = {
+  photoName: "Uploaded file", logoName: "Uploaded file", fileName: "Uploaded file",
+  finish: "Finish", technique: "Technique", color: "Colour", accent: "Accent colour",
+  textStyle: "Text style", photoLayout: "Photo layout", shape: "Shape",
+  size: "Size", thickness: "Thickness", stand: "Stand", background: "Background",
+  lighting: "Lighting", shadow: "Shadow", quantity: "Quantity", purpose: "Purpose",
+  notes: "Notes", acrylic: "Acrylic",
+};
+
+function prettyCustomLabel(key) {
+  return CUSTOM_FIELD_LABELS[key] || String(key)
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .replace(/^./, (c) => c.toUpperCase());
 }
 
 function orderItemCustomText(customization) {
   if (!customization) return "";
-  const text = customization.text || customization.engravingText || customization.message || customization.customText || "";
-  return typeof text === "string" ? text.trim() : "";
+  for (const field of CUSTOM_TEXT_FIELDS) {
+    const value = customization[field];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+// Most customization fields are flat scalars, but a few (studio.js's acrylic
+// frame options: shape/size/stand/background...) are saved as one nested
+// object. Flattening one level in, with the parent name prefixed onto each
+// label, is what stops that whole group silently vanishing from production's
+// view instead of just being unreadable.
+function orderItemCustomSpecs(customization) {
+  if (!customization || typeof customization !== "object") return [];
+  const specs = [];
+  Object.entries(customization).forEach(([key, value]) => {
+    if (CUSTOM_HIDDEN_FIELDS.has(key) || value == null) return;
+    if (typeof value === "string" || typeof value === "number") {
+      const str = String(value).trim();
+      if (str && !str.startsWith("data:")) specs.push([prettyCustomLabel(key), str]);
+    } else if (typeof value === "object" && !Array.isArray(value)) {
+      const prefix = prettyCustomLabel(key);
+      Object.entries(value).forEach(([subKey, subValue]) => {
+        if (typeof subValue !== "string" && typeof subValue !== "number") return;
+        const str = String(subValue).trim();
+        if (str) specs.push([`${prefix} ${prettyCustomLabel(subKey)}`, str]);
+      });
+    }
+  });
+  return specs;
+}
+
+/* How the customer positioned their photo inside the print area. Unlike the
+   customer-facing order history (where this is noise), the print shop needs it
+   to reproduce what the customer saw in the live preview. */
+function orderItemPlacement(customization) {
+  if (!customization) return "";
+  const crop = customization.photoCrop || {};
+  const fit = crop.fit ?? customization.photoFit;
+  const zoom = crop.zoom ?? customization.photoZoom;
+  const x = crop.x ?? customization.photoX;
+  const y = crop.y ?? customization.photoY;
+  const bits = [];
+  if (fit) bits.push(`fit: ${fit}`);
+  if (zoom != null && zoom !== "") bits.push(`zoom: ${Number(zoom).toFixed(2)}×`);
+  if ((x != null && x !== "") || (y != null && y !== "")) bits.push(`offset: ${Number(x || 0)}%, ${Number(y || 0)}%`);
+  return bits.join(" · ");
+}
+
+/* Turns "image/jpeg" into a file extension. JFIF/JPG both arrive as image/jpeg;
+   anything unrecognised keeps a generic .img rather than a wrong extension that
+   would stop the design tool opening it. */
+const ARTWORK_EXTENSIONS = {
+  "image/jpeg": "jpg", "image/jpg": "jpg", "image/png": "png", "image/webp": "webp",
+  "image/gif": "gif", "image/avif": "avif", "image/svg+xml": "svg", "image/bmp": "bmp",
+  "image/tiff": "tiff",
+};
+
+function artworkFilenameSafe(s) {
+  return String(s || "")
+    .replace(/\.[a-z0-9]{2,5}$/i, "")          // drop the original extension; the real MIME decides it
+    .replace(/[^\w\-. ]+/g, "")
+    .trim().replace(/\s+/g, "-")
+    .slice(0, 60) || "artwork";
+}
+
+/* A data: URI's payload is base64, so its decoded byte count is derivable
+   without decoding the whole (potentially multi-MB) string — staff need the
+   file size to judge whether the upload is print-resolution before downloading. */
+function base64ByteLength(b64) {
+  const clean = b64.replace(/=+$/, "");
+  return Math.floor((clean.length * 3) / 4);
+}
+
+function fmtBytes(bytes) {
+  if (bytes == null) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/* Checkout now uploads these to Supabase Storage and stores a plain URL
+   instead of base64 (see backend's services/storage.py) - a data: URI only
+   shows up as a fallback if that upload failed. Byte size isn't knowable from
+   a URL without a separate request, so it's just omitted for those. */
+function mimeFromUrl(url) {
+  const ext = (url.split("?")[0].split("#")[0].split(".").pop() || "").toLowerCase();
+  const byExt = {
+    jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp",
+    gif: "image/gif", avif: "image/avif", svg: "image/svg+xml", bmp: "image/bmp", tiff: "image/tiff",
+  };
+  return byExt[ext] || "image/jpeg";
+}
+
+/* Every artwork file on one order item. An item can legitimately carry more
+   than one (a photo AND a logo), so this returns a list rather than the single
+   "first match" the old view showed. */
+function orderItemUploads(item, itemIndex, orderNumber) {
+  const customization = (item.product_snapshot || {}).customization;
+  if (!customization) return [];
+  const originalName = CUSTOM_NAME_FIELDS
+    .map((f) => customization[f])
+    .find((v) => typeof v === "string" && v.trim()) || "";
+
+  const uploads = [];
+  CUSTOM_IMAGE_FIELDS.forEach((field) => {
+    const data = customization[field];
+    if (typeof data !== "string") return;
+    const isDataUri = data.startsWith("data:image/");
+    const isUrl = /^https?:\/\//i.test(data);
+    if (!isDataUri && !isUrl) return;
+    const comma = isDataUri ? data.indexOf(",") : -1;
+    const mime = isDataUri ? (data.slice(5, comma).split(";")[0] || "image/png").toLowerCase() : mimeFromUrl(data);
+    const ext = ARTWORK_EXTENSIONS[mime] || "img";
+    const base = artworkFilenameSafe(originalName || (item.product_snapshot || {}).title);
+    uploads.push({
+      field, data, mime, originalName, isDataUri,
+      bytes: isDataUri ? base64ByteLength(data.slice(comma + 1)) : null,
+      filename: `${orderNumber}_item${itemIndex + 1}_${base}.${ext}`,
+    });
+  });
+  return uploads;
+}
+
+/* Works against either shape of order data: the list response (artwork
+   stripped, only item.upload_count is trustworthy) or a full detail fetch
+   (real customization data, so orderItemUploads finds the actual files). */
+function orderUploadCount(order) {
+  return (order.items || []).reduce((n, item, i) => {
+    const real = orderItemUploads(item, i, order.number).length;
+    return n + (real || item.upload_count || 0);
+  }, 0);
+}
+
+/* Pixel dimensions are only knowable once the browser has decoded the image, so
+   they're filled in on load rather than rendered with the rest of the row. Staff
+   need them to judge whether an upload is big enough to print before they take
+   it into production. */
+function showArtworkDimensions(img) {
+  const slot = img.closest(".oid-artwork-file")?.querySelector(".oid-dims");
+  if (!slot || !img.naturalWidth) return;
+  slot.textContent = ` · ${img.naturalWidth} × ${img.naturalHeight} px`;
+  if (Math.max(img.naturalWidth, img.naturalHeight) < 1200) {
+    slot.classList.add("oid-dims-low");
+    slot.title = "Low resolution — check with the customer before printing large.";
+  }
+}
+
+/* ---------- downloading the artwork ----------
+   Uploads live in the database as data: URIs. Browsers refuse a top-level
+   navigation to a data: URL, so the bytes are handed to the download as an
+   object URL instead — which also means no multi-MB string ever has to sit in
+   an onclick attribute. */
+
+function dataUriToBlob(dataUri) {
+  const comma = dataUri.indexOf(",");
+  const mime = dataUri.slice(5, comma).split(";")[0] || "application/octet-stream";
+  const binary = atob(dataUri.slice(comma + 1));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
+function saveBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
+/* Uploads live either as a base64 data: URI (the fallback path, if storing to
+   Supabase Storage failed at checkout) or a plain URL (the normal path) - the
+   former decodes locally, the latter needs an actual fetch to get bytes. */
+async function uploadToBlob(upload) {
+  if (upload.isDataUri) return dataUriToBlob(upload.data);
+  const res = await fetch(upload.data);
+  if (!res.ok) throw new Error(`Couldn't fetch the file (${res.status})`);
+  return res.blob();
+}
+
+async function downloadOrderArtwork(orderId, itemIndex, field) {
+  let order;
+  try { order = await getOrderDetail(orderId); } catch (err) { alert(err.message); return; }
+  const upload = orderItemUploads(order.items[itemIndex], itemIndex, order.number).find((u) => u.field === field);
+  if (!upload) return;
+  try { saveBlob(await uploadToBlob(upload), upload.filename); }
+  catch (err) { alert("Couldn't download the file: " + err.message); }
+}
+
+/* Downloads every artwork file on an order in one go. They're staggered because
+   browsers drop same-tick bursts of programmatic downloads — the gap is what
+   makes a 6-file order actually produce 6 files. */
+async function downloadAllOrderArtwork(orderId) {
+  let order;
+  try { order = await getOrderDetail(orderId); } catch (err) { alert(err.message); return; }
+  const uploads = [];
+  order.items.forEach((item, i) => uploads.push(...orderItemUploads(item, i, order.number)));
+  if (!uploads.length) {
+    alert("This order has no customer-uploaded artwork.");
+    return;
+  }
+  uploads.forEach((upload, i) => {
+    setTimeout(async () => {
+      try { saveBlob(await uploadToBlob(upload), upload.filename); }
+      catch (err) { console.error(`Couldn't download ${upload.filename}:`, err); }
+    }, i * 400);
+  });
 }
 
 function trackingTimelineHTML(order) {
@@ -200,11 +488,75 @@ async function decideRequest(kind, id, action) {
   }
 }
 
-function viewOrder(id) {
-  const o = window._ORDERS_CACHE.find(x => x.id === id);
+function orderItemDetailHTML(order, item, index) {
+  const snap = item.product_snapshot || {};
+  const customization = snap.customization || null;
+  const customText = orderItemCustomText(customization);
+  const specs = orderItemCustomSpecs(customization);
+  const placement = orderItemPlacement(customization);
+  const uploads = orderItemUploads(item, index, order.number);
+
+  return `
+    <div class="order-item-detail-row">
+      <img class="oid-thumb" src="${esc(snap.image || "")}" alt="" onerror="this.style.visibility='hidden'">
+      <div class="oid-body">
+        <div class="oid-title-row">
+          <b>${esc(snap.title || "—")}</b>
+          <span class="mono">${item.product_id ? `Product ID: ${esc(item.product_id)}` : "Custom item (no catalog ID)"}</span>
+        </div>
+        <div class="oid-pricing">${item.qty} × ${fmtINR(item.unit_price)} = <b>${fmtINR(item.unit_price * item.qty)}</b></div>
+        ${item.notes ? `<div class="oid-note">Note: ${esc(item.notes)}</div>` : ""}
+
+        ${uploads.length ? `
+        <div class="oid-artwork">
+          <div class="oid-artwork-label">Customer artwork &mdash; ${uploads.length} file${uploads.length === 1 ? "" : "s"}</div>
+          <div class="oid-artwork-files">
+            ${uploads.map(u => `
+              <div class="oid-artwork-file">
+                <img class="oid-upload" src="${u.data}" alt="Customer's uploaded artwork"
+                     title="Click to view full size" onload="showArtworkDimensions(this)"
+                     onclick="openArtworkZoom('${order.id}', ${index}, '${u.field}')">
+                <div class="oid-artwork-meta">
+                  <b title="${esc(u.filename)}">${esc(u.originalName || u.filename)}</b>
+                  <span>${esc(u.mime.replace("image/", "").toUpperCase())}${u.bytes != null ? ` &middot; ${fmtBytes(u.bytes)}` : ""}<span class="oid-dims"></span></span>
+                  <button type="button" class="btn secondary oid-dl"
+                          onclick="downloadOrderArtwork('${order.id}', ${index}, '${u.field}')">&#11015; Download</button>
+                </div>
+              </div>`).join("")}
+          </div>
+        </div>` : ""}
+
+        ${customText || specs.length || placement ? `
+        <div class="oid-custom">
+          ${customText ? `<div class="oid-text">Custom text: &ldquo;${esc(customText)}&rdquo;</div>` : ""}
+          ${specs.length ? `
+            <dl class="oid-specs">
+              ${specs.map(([label, value]) => `<div class="oid-spec-row"><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join("")}
+            </dl>` : ""}
+          ${placement ? `<div class="oid-placement">Print placement &mdash; ${esc(placement)}</div>` : ""}
+        </div>` : ""}
+      </div>
+    </div>`;
+}
+
+async function viewOrder(id) {
+  openModal(LOADING, true);
+  let o;
+  try {
+    o = await getOrderDetail(id);
+  } catch (err) {
+    closeModal();
+    alert(err.message || "Couldn't load order details.");
+    return;
+  }
+  renderOrderModal(o);
+}
+
+function renderOrderModal(o) {
   const c = o.customer;
   const a = o.address;
   const payment = o.payments[o.payments.length - 1];
+  const uploadCount = orderUploadCount(o);
   openModal(`
     <div class="order-modal-head">
       <div>
@@ -237,30 +589,12 @@ function viewOrder(id) {
     </div>
 
     <div class="order-section">
-      <h3 class="order-section-title">Items <span class="count">(${o.items.length})</span></h3>
+      <h3 class="order-section-title">
+        Items <span class="count">(${o.items.length})</span>
+        ${uploadCount ? `<button type="button" class="btn secondary oid-dl-all" onclick="downloadAllOrderArtwork('${o.id}')">&#11015; Download all artwork (${uploadCount})</button>` : ""}
+      </h3>
       <div class="order-items-detail">
-        ${o.items.map(i => {
-          const snap = i.product_snapshot || {};
-          const customization = snap.customization || null;
-          const uploadedImage = orderItemUploadedImage(customization);
-          const customText = orderItemCustomText(customization);
-          return `
-          <div class="order-item-detail-row">
-            <img class="oid-thumb" src="${esc(snap.image || "")}" alt="" onerror="this.style.visibility='hidden'">
-            <div class="oid-body">
-              <div class="oid-title-row">
-                <b>${esc(snap.title || "—")}</b>
-                <span class="mono">${i.product_id ? `Product ID: ${esc(i.product_id)}` : "Custom item (no catalog ID)"}</span>
-              </div>
-              <div class="oid-pricing">${i.qty} × ${fmtINR(i.unit_price)} = <b>${fmtINR(i.unit_price * i.qty)}</b></div>
-              ${uploadedImage || customText ? `
-              <div class="oid-custom">
-                ${uploadedImage ? `<img class="oid-upload" src="${uploadedImage}" alt="Customer's uploaded photo" title="Click to view full size" onclick="openImageZoom(this.src)">` : ""}
-                ${customText ? `<span class="oid-text">Custom text: &ldquo;${esc(customText)}&rdquo;</span>` : ""}
-              </div>` : ""}
-            </div>
-          </div>`;
-        }).join("")}
+        ${o.items.map((i, idx) => orderItemDetailHTML(o, i, idx)).join("")}
       </div>
     </div>
 
@@ -337,9 +671,24 @@ function viewOrder(id) {
   });
 }
 
-function openImageZoom(src) {
+/* Opens one artwork file full size. Addressed by order/item/field rather than
+   by src so the modal can offer the download too — and so a multi-MB data URI
+   never has to travel through an inline onclick attribute. */
+async function openArtworkZoom(orderId, itemIndex, field) {
+  let order;
+  try { order = await getOrderDetail(orderId); } catch (err) { alert(err.message); return; }
+  const item = order.items[itemIndex];
+  const upload = orderItemUploads(item, itemIndex, order.number).find(u => u.field === field);
+  if (!upload) return;
   openModal(`
-    <img src="${esc(src)}" alt="" style="width:100%;border-radius:8px;display:block;">
+    <div class="artwork-zoom-head">
+      <div>
+        <b>${esc(upload.originalName || upload.filename)}</b>
+        <span class="artwork-zoom-meta">${esc((item.product_snapshot || {}).title || "")} &middot; ${esc(upload.mime.replace("image/", "").toUpperCase())}${upload.bytes != null ? ` &middot; ${fmtBytes(upload.bytes)}` : ""}</span>
+      </div>
+      <button type="button" class="btn" onclick="downloadOrderArtwork('${orderId}', ${itemIndex}, '${field}')">&#11015; Download</button>
+    </div>
+    <img src="${upload.data}" alt="Customer's uploaded artwork" class="artwork-zoom-img">
     <div class="modal-actions"><button type="button" class="btn secondary" onclick="closeModal()">Close</button></div>
   `);
 }

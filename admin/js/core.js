@@ -12,8 +12,26 @@ async function boot() {
   document.body.classList.toggle("is-owner", CURRENT_USER.role === "owner");
   document.getElementById("logoutLink").addEventListener("click", (e) => { e.preventDefault(); logout(); });
   window.addEventListener("hashchange", route);
+  setupMobileNav();
   applyBrandTheme();
   route();
+}
+
+/* Off-canvas sidebar for narrow screens: hamburger button opens it, and the
+   dimmed overlay (or picking a nav link) closes it again. */
+function setupMobileNav() {
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+  const toggle = document.getElementById("sidebarToggle");
+  if (!sidebar || !overlay || !toggle) return;
+
+  const close = () => { sidebar.classList.remove("open"); overlay.classList.remove("open"); };
+  toggle.addEventListener("click", () => {
+    sidebar.classList.toggle("open");
+    overlay.classList.toggle("open");
+  });
+  overlay.addEventListener("click", close);
+  sidebar.querySelectorAll("nav a").forEach(a => a.addEventListener("click", close));
 }
 
 /* Lets the owner's Settings > Branding colors re-theme the admin UI itself
@@ -29,6 +47,31 @@ async function applyBrandTheme() {
 }
 
 function logout() { clearToken(); location.href = "index.html"; }
+
+/* CSV report endpoints require the admin's bearer token like every other API
+   call, so a plain <a href> (no Authorization header) always 401s — this
+   fetches with the token instead and saves the response as a file. */
+async function downloadCsvReport(path, filename) {
+  const token = getToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) {
+    let detail = res.statusText;
+    try { detail = (await res.json()).detail || detail; } catch (_) {}
+    alert(`Couldn't download the report: ${detail}`);
+    return;
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
 
 function parseHash() {
   const raw = location.hash.replace(/^#\/?/, "");

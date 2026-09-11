@@ -949,6 +949,132 @@
       padding: 24px;
     }
 
+    .saved-address-section {
+      margin-bottom: 18px;
+    }
+
+    .saved-address-heading {
+      font-size: 12.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      color: var(--gray-700);
+      margin-bottom: 10px;
+    }
+
+    .saved-address-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .saved-address-card {
+      text-align: left;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 13px 14px;
+      background: var(--bg);
+      font-family: inherit;
+      transition: border-color .15s ease, background .15s ease;
+    }
+
+    .saved-address-card:hover {
+      border-color: var(--orange);
+    }
+
+    .saved-address-card.selected {
+      border-color: var(--orange-dark);
+      background: var(--orange-light);
+    }
+
+    .saved-address-card-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .saved-address-card-label {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      color: var(--gray-700);
+      background: #fff;
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+
+    .saved-address-card-default {
+      font-size: 10px;
+      font-weight: 800;
+      color: #1E1E1E;
+      background: var(--orange);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+
+    .saved-address-card-name {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--gray-900);
+      margin-bottom: 2px;
+    }
+
+    .saved-address-card-text {
+      font-size: 12px;
+      color: var(--gray-700);
+      line-height: 1.45;
+    }
+
+    .saved-address-new-btn {
+      background: none;
+      border: 1.5px dashed var(--border);
+      border-radius: 10px;
+      color: var(--orange-dark);
+      font-weight: 800;
+      font-size: 13px;
+      padding: 10px 14px;
+      width: 100%;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .saved-address-new-btn:hover {
+      border-color: var(--orange-dark);
+      background: var(--orange-light);
+    }
+
+    .save-address-row {
+      margin-top: 6px;
+    }
+
+    .save-address-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--gray-700);
+      cursor: pointer;
+    }
+
+    .save-address-checkbox input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--orange-dark);
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 640px) {
+      .saved-address-list {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .cart-field-grid {
       display: grid;
       grid-template-columns: repeat(12, 1fr);
@@ -1365,29 +1491,278 @@
       color: var(--error);
     }
 
+    /* ── order card: item lines with their thumbnail + personalisation ── */
+    .order-section { margin-bottom: 16px; }
+
+    .order-section-title {
+      margin: 0 0 10px;
+      font-size: 11.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--gray-600);
+    }
+
+    .order-section-title .count {
+      color: var(--gray-500);
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
     .order-items-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
     }
 
-    .order-item-row {
+    .order-item-card {
       display: flex;
-      justify-content: space-between;
-      font-size: 13.5px;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 12px;
+      background: var(--gray-100);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .order-item-thumb {
+      width: 64px;
+      height: 64px;
+      flex-shrink: 0;
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--white);
+      border: 1px solid var(--border);
+    }
+
+    .order-item-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .order-item-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .order-item-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gray-900);
+      overflow-wrap: anywhere;
+    }
+
+    .order-item-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-top: 3px;
+      font-size: 12.5px;
+      color: var(--gray-600);
+    }
+
+    .order-item-dot { color: var(--gray-400); }
+
+    .order-item-note {
+      margin: 5px 0 0;
+      font-size: 12px;
       color: var(--gray-700);
     }
 
-    .order-card-total {
-      display: flex;
-      justify-content: space-between;
+    .order-item-amount {
+      flex-shrink: 0;
       font-size: 14.5px;
       font-weight: 800;
       color: var(--gray-900);
-      margin-top: 14px;
-      padding-top: 14px;
+      white-space: nowrap;
+    }
+
+    .order-item-custom {
+      margin-top: 10px;
+      padding: 10px;
+      background: var(--white);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+    }
+
+    .order-item-custom-title {
+      display: block;
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      color: var(--green-dark);
+      margin-bottom: 8px;
+    }
+
+    .order-item-custom-body {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .order-custom-photo-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      margin: 0;
+      flex-shrink: 0;
+    }
+
+    .order-custom-photo {
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      cursor: zoom-in;
+      display: block;
+    }
+
+    .order-custom-photo-label {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      color: var(--gray-600);
+    }
+
+    .order-custom-fields {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .order-custom-text {
+      font-size: 13px;
+      font-style: italic;
+      color: var(--gray-800);
+      overflow-wrap: anywhere;
+      margin-bottom: 6px;
+    }
+
+    /* One spec per row, label left / value right, stacked in reading order —
+       an auto-fit grid used to reflow specs into columns based on each one's
+       wrapped height, which zig-zagged unrelated labels/values into the same
+       visual row the moment any single value ran long. */
+    .order-custom-specs {
+      display: flex;
+      flex-direction: column;
+      margin: 0;
+    }
+
+    .order-custom-spec-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 14px;
+      padding: 5px 0;
+      font-size: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .order-custom-spec-row:last-child { border-bottom: none; }
+
+    .order-custom-specs dt { color: var(--gray-600); flex-shrink: 0; }
+
+    .order-custom-specs dd {
+      margin: 0;
+      font-weight: 700;
+      color: var(--gray-800);
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+
+    /* ── order card: amounts ── */
+    .order-amount-summary {
+      margin-top: 4px;
+      padding-top: 12px;
       border-top: 1px solid var(--border);
     }
+
+    .order-amount-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13.5px;
+      color: var(--gray-700);
+      padding: 3px 0;
+    }
+
+    .order-amount-total {
+      margin-top: 6px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--gray-900);
+    }
+
+    /* ── order card: address / payment panels ── */
+    .order-panels {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .order-panel {
+      padding: 12px 14px;
+      background: var(--gray-100);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .order-panel-title {
+      margin: 0 0 8px;
+      font-size: 11.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--gray-600);
+    }
+
+    .order-panel-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12.5px;
+      color: var(--gray-700);
+      padding: 2px 0;
+    }
+
+    .order-panel-row span:last-child {
+      font-weight: 700;
+      color: var(--gray-900);
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+
+    .order-panel-empty {
+      font-size: 12.5px;
+      color: var(--gray-500);
+    }
+
+    .order-address-name {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--gray-900);
+    }
+
+    .order-address-line {
+      font-size: 12.5px;
+      color: var(--gray-700);
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+
+    .order-address-phone { margin-top: 4px; }
 
     /* ── order card: shipment / requests / actions / timeline ── */
     .order-shipment-summary {
@@ -1409,6 +1784,210 @@
       border-radius: 10px;
       font-size: 12.5px;
       font-weight: 700;
+    }
+
+    .order-request-ok {
+      background: rgba(34, 197, 94, 0.12);
+      color: #16803d;
+    }
+
+    .order-request-bad {
+      background: rgba(179, 38, 30, 0.09);
+      color: var(--error);
+    }
+
+    .order-request-addr {
+      display: inline-block;
+      margin-top: 3px;
+      font-weight: 500;
+      overflow-wrap: anywhere;
+    }
+
+    /* ── my-bookings page: one card per photography booking ── */
+    .booking-card { padding-bottom: 8px; }
+
+    .booking-card-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding-bottom: 14px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Full-bleed banner across the top of the booking card, replacing what used
+       to be an 86×86 thumbnail squeezed next to the title — too small to show
+       the package photo clearly, and object-fit:cover on a small square cropped
+       most portrait shots down to a sliver. Negative-margined out to the card's
+       own edges (.order-card padding: 20px 22px, same border-radius) so it reads
+       as one photo header rather than an inset image. */
+    .booking-hero-banner {
+      margin: -20px -22px 16px;
+      height: 200px;
+      overflow: hidden;
+      border-radius: var(--radius) var(--radius) 0 0;
+      background: var(--gray-200);
+    }
+
+    .booking-hero-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 25%;
+      display: block;
+      cursor: zoom-in;
+    }
+
+    .booking-head-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .booking-category {
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--orange-dark);
+      margin-bottom: 2px;
+    }
+
+    .booking-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .booking-chip {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--gray-200);
+      color: var(--gray-700);
+    }
+
+    .booking-chip-price {
+      background: var(--orange-light);
+      color: var(--orange-dark);
+    }
+
+    .booking-section { margin-bottom: 16px; }
+
+    .booking-events {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .booking-event-row {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      background: var(--gray-100);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 12.5px;
+      color: var(--gray-700);
+    }
+
+    .booking-event-type {
+      font-weight: 800;
+      color: var(--gray-900);
+      overflow-wrap: anywhere;
+    }
+
+    .booking-event-date {
+      font-weight: 600;
+      color: var(--gray-800);
+    }
+
+    .booking-event-time {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .booking-addons {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* Each add-on gets its own photo — a booking with several (Candid Photography
+       + Drone + LED Screens) used to read as an identical wall of text rows with
+       nothing to tell them apart at a glance. */
+    .booking-addon-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 12px;
+      background: var(--gray-100);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 12.5px;
+      color: var(--gray-700);
+    }
+
+    .booking-addon-thumb {
+      width: 60px;
+      height: 60px;
+      flex-shrink: 0;
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--white);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+    }
+
+    .booking-addon-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .booking-addon-thumb-empty { background: var(--gray-200); }
+
+    .booking-addon-name {
+      flex: 1;
+      min-width: 0;
+      font-weight: 600;
+      color: var(--gray-800);
+      overflow-wrap: anywhere;
+    }
+
+    .booking-addon-price {
+      font-weight: 700;
+      color: var(--gray-900);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .booking-addon-icon { font-size: 18px; }
+
+    .booking-amount-note {
+      margin-top: 6px;
+      font-size: 11.5px;
+      color: var(--gray-500);
+      text-align: right;
+    }
+
+    .booking-message {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--gray-700);
+      padding: 10px 12px;
+      background: var(--gray-100);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow-wrap: anywhere;
     }
 
     .order-card-actions {
@@ -2191,3 +2770,49 @@
       }
     }
   
+    /* ── my-orders / my-bookings: stack the richer cards on phones ── */
+    @media (max-width: 640px) {
+      .order-card {
+        padding: 16px 14px;
+      }
+
+      .order-card-head {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .order-item-card {
+        flex-wrap: wrap;
+      }
+
+      .order-item-amount {
+        width: 100%;
+        text-align: right;
+      }
+
+      .order-item-custom-body {
+        flex-direction: column;
+      }
+
+      .order-custom-photo-wrap {
+        align-items: flex-start;
+      }
+
+      .booking-card-head {
+        flex-wrap: wrap;
+      }
+
+      .booking-hero-banner {
+        margin: -16px -14px 14px;
+        height: 150px;
+      }
+
+      .booking-event-row {
+        grid-template-columns: 1fr;
+        gap: 3px;
+      }
+
+      .booking-event-time {
+        text-align: left;
+      }
+    }

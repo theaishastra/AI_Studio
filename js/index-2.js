@@ -63,12 +63,16 @@
       return Math.round((o - p) / o * 100);
     }
 
-    function productCardHTML({ name, price, old, imgUrl, badge, rating, onClick, actionHTML }) {
+    function productCardHTML({ name, price, old, imgUrl, badge, rating, onClick, href, actionHTML }) {
+      // href (when the caller has one) is baked into the wishlist entry as the
+      // product's page, so the wishlist drawer can send the customer straight
+      // back to it later - the same place clicking this card itself goes to.
+      const wishOpts = href ? `{ url: '${href.replace(/'/g, "\\'")}' }` : '{}';
       return `
       <div class="p-card" onclick="${onClick}">
         <div class="p-thumb">
           <img src="${cldOpt(imgUrl)}" alt="${name}" loading="lazy">
-          <button class="p-wish${isWished(name) ? ' active' : ''}" data-name="${name}" onclick="event.stopPropagation(); toggleWishItem('${name}', '${price}', '${imgUrl}')" aria-label="Add ${name} to wishlist">${heartIcon}</button>
+          <button class="p-wish${isWished(name) ? ' active' : ''}" data-name="${name}" onclick="event.stopPropagation(); toggleWishItem('${name}', '${price}', '${imgUrl}', ${wishOpts})" aria-label="Add ${name} to wishlist">${heartIcon}</button>
         </div>
         <div class="p-body">
           <h4>${name}</h4>
@@ -105,9 +109,12 @@
     }
 
     function renderPhotoServices() {
-      document.getElementById('photoServices').innerHTML = services.map(([name, price, tag, imgUrl, rating, categoryId, pid, tier, feat]) => productCardHTML({
-        name, price, imgUrl, badge: tag, rating, onClick: `location.href='${photoHref(categoryId, pid, name, tier, price, feat)}'`
-      })).join('');
+      document.getElementById('photoServices').innerHTML = services.map(([name, price, tag, imgUrl, rating, categoryId, pid, tier, feat]) => {
+        const href = photoHref(categoryId, pid, name, tier, price, feat);
+        return productCardHTML({
+          name, price, imgUrl, badge: tag, rating, href, onClick: `location.href='${href}'`
+        });
+      }).join('');
     }
 
     // ---------- studio services ----------
@@ -181,7 +188,7 @@
       // above, so all four homepage shop-strip sections look the same.
       return productCardHTML({
         name, price, old, imgUrl, rating, badge: 'Starting from',
-        onClick: `location.href='${targetHref}'`
+        href: targetHref, onClick: `location.href='${targetHref}'`
       });
     }
 
@@ -336,114 +343,12 @@
       }
     }
 
-    // --- Wishlist System ---
-    function getWishlist() {
-      try {
-        return JSON.parse(localStorage.getItem('sai_studio_wishlist')) || {};
-      } catch (e) {
-        return {};
-      }
-    }
-
-    function saveWishlist(wishlist) {
-      localStorage.setItem('sai_studio_wishlist', JSON.stringify(wishlist));
-      updateWishlistUI();
-    }
-
-    function isWished(productName) {
-      return !!getWishlist()[productName];
-    }
-
-    function toggleWishItem(productName, priceStr, imgUrl) {
-      const wishlist = getWishlist();
-      if (wishlist[productName]) {
-        delete wishlist[productName];
-      } else {
-        wishlist[productName] = { name: productName, price: priceStr, img: imgUrl };
-      }
-      saveWishlist(wishlist);
-      document.querySelectorAll(`.p-wish[data-name="${CSS.escape(productName)}"]`).forEach(el => {
-        el.classList.toggle('active', !!wishlist[productName]);
-      });
-    }
-
-    function removeWishItem(productName) {
-      const wishlist = getWishlist();
-      delete wishlist[productName];
-      saveWishlist(wishlist);
-      document.querySelectorAll(`.p-wish[data-name="${CSS.escape(productName)}"]`).forEach(el => {
-        el.classList.remove('active');
-      });
-    }
-
-    function moveWishItemToCart(productName, priceStr, imgUrl) {
-      updateCartQty(productName, 1, priceStr, imgUrl);
-      removeWishItem(productName);
-    }
-
-    function updateWishlistUI() {
-      const wishlist = getWishlist();
-      const items = Object.values(wishlist);
-      const count = items.length;
-
-      [document.getElementById('navWishlistBadge'), document.getElementById('mobileWishlistBadge')].forEach(badge => {
-        if (!badge) return;
-        badge.textContent = count;
-        badge.style.display = count > 0 ? 'flex' : 'none';
-      });
-
-      const drawerItemsContainer = document.getElementById('wishlistDrawerItems');
-      if (!drawerItemsContainer) return;
-
-      if (items.length === 0) {
-        drawerItemsContainer.innerHTML = `
-          <div style="text-align: center; color: #888; padding-top: 40px;">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; opacity: 0.5;">
-              <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
-            </svg>
-            <p>Your wishlist is empty</p>
-          </div>
-        `;
-      } else {
-        drawerItemsContainer.innerHTML = items.map(item => `
-          <div class="cart-drawer-item">
-            <img class="cart-drawer-item-img" src="${cldOpt(item.img)}" alt="${item.name}">
-            <div class="cart-drawer-item-info">
-              <h5>${item.name}</h5>
-              <p>${item.price}</p>
-            </div>
-            <button class="cart-btn" title="Move to cart" aria-label="Move ${item.name} to cart" onclick="moveWishItemToCart('${item.name}', '${item.price}', '${item.img}')">${cartIcon}</button>
-            <button class="cart-drawer-item-remove" onclick="removeWishItem('${item.name}')" title="Remove item" aria-label="Remove item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-          </div>
-        `).join('');
-      }
-    }
-
-    function openWishlistDrawer() {
-      document.getElementById('wishlistDrawer').classList.add('open');
-      document.getElementById('wishlistDrawerOverlay').style.display = 'block';
-      updateWishlistUI();
-    }
-
-    function closeWishlistDrawer() {
-      document.getElementById('wishlistDrawer').classList.remove('open');
-      document.getElementById('wishlistDrawerOverlay').style.display = 'none';
-    }
-
-    function openMobileMenuDrawer() {
-      document.getElementById('mobileMenuDrawer').classList.add('open');
-      document.getElementById('mobileMenuOverlay').style.display = 'block';
-    }
-
-    function closeMobileMenuDrawer() {
-      document.getElementById('mobileMenuDrawer').classList.remove('open');
-      document.getElementById('mobileMenuOverlay').style.display = 'none';
-    }
+    // --- Wishlist + drawers ---
+    // getWishlist/toggleWishItem/updateWishlistUI/openWishlistDrawer and the
+    // mobile menu drawer used to be duplicated here. They now live in
+    // js/shared/wishlist-menu.js (loaded by index.html below this file), which
+    // is the one copy that gates saving behind sign-in and persists the
+    // wishlist to the account instead of only this browser.
 
     function openCartDrawer() {
       document.getElementById('cartDrawer').classList.add('open');

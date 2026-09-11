@@ -99,6 +99,10 @@
 
     // --- State management ---
     let currentCategory = "all";
+    // Snapshot of the grid's original static "All Corporate Gifts" HTML,
+    // captured once before any dynamic per-category render overwrites it -
+    // used to restore the full "All" list when switching back to it later.
+    let staticAllHTML = null;
 
     // --- Render Header Components ---
     function renderHeaderComponents() {
@@ -389,12 +393,24 @@
       if (!packagesGridEl) return;
       packagesGridEl._naturalOrder = null; // grid content is about to change - drop the stale sort cache
 
-      // Preserve rich static HTML product cards on 'all' view
-      if (currentCategory === 'all' && packagesGridEl.children.length > 0) {
+      // Capture the original static "All" cards exactly once, before any
+      // per-category render has a chance to overwrite them.
+      if (staticAllHTML === null) {
+        staticAllHTML = packagesGridEl.innerHTML;
+      }
+
+      // Restore the rich static HTML product cards on the 'all' view. Using
+      // the captured snapshot (rather than "does the grid already have
+      // children") matters because after visiting any other category the
+      // grid's children ARE that category's dynamically-rendered cards, not
+      // the original "All" ones - checking children.length alone left the
+      // previous category's products on screen under the "All" title.
+      if (currentCategory === 'all') {
         const catTitleEl = document.getElementById('catTitle');
         const catDescEl = document.getElementById('catDesc');
         if (catTitleEl) catTitleEl.textContent = "All Corporate Gifts";
         if (catDescEl) catDescEl.textContent = "Explore our complete range of customized executive gift sets, welcome kits, corporate diaries, pens, awards, and promotional materials.";
+        packagesGridEl.innerHTML = staticAllHTML;
         return;
       }
 

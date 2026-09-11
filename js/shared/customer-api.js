@@ -9,10 +9,12 @@ const CUSTOMER_TOKEN_KEY = "sai_studio_customer_token";
 const CUSTOMER_REFRESH_KEY = "sai_studio_customer_refresh";
 const CUSTOMER_EMAIL_KEY = "sai_studio_customer_email";
 const CUSTOMER_NAME_KEY = "sai_studio_customer_name";
+const CUSTOMER_PHONE_KEY = "sai_studio_customer_phone";
 
 function getCustomerToken() { return localStorage.getItem(CUSTOMER_TOKEN_KEY); }
 function getCustomerEmail() { return localStorage.getItem(CUSTOMER_EMAIL_KEY); }
 function getCustomerName() { return localStorage.getItem(CUSTOMER_NAME_KEY) || ""; }
+function getCustomerPhone() { return localStorage.getItem(CUSTOMER_PHONE_KEY) || ""; }
 function isCustomerLoggedIn() { return !!getCustomerToken(); }
 
 function setCustomerSession(tokens, email) {
@@ -26,6 +28,23 @@ function clearCustomerSession() {
   localStorage.removeItem(CUSTOMER_REFRESH_KEY);
   localStorage.removeItem(CUSTOMER_EMAIL_KEY);
   localStorage.removeItem(CUSTOMER_NAME_KEY);
+  localStorage.removeItem(CUSTOMER_PHONE_KEY);
+}
+
+// A 401 here means the stored access token is expired/invalid. Until this ran,
+// isCustomerLoggedIn() kept returning true off the mere presence of a token,
+// so the nav/drawer/account-modal kept showing the cached name off a session
+// that no longer works - and every real request (cart sync included) failed
+// silently underneath it. Clearing the session + cached wishlist and asking
+// the nav to repaint is what drops the UI back to "logged out" immediately,
+// instead of leaving stale identity on screen until the customer reloads.
+function handleExpiredCustomerSession() {
+  clearCustomerSession();
+  try {
+    localStorage.removeItem("sai_studio_wishlist");
+    if (typeof window.updateWishlistUI === "function") window.updateWishlistUI();
+  } catch (_) {}
+  if (window.SaiAuthNav && typeof window.SaiAuthNav.refresh === "function") window.SaiAuthNav.refresh();
 }
 
 async function customerApi(path, options = {}) {
@@ -34,6 +53,10 @@ async function customerApi(path, options = {}) {
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
   const res = await fetch(`${CUSTOMER_API_BASE}${path}`, { ...options, headers });
+  if (res.status === 401 && token) {
+    handleExpiredCustomerSession();
+    throw new Error("Your session has expired. Please sign in again.");
+  }
   if (!res.ok) {
     let detail = res.statusText;
     try { detail = (await res.json()).detail || detail; } catch (_) {}
@@ -50,16 +73,25 @@ const CustomerAuth = {
     setCustomerSession(tokens, email);
     return tokens;
   },
-  logout: () => { clearCustomerSession(); },
+  // The wishlist is login-gated and lives on the account, so its localStorage
+  // copy is just a cache of the signed-out user's rows - leaving it behind
+  // would show their saved items to whoever signs in next on this browser.
+  logout: () => handleExpiredCustomerSession(),
 
   getMe: async () => {
     const me = await customerApi("/api/auth/me");
-    try { localStorage.setItem(CUSTOMER_NAME_KEY, me.name || ""); } catch (_) {}
+    try {
+      localStorage.setItem(CUSTOMER_NAME_KEY, me.name || "");
+      localStorage.setItem(CUSTOMER_PHONE_KEY, me.phone || "");
+    } catch (_) {}
     return me;
   },
   updateMe: async (data) => {
     const me = await customerApi("/api/auth/me", { method: "PATCH", body: JSON.stringify(data) });
-    try { localStorage.setItem(CUSTOMER_NAME_KEY, me.name || ""); } catch (_) {}
+    try {
+      localStorage.setItem(CUSTOMER_NAME_KEY, me.name || "");
+      localStorage.setItem(CUSTOMER_PHONE_KEY, me.phone || "");
+    } catch (_) {}
     return me;
   },
 
@@ -85,6 +117,14 @@ const CustomerAuth = {
     }));
     customerApi("/api/cart", { method: "PUT", body: JSON.stringify({ items }) }).catch(() => {});
   },
+
+  // Wishlist. Unlike the cart there's no guest state to merge - the heart icon
+  // is login-gated (js/shared/wishlist-menu.js), so the server rows ARE the
+  // wishlist and localStorage is only a cache for instant rendering.
+  getWishlist: () => customerApi("/api/wishlist"),
+  syncWishlist: (items) => customerApi("/api/wishlist", { method: "PUT", body: JSON.stringify({ items }) }),
+  removeWishlistItem: (key) => customerApi(`/api/wishlist/items/${encodeURIComponent(key)}`, { method: "DELETE" }),
+  clearServerWishlist: () => customerApi("/api/wishlist", { method: "DELETE" }),
 
   checkout: (body) => customerApi("/api/orders/checkout", { method: "POST", body: JSON.stringify(body) }),
   confirmCod: (orderId) => customerApi(`/api/orders/${orderId}/confirm-cod`, { method: "POST" }),

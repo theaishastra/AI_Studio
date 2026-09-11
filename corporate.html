@@ -334,9 +334,14 @@
     <div class="mobile-cat-scroll" id="mobileCatScroll" role="navigation" aria-label="Browse categories"></div>
   </div><!-- end .mobile-sticky-header -->
 
-  <!-- ================= DESKTOP DASHBOARD LAYOUT (sidebar + page content) ================= -->
+  <!-- ================= DASHBOARD LAYOUT (shell + sidebar-wrap + main) =================
+       Same structure as photography.html's .shell > .sidebar-wrap > aside.sidebar
+       + main.main pattern: sidebar-wrap is just a shrink-wrap column around the
+       sidebar (css/corporate.css), and main.main is the single scrolling content
+       column beside it - no separate .corp-main-col wrapper anymore. ================= -->
   <div class="corp-dashboard">
     <!-- Desktop Sidebar -->
+    <div class="sidebar-wrap">
     <aside class="sidebar">
       <div class="sidebar-title">Categories</div>
       <div class="sidebar-list sidebar-sticky-inner" id="desktopSidebar">
@@ -386,10 +391,9 @@
         </div>
       </div>
     </aside>
+    </div><!-- end .sidebar-wrap -->
 
-    <div class="corp-main-col">
-
-  <main class="main-wrapper" id="mainContent">
+  <main class="main main-wrapper" id="mainContent">
 
   <!-- ================= PREMIUM HERO SLIDER ================= -->
   <section class="hero-zone" id="heroZone">
@@ -1455,7 +1459,6 @@
 
   </main>
 
-    </div><!-- end .corp-main-col -->
   </div><!-- end .corp-dashboard -->
 
   <!-- ================= FOOTER ================= -->

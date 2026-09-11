@@ -48,11 +48,16 @@ a { color: var(--accent); }
 }
 .login-card {
   width: 360px;
+  max-width: 100%;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 36px 32px;
+}
+@media (max-width: 420px) {
+  .login-shell { padding: 16px; }
+  .login-card { padding: 28px 20px; }
 }
 .login-card h1 {
   font-size: 21px;
@@ -141,6 +146,7 @@ body.is-owner .sidebar .owner-only { display: flex; }
 
 .main {
   flex: 1;
+  min-width: 0;
   padding: 28px 36px 60px;
   max-width: 1150px;
 }
@@ -153,6 +159,73 @@ body.is-owner .sidebar .owner-only { display: flex; }
   flex-wrap: wrap;
 }
 .main header.page-head h1 { font-size: 23px; margin: 0; font-weight: 700; }
+
+/* ---------- mobile nav (hamburger + off-canvas sidebar) ---------- */
+.mobile-topbar { display: none; }
+.sidebar-overlay { display: none; }
+
+@media (max-width: 860px) {
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 14px;
+  }
+  .mobile-topbar h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--text);
+  }
+
+  .app-shell { flex-direction: column; }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 60;
+    width: 250px;
+    max-width: 82vw;
+    transform: translateX(-100%);
+    transition: transform .2s ease;
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 12px 0 32px -12px rgba(36, 26, 32, .35);
+  }
+
+  .sidebar-overlay.open {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(36, 26, 32, .45);
+    z-index: 55;
+  }
+
+  .main { padding: 18px 16px 48px; max-width: 100%; }
+}
 
 /* ---------- controls ---------- */
 .btn {
@@ -213,6 +286,15 @@ td .actions button { font-size: 12px; padding: 5px 10px; }
 .badge.off { background: var(--danger-bg); color: var(--danger); }
 .badge.featured { background: color-mix(in srgb, var(--cta) 35%, white); color: #916800; }
 
+@media (max-width: 860px) {
+  /* Tables render full-width markup from JS with no scroll wrapper; making
+     the table itself the scroll container (rather than its content wrapping)
+     keeps every column readable instead of squeezing text onto tiny lines. */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  th, td { white-space: nowrap; }
+  td .actions { white-space: normal; }
+}
+
 /* ---------- cards ---------- */
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 26px; }
 .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); border-top: 3px solid var(--accent); }
@@ -235,9 +317,15 @@ td .actions button { font-size: 12px; padding: 5px 10px; }
 .modal .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; }
 .modal.modal-wide { max-width: 760px; }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+@media (max-width: 560px) {
+  .two-col { grid-template-columns: 1fr; }
+  .modal { padding: 20px 16px; }
+  .modal-backdrop { padding: 20px 10px; }
+}
 
 /* ---------- booking detail (customer, service, venue, schedule) ---------- */
 .bk-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.bk-modal-head > div { flex: 1; min-width: 0; }
 .bk-modal-head h2 { margin: 2px 0 0; }
 .bk-kicker {
   display: block; font-size: 11px; font-weight: 700; text-transform: uppercase;
@@ -259,6 +347,7 @@ td .actions button { font-size: 12px; padding: 5px 10px; }
   font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
   color: var(--text-dim); margin: 0 0 8px;
 }
+.bk-section-title .count { text-transform: none; letter-spacing: 0; font-weight: 600; }
 
 .bk-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .bk-field {
@@ -322,10 +411,123 @@ td .actions button { font-size: 12px; padding: 5px 10px; }
 .oid-title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .oid-title-row b { font-size: 14px; }
 .oid-pricing { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
-.oid-custom { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 8px 10px; background: var(--panel); border: 1px dashed var(--border); border-radius: 8px; }
-.oid-upload { width: 52px; height: 52px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); cursor: zoom-in; flex-shrink: 0; }
+.oid-custom { margin-top: 8px; padding: 9px 11px; background: var(--panel); border: 1px dashed var(--border); border-radius: 8px; }
+.oid-upload { width: 68px; height: 68px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); cursor: zoom-in; flex-shrink: 0; display: block; }
 .oid-text { font-size: 12.5px; font-style: italic; color: var(--text); overflow-wrap: anywhere; }
 .oid-req { font-size: 11.5px; color: var(--danger); margin-top: 6px; }
+.oid-note { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+/* every option the customer picked — production needs finish/technique/size, not just the photo */
+/* One spec per row, label left / value right — an auto-fit grid used to
+   reflow specs into columns sized by each one's wrapped height, which
+   zig-zagged unrelated labels/values into the same visual row the moment any
+   single value (e.g. a long filename) ran long. */
+.oid-specs { display: flex; flex-direction: column; margin: 6px 0 0; }
+.oid-spec-row {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+  padding: 4px 0; font-size: 12px; border-bottom: 1px solid var(--border);
+}
+.oid-spec-row:last-child { border-bottom: none; }
+.oid-specs dt { color: var(--text-dim); flex-shrink: 0; }
+.oid-specs dd { margin: 0; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.oid-placement { margin-top: 6px; font-size: 11.5px; color: var(--text-dim); }
+
+/* ---------- customer artwork (downloadable for production) ---------- */
+.oid-artwork {
+  margin-top: 8px; padding: 10px 11px; border-radius: 8px;
+  background: color-mix(in srgb, var(--accent-2) 6%, white);
+  border: 1px solid color-mix(in srgb, var(--accent-2) 24%, white);
+}
+.oid-artwork-label {
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--accent); margin-bottom: 8px;
+}
+.oid-artwork-files { display: flex; flex-wrap: wrap; gap: 14px; }
+.oid-artwork-file { display: flex; gap: 10px; align-items: flex-start; min-width: 0; }
+.oid-artwork-meta { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.oid-artwork-meta b { font-size: 12.5px; overflow-wrap: anywhere; }
+.oid-artwork-meta span { font-size: 11px; color: var(--text-dim); }
+.oid-dims-low { color: var(--danger); font-weight: 700; }
+.oid-dl { padding: 4px 10px; font-size: 11.5px; margin-top: 2px; align-self: flex-start; }
+.oid-dl-all { padding: 5px 12px; font-size: 12px; margin-left: 10px; vertical-align: middle; }
+
+.artwork-zoom-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;
+  margin-bottom: 12px; flex-wrap: wrap;
+}
+.artwork-zoom-head b { font-size: 14px; display: block; overflow-wrap: anywhere; }
+.artwork-zoom-meta { font-size: 12px; color: var(--text-dim); }
+.artwork-zoom-img {
+  width: 100%; max-height: 65vh; object-fit: contain; border-radius: 8px;
+  display: block; background: var(--panel-2); border: 1px solid var(--border);
+}
+
+/* ---------- orders table: what was ordered, and its artwork, at a glance ---------- */
+.otr-items { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.otr-thumbs { display: flex; flex-shrink: 0; }
+.otr-thumb {
+  width: 34px; height: 34px; object-fit: cover; border-radius: 6px;
+  border: 2px solid var(--panel); background: var(--panel-2); margin-left: -8px;
+}
+.otr-thumb:first-child { margin-left: 0; }
+.otr-thumb-blank { display: inline-block; }
+.otr-thumb-more {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--text-dim);
+}
+.otr-items-label { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 210px; }
+.otr-dl { padding: 4px 10px; font-size: 11.5px; white-space: nowrap; }
+
+/* ---------- bookings table: package photo + venue ---------- */
+.bkr-service { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.bkr-thumb {
+  width: 76px; height: 76px; object-fit: cover; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--panel-2); flex-shrink: 0;
+}
+.bkr-service-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.bkr-service-text b { font-size: 13px; }
+.bkr-service-text span { font-size: 11.5px; color: var(--text-dim); }
+.bkr-addons { color: var(--accent-2) !important; font-weight: 600; }
+.bkr-venue { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Full-bleed banner across the top of the booking modal, replacing what used
+   to be a 64×64 thumbnail squeezed next to the title — too small to actually
+   show the package photo, and object-fit:cover on a tiny box cropped most
+   portrait shots down to an unrecognisable sliver. Negative-margined out to
+   the modal's own edges (padding 26px, same border-radius) so it reads as one
+   photo header rather than an inset image. */
+.bk-hero-banner {
+  margin: -26px -26px 18px;
+  height: 220px;
+  overflow: hidden;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: var(--panel-2);
+}
+.bk-hero-img {
+  width: 100%; height: 100%; object-fit: cover; object-position: center 25%;
+  display: block; cursor: zoom-in;
+}
+@media (max-width: 560px) {
+  .bk-hero-banner { height: 160px; margin: -20px -16px 18px; }
+}
+.bk-addons { display: flex; flex-direction: column; gap: 6px; }
+/* Each add-on gets its own photo — a booking with several picked at once used
+   to read as an identical wall of text rows with nothing to tell them apart. */
+.bk-addon-row {
+  display: flex; align-items: center; gap: 12px; font-size: 13px;
+  padding: 9px 12px; background: var(--panel-2);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+.bk-addon-thumb {
+  width: 80px; height: 80px; flex-shrink: 0; border-radius: 10px; overflow: hidden;
+  background: var(--panel); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center; font-size: 32px;
+}
+.bk-addon-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bk-addon-thumb-empty { background: var(--border); }
+.bk-addon-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.bk-addon-price, .bk-addon-row b { white-space: nowrap; flex-shrink: 0; }
+.bk-addon-icon { font-size: 26px; }
 
 .msg { padding: 10px 13px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 14px; }
 .msg.error { background: var(--danger-bg); color: var(--danger); }
@@ -333,6 +535,9 @@ td .actions button { font-size: 12px; padding: 5px 10px; }
 
 .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 18px; flex-wrap: wrap; }
 .toolbar select, .toolbar input { width: auto; min-width: 200px; }
+@media (max-width: 560px) {
+  .toolbar select, .toolbar input { min-width: 0; flex: 1 1 160px; }
+}
 .empty-state { color: var(--text-dim); padding: 36px; text-align: center; background: var(--panel); border-radius: var(--radius); border: 1px dashed var(--border); }
 
 .loading { display: flex; align-items: center; gap: 9px; color: var(--text-dim); font-size: 13px; padding: 10px 2px; }
@@ -370,6 +575,10 @@ td .actions button { font-size: 12px; padding: 5px 10px; }
 
 /* ---------- orders: tabs, requests, tracking ---------- */
 .tabs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
+@media (max-width: 560px) {
+  .tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab-btn { flex-shrink: 0; }
+}
 .tab-btn {
   display: flex; align-items: center; gap: 6px;
   padding: 9px 14px; border: none; background: none; cursor: pointer;
@@ -425,6 +634,14 @@ td .actions button { font-size: 12px; padding: 5px 10px; }
 .order-status-in_production, .order-status-shipped { background: color-mix(in srgb, var(--accent-2) 14%, white); color: var(--accent); }
 .order-status-delivered { background: var(--success-bg); color: var(--success); }
 .order-status-cancelled, .order-status-refunded { background: var(--danger-bg); color: var(--danger); }
+
+select.order-status-select {
+  width: auto; min-width: 172px; padding: 7px 10px; border: 1px solid transparent;
+  border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: capitalize;
+  letter-spacing: .01em; cursor: pointer;
+  background: var(--panel-2); color: var(--text-dim);
+}
+select.order-status-select:focus { box-shadow: 0 0 0 3px rgba(92, 9, 48, .12); }
 
 .order-section { margin-top: 20px; }
 .order-section-title {

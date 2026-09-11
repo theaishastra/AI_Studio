@@ -186,23 +186,122 @@
   color: #c0392b;
 }
 
+.mobile-menu-drawer {
+  background: #F7F5F1;
+}
+
+.mobile-menu-drawer .cart-drawer-header {
+  background: #fff;
+}
+
 .mobile-menu-links {
   flex: 1;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  padding: 8px 0;
+  gap: 7px;
+  padding: 12px 0 16px;
 }
 
 .mobile-menu-links a {
-  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 0 12px;
+  padding: 13px 15px;
+  border-radius: 13px;
+  border: 1px solid #EFEAE2;
   text-decoration: none;
   color: #2b2b2b;
   font-weight: 600;
-  font-size: 15px;
-  border-bottom: 1px solid #f4f4f4;
+  font-size: 14.5px;
+  background: #fff;
+  transition: background .15s ease, transform .1s ease;
+}
+
+.mobile-menu-links a:not(.mobile-menu-logout)::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  margin-left: auto;
+  flex-shrink: 0;
+  border-top: 2px solid #D3CCC2;
+  border-right: 2px solid #D3CCC2;
+  transform: rotate(45deg);
 }
 
 .mobile-menu-links a:active {
-  background: #faf5ec;
+  background: #FBF3E4;
+  transform: scale(.98);
+}
+
+.mobile-menu-link-icon {
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.mobile-menu-profile {
+  display: none;
+  align-items: center;
+  gap: 13px;
+  margin: 14px 14px 4px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid #F3D9E6;
+  background: linear-gradient(135deg, #FDF5F9, #FBEAF1);
+  box-shadow: 0 2px 10px rgba(92, 9, 48, .06);
+}
+
+.mobile-menu-avatar {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5C0930, #8A1049);
+  color: #FFC700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: 0 4px 10px rgba(92, 9, 48, .25);
+}
+
+.mobile-menu-profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mobile-menu-profile-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #111;
+}
+
+.mobile-menu-profile-detail {
+  font-size: 12.5px;
+  color: #6B5A54;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-menu-links a.mobile-menu-details-link {
+  color: #5C0930;
+  font-weight: 800;
+}
+
+.mobile-menu-links a.mobile-menu-logout {
+  margin-top: auto;
+  justify-content: center;
+  background: #FEF2F2;
+  border-color: #FBD5D5;
+  color: #DC2626;
+  font-weight: 800;
+}
+
+.mobile-menu-links a.mobile-menu-logout:active {
+  background: #FDE4E4;
 }

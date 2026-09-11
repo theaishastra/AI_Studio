@@ -33,3 +33,28 @@ def run_column_migrations(engine: Engine) -> None:
             for clause in clauses:
                 conn.execute(text(f"ALTER TABLE {table} {clause}"))
     logger.info("Column migrations applied.")
+
+
+# The admin/customer order lists filter by status and always sort by
+# created_at desc - without an index Postgres has to sort the whole table on
+# every request, which is the main cost of GET /api/admin/orders as the table
+# grows. create_all() never adds indexes to a table that already exists, so
+# they're backfilled here the same way columns are.
+_INDEX_MIGRATIONS: dict[str, list[str]] = {
+    "orders": [
+        "CREATE INDEX IF NOT EXISTS ix_orders_created_at ON orders (created_at DESC)",
+        "CREATE INDEX IF NOT EXISTS ix_orders_status_created_at ON orders (status, created_at DESC)",
+    ],
+}
+
+
+def run_index_migrations(engine: Engine) -> None:
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    with engine.begin() as conn:
+        for table, clauses in _INDEX_MIGRATIONS.items():
+            if table not in existing_tables:
+                continue
+            for clause in clauses:
+                conn.execute(text(clause))
+    logger.info("Index migrations applied.")

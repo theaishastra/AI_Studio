@@ -955,6 +955,14 @@ a {
   .mobile-header-bar {
     display: flex !important;
   }
+
+  /* Product/customise/checkout are standalone detail pages (matching studio.html's
+     product overlay) - the category browse chrome (app switcher, search bar, hero
+     tagline) belongs to the catalog view only and shouldn't show above them. */
+  body.gifts-module-route:not(.gifts-view-category) .mobile-app-switcher,
+  body.gifts-module-route:not(.gifts-view-category) .mobile-header-bar {
+    display: none !important;
+  }
 }
 
 .hero {
@@ -12768,11 +12776,9 @@ aside.filters {
 html body.gifts-module-route .product-grid,
 body .product-grid,
 #productGrid {
-  max-height: calc(100vh - 220px) !important;
-  overflow-y: auto !important;
-  padding-right: 6px !important;
-  scrollbar-width: thin !important;
-  scrollbar-color: #990F4B transparent !important;
+  max-height: none !important;
+  overflow-y: visible !important;
+  padding-right: 0 !important;
 }
 
 /* ==========================================================================
@@ -14511,6 +14517,7 @@ html body.gifts-view-category .pkg-meta-row {
     display: block !important;
     width: 90px !important;
     flex-shrink: 0 !important;
+    align-self: stretch !important;
     height: auto !important;
     max-height: none !important;
     position: static !important;
@@ -14532,8 +14539,21 @@ html body.gifts-view-category .pkg-meta-row {
     display: none !important;
   }
 
+  /* The outer aside stretches to match the (much taller) product grid so its
+     rail background never runs out mid-scroll - the nav items themselves
+     live in this inner wrapper, pinned below the sticky mobile search bar
+     (114px tall) the same way the desktop sidebar pins below its header. */
   html body.gifts-view-category .sidebar-sticky-inner {
+    position: sticky !important;
+    top: 114px !important;
+    max-height: calc(100vh - 114px) !important;
+    overflow-y: auto !important;
+    scrollbar-width: none !important;
     padding: 0 !important;
+  }
+
+  html body.gifts-view-category .sidebar-sticky-inner::-webkit-scrollbar {
+    display: none !important;
   }
 
   html body.gifts-view-category .sidebar-item {

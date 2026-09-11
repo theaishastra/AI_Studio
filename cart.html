@@ -391,7 +391,14 @@
           <div class="cart-details-panel">
             <h3 class="panel-title">Delivery Details</h3>
             <div id="detailsFormMsg" class="cart-form-msg" style="display:none;"></div>
-            <div class="cart-field-grid">
+
+            <div class="saved-address-section" id="savedAddressSection" style="display:none;">
+              <div class="saved-address-heading">Recommended from your account</div>
+              <div class="saved-address-list" id="savedAddressList"><!-- filled dynamically --></div>
+              <button type="button" class="saved-address-new-btn" id="savedAddressNewBtn" onclick="useNewAddressForm()">+ Enter a new address</button>
+            </div>
+
+            <div class="cart-field-grid" id="deliveryFieldGrid">
               <div class="field-col-6">
                 <label class="cart-field-label">Full Name</label>
                 <input type="text" id="custName" class="cart-field-input" placeholder="Your name" autocomplete="name">
@@ -435,6 +442,12 @@
               <div class="field-col-3">
                 <label class="cart-field-label">Pincode</label>
                 <input type="text" id="custPincode" class="cart-field-input" placeholder="500018" inputmode="numeric" maxlength="6">
+              </div>
+              <div class="field-col-12 save-address-row" id="saveAddressRow" style="display:none;">
+                <label class="save-address-checkbox">
+                  <input type="checkbox" id="custSaveAddress" checked>
+                  Save this address to my account for faster checkout next time
+                </label>
               </div>
             </div>
             <div class="cart-step-actions">

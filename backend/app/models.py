@@ -219,6 +219,33 @@ class CartItem(Base, TimestampMixin):
     __table_args__ = (UniqueConstraint("user_id", "item_key", name="uq_cart_item_per_user"),)
 
 
+class WishlistItem(Base, TimestampMixin):
+    """A logged-in customer's saved-for-later product. Saving to the wishlist is
+    login-gated on the storefront (the heart icon opens the sign-in modal for a
+    guest), so unlike the cart there is no guest state to merge - the rows here
+    are the wishlist, and localStorage only caches them for instant rendering."""
+    __tablename__ = "wishlist_items"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=uid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    item_key: Mapped[str] = mapped_column(String(300))  # the localStorage wishlist object's key
+    product_id: Mapped[str | None] = mapped_column(
+        ForeignKey("products.id", ondelete="SET NULL"), nullable=True
+    )  # set on pages whose cards come from the catalog API instead of hardcoded JS
+    name: Mapped[str] = mapped_column(String(300))
+    price: Mapped[str] = mapped_column(String(40))  # kept as the formatted string the frontend shows
+    img: Mapped[str | None] = mapped_column(Text, nullable=True)
+    url: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # the product's page (e.g. "studio.html?category=..&openProduct=..") - baked in
+    # at save time since each storefront page builds its own deep link differently, so the
+    # wishlist drawer can send the customer straight to the product from any page/device.
+
+    user: Mapped["User"] = relationship()
+
+    __table_args__ = (UniqueConstraint("user_id", "item_key", name="uq_wishlist_item_per_user"),)
+
+
 ORDER_STATUSES = [
     "created", "payment_pending", "paid", "in_production",
     "shipped", "delivered", "cancelled", "refunded",

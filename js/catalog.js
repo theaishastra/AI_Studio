@@ -481,18 +481,6 @@
       renderCartDrawerItems();
     }
 
-    function getStoredWishlist() {
-      try {
-        return JSON.parse(localStorage.getItem('sai_studio_wishlist')) || {};
-      } catch (e) {
-        return {};
-      }
-    }
-
-    function saveStoredWishlist(wishlist) {
-      localStorage.setItem('sai_studio_wishlist', JSON.stringify(wishlist));
-    }
-
     function updateCartBadge() {
       const cart = getStoredCart();
       const count = Object.values(cart).reduce((sum, item) => sum + (item.qty || 1), 0);
@@ -579,7 +567,7 @@
       const grid = document.getElementById('productGrid');
       const filtered = getFilteredProducts();
       const sorted = sortProducts(filtered);
-      const wishlist = getStoredWishlist();
+      const wishlist = getWishlist();  // js/shared/wishlist-menu.js
 
       // Update Result Counts
       document.getElementById('resultsCountText').textContent = `Showing ${sorted.length} item${sorted.length === 1 ? '' : 's'}`;
@@ -850,20 +838,22 @@
       saveStoredCart(cart);
     }
 
+    // Saving is gated behind sign-in (see js/shared/wishlist-menu.js) - if the
+    // shopper isn't signed in this opens the sign-in modal instead, and the
+    // toggle + toast + re-render run once they verify.
     function toggleWishlist(productId) {
       const product = CATALOG_PRODUCTS.find(p => p.id === productId);
       if (!product) return;
 
-      const wishlist = getStoredWishlist();
-      if (wishlist[product.id]) {
-        delete wishlist[product.id];
-        showToast(`Removed "${product.title}" from wishlist.`, 'favorite_border');
-      } else {
-        wishlist[product.id] = { id: product.id, name: product.title, price: `₹${product.price}`, img: product.img };
-        showToast(`Saved "${product.title}" to wishlist!`, 'favorite');
-      }
-      saveStoredWishlist(wishlist);
-      renderCatalog();
+      toggleWishItem(product.title, `₹${product.price}`, product.img, {
+        key: product.id,
+        product_id: product.id,
+        // Baked in now so the wishlist drawer can send the customer straight back
+        // to this exact product later, from any page/device - see the matching
+        // ?openProduct=<id> deep-link reader in the DOMContentLoaded handler below.
+        url: `catalog.html?openProduct=${encodeURIComponent(product.id)}`,
+        onDone: () => renderCatalog(),
+      });
     }
 
     // ─── Quick View Modal ───
@@ -1054,6 +1044,15 @@
         searchClear.style.display = 'block';
         renderCatalog();
         scrollToCatalogSection('auto');
+      }
+
+      // Deep-link support: ?openProduct=<id> auto-opens that exact product's
+      // quick view modal - used by the wishlist drawer (see js/shared/wishlist-menu.js)
+      // so clicking a saved item there lands on the exact product, not just the
+      // catalog's top-level grid.
+      const openProductParam = urlParams.get('openProduct');
+      if (openProductParam) {
+        setTimeout(() => openQuickViewModal(openProductParam), 150);
       }
 
       updateCartBadge();

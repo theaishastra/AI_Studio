@@ -86,6 +86,7 @@ const Api = {
   activity: () => api("/api/admin/activity"),
 
   orders: (status) => api(`/api/admin/orders${status ? `?status_filter=${encodeURIComponent(status)}` : ""}`),
+  order: (id) => api(`/api/admin/orders/${id}`),
   updateOrderStatus: (id, status) => api(`/api/admin/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
   updateOrderTracking: (id, data) => api(`/api/admin/orders/${id}/tracking`, { method: "PUT", body: JSON.stringify(data) }),
   refundOrder: (orderId) => api(`/api/payments/refund/${orderId}`, { method: "POST" }),

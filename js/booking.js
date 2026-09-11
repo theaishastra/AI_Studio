@@ -140,10 +140,21 @@ const current={
 
 function goToBookingForm(){
   const q=new URLSearchParams({pid:current.pid,category:cat,package:current.pkg,tier:current.tier,price:current.price});
+  /* the service label and this package's own photo are resolved here, where the
+     maps that define them live, and travel with the booking so "My Photography
+     Bookings" can show the customer the package they actually booked instead of
+     just its name */
+  q.set("catlabel",catLabel);
+  const packageImages=resolvePackageImages(cat,current.tier);
+  if(packageImages&&packageImages[0]) q.set("image",packageImages[0]);
   /* the Confirm Booking form lives on booking-form.html, so any add-ons picked in the
-     Equipment & Coverage section above have to travel with it */
+     Equipment & Coverage section above have to travel with it — names for the existing
+     summary line, and name+price+photo per add-on so the booking record keeps what
+     each one actually is, not just a bare label, once there's more than one of them */
   if(selectedEquipSet.size){
-    q.set("equipments",Array.from(selectedEquipSet).map(id=>EQUIPMENT_DATA[id].name).join(", "));
+    const picked=Array.from(selectedEquipSet).map(id=>EQUIPMENT_DATA[id]);
+    q.set("equipments",picked.map(e=>e.name).join(", "));
+    q.set("addons",JSON.stringify(picked.map(e=>({name:e.name,price:e.priceAdd||"",icon:e.icon||"",image:e.bgImage||""}))));
   }
   window.location.href="booking-form.html?"+q.toString();
 }
