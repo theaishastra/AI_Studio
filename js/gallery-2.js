@@ -101,7 +101,16 @@
     function cldOpt(url) {
       // Cloudinary account has Strict Transformations enabled — any on-the-fly
       // transform (even a plain resize) 400s. No-op until that's turned off.
-      return url;
+      // Locally-uploaded (admin Media Library) images are relative /media/<file>
+      // paths served by FastAPI itself - route them through the same backend
+      // origin every fetch() on this page already uses, or they resolve against
+      // whatever's hosting this static page instead and 404.
+      if (url && url.startsWith('/media/')) return `${window.SAI_API_BASE || "http://localhost:8000"}${url}`;
+      // images.weserv.nl is a free public resizing/compression proxy - shrinks the
+      // 500KB-1MB+ originals actually being served down to what a card/thumbnail
+      // needs. It can't reach a localhost-only dev URL, so local media stays as-is.
+      if (!url || url.startsWith('data:') || url.startsWith('blob:') || /^https?:\/\/(localhost|127\.0\.0\.1)/.test(url)) return url;
+      return `https://images.weserv.nl/?url=${url.replace(/^https?:\/\//, '')}&w=640&q=75&output=webp&we`;
     }
 
     let activeCategory = "wedding";
@@ -165,11 +174,11 @@
       const grid = document.getElementById("galleryGrid");
       grid.innerHTML = photos.map((caption, idx) => {
         const filename = files[idx % files.length];
-        const imgSrc = cldOpt(`https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/${filename}`);
+        const imgSrc = cldOpt(`https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/${filename}`);
         return `
           <div class="photo-card" onclick="openLightbox(${idx})">
             <div class="photo-thumb-wrap">
-              <img class="photo-img" src="${imgSrc}" alt="${caption}" loading="lazy" onerror="this.onerror=null;this.src='https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-1.png'">
+              <img class="photo-img" src="${imgSrc}" alt="${caption}" loading="lazy" onerror="this.onerror=null;this.src='https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-1.png'">
               <div class="photo-overlay">
                 <div class="overlay-top">
                   <span class="zoom-badge">🔍 Click to Expand</span>
@@ -228,7 +237,7 @@
       activeLightboxIndex = index % files.length;
       const filename = files[activeLightboxIndex];
       const caption = captions[activeLightboxIndex % captions.length];
-      const imgSrc = cldOpt(`https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/${filename}`);
+      const imgSrc = cldOpt(`https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/${filename}`);
 
       document.getElementById("lightboxImg").src = imgSrc;
       document.getElementById("lightboxCatTag").textContent = catMeta.name.toUpperCase();

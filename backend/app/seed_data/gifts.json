@@ -3,47 +3,47 @@
     {
       "id": "accessories",
       "name": "Accessories (Keychains)",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/sidebar-keychain.png"
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/sidebar-keychain.png"
     },
     {
       "id": "frames",
       "name": "Photo Frames",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/sidebar-photo%20frames.jpg"
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/sidebar-photo%20frames.jpg"
     },
     {
       "id": "clocks",
       "name": "Wall Clocks",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/sidebar-wall%20clock.jpg"
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/sidebar-wall%20clock.jpg"
     },
     {
       "id": "mirror",
       "name": "Magic Mirror",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/34--magic%20mirror%20round.webp"
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/34--magic%20mirror%20round.webp"
     },
     {
       "id": "pillows",
       "name": "Pillows",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/sidebar-photo%20pillow.png"
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/sidebar-photo%20pillow.png"
     },
     {
       "id": "crystal",
       "name": "Crystal Gifts",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/sidebar-crystal%20gifts.jpg"
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/sidebar-crystal%20gifts.jpg"
     },
     {
       "id": "decor",
       "name": "Home Decor",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/15-fridge%20magnets-01.webp"
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/15-fridge%20magnets-01.webp"
     },
     {
       "id": "drinkware",
       "name": "Drinkware",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/sidebar-mugs.jpg"
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/sidebar-mugs.jpg"
     },
     {
       "id": "combos",
       "name": "Hampers & Combos",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/10--dairy%20combos-02.webp"
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/10--dairy%20combos-02.webp"
     }
   ],
   "products": [
@@ -53,7 +53,7 @@
       "price": 699,
       "old": 999,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/wooden-frame-1.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/wooden-frame-1.png",
       "rating": "4.8 (120)"
     },
     {
@@ -62,7 +62,7 @@
       "price": 799,
       "old": 1199,
       "off": "33% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/05--%2006.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/05--%2006.jpg",
       "rating": "4.9 (88)"
     },
     {
@@ -71,7 +71,7 @@
       "price": 599,
       "old": 899,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/wooden-frame-2.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/wooden-frame-2.png",
       "rating": "4.8 (120)"
     },
     {
@@ -80,7 +80,7 @@
       "price": 699,
       "old": 999,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/wooden-frame-8.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/wooden-frame-8.png",
       "rating": "4.8 (120)"
     },
     {
@@ -89,7 +89,7 @@
       "price": 599,
       "old": 999,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/wooden-frame-11.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/wooden-frame-11.png",
       "rating": "4.8 (120)"
     },
     {
@@ -98,7 +98,7 @@
       "price": 799,
       "old": 1199,
       "off": "33% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/wooden-frame-17.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/wooden-frame-17.png",
       "rating": "4.8 (120)"
     },
     {
@@ -107,7 +107,7 @@
       "price": 649,
       "old": 949,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/wooden-frame-16.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/wooden-frame-16.png",
       "rating": "4.7 (85)"
     },
     {
@@ -116,7 +116,7 @@
       "price": 899,
       "old": 1299,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/BASE%20WOODEN%20CUTOUT%20FRAME.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/BASE%20WOODEN%20CUTOUT%20FRAME.png",
       "rating": "4.8 (31)"
     },
     {
@@ -125,7 +125,7 @@
       "price": 1199,
       "old": 1599,
       "off": "25% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/ACRYLIC%20LED%20CUTOUT%20FRAME%20%281%29.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/ACRYLIC%20LED%20CUTOUT%20FRAME%20%281%29.png",
       "rating": "4.9 (45)"
     },
     {
@@ -134,7 +134,7 @@
       "price": 749,
       "old": 999,
       "off": "25% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/18-TABLE%20TOP%20ACRYLIC%20PHOTO%20FRAMES-01.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/18-TABLE%20TOP%20ACRYLIC%20PHOTO%20FRAMES-01.jpg",
       "rating": "4.8 (42)"
     },
     {
@@ -143,7 +143,7 @@
       "price": 849,
       "old": 1199,
       "off": "29% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/17%20acrylic%20photo%20frames.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/17%20acrylic%20photo%20frames.jpg",
       "rating": "4.8 (34)"
     },
     {
@@ -152,7 +152,7 @@
       "price": 799,
       "old": 1099,
       "off": "27% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/18--TABLE%20TOP%20ACRYLIC%20PHOTO%20FRAMES-02.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/18--TABLE%20TOP%20ACRYLIC%20PHOTO%20FRAMES-02.jpg",
       "rating": "4.8 (40)"
     },
     {
@@ -161,7 +161,7 @@
       "price": 999,
       "old": 1499,
       "off": "33% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/tirumala_balaji_new_acrylic_frame%20%281%29.webp",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/tirumala_balaji_new_acrylic_frame%20%281%29.webp",
       "rating": "5.0 (62)"
     },
     {
@@ -170,7 +170,7 @@
       "price": 899,
       "old": 1299,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/19-led-photo-frame.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/19-led-photo-frame.png",
       "rating": "4.7 (65)"
     },
     {
@@ -179,7 +179,7 @@
       "price": 999,
       "old": 1399,
       "off": "28% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/20--collage%20photo%20frames%20%281%29.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/20--collage%20photo%20frames%20%281%29.jpg",
       "rating": "4.7 (38)"
     },
     {
@@ -188,7 +188,7 @@
       "price": 1099,
       "old": 1599,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/20--collage%20photo%20frames%20%282%29.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/20--collage%20photo%20frames%20%282%29.jpg",
       "rating": "4.8 (46)"
     },
     {
@@ -197,7 +197,7 @@
       "price": 1199,
       "old": 1699,
       "off": "29% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/20--collage%20photo%20frames%20%283%29.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/20--collage%20photo%20frames%20%283%29.jpg",
       "rating": "4.9 (53)"
     },
     {
@@ -206,7 +206,7 @@
       "price": 1299,
       "old": 1899,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/crystal%20frame%201.webp",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/crystal%20frame%201.webp",
       "rating": "4.8 (32)"
     },
     {
@@ -215,7 +215,7 @@
       "price": 1399,
       "old": 1999,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/crystal%20frame%202.webp",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/crystal%20frame%202.webp",
       "rating": "4.9 (41)"
     },
     {
@@ -224,7 +224,7 @@
       "price": 1499,
       "old": 2199,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/Custom_Crystal_Photo_Frame_16-12-3.webp",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/Custom_Crystal_Photo_Frame_16-12-3.webp",
       "rating": "4.8 (37)"
     },
     {
@@ -233,7 +233,7 @@
       "price": 1199,
       "old": 1699,
       "off": "29% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/ChatGPT%20Image%20Jul%2026%2C%202026%2C%2005_55_10%20PM.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/ChatGPT%20Image%20Jul%2026%2C%202026%2C%2005_55_10%20PM.png",
       "rating": "4.7 (27)"
     },
     {
@@ -242,7 +242,7 @@
       "price": 1249,
       "old": 1799,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/ChatGPT%20Image%20Jul%2026%2C%202026%2C%2005_58_17%20PM.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/ChatGPT%20Image%20Jul%2026%2C%202026%2C%2005_58_17%20PM.png",
       "rating": "4.8 (33)"
     },
     {
@@ -251,7 +251,7 @@
       "price": 1299,
       "old": 1899,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/ChatGPT%20Image%20Jul%2026%2C%202026%2C%2005_59_48%20PM.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/ChatGPT%20Image%20Jul%2026%2C%202026%2C%2005_59_48%20PM.png",
       "rating": "4.9 (42)"
     },
     {
@@ -260,7 +260,7 @@
       "price": 1499,
       "old": 2199,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/neon%20frame%201.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/neon%20frame%201.png",
       "rating": "4.9 (41)"
     },
     {
@@ -269,7 +269,7 @@
       "price": 1549,
       "old": 2299,
       "off": "32% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/ChatGPT%20Image%20Jul%2026%2C%202026%2C%2005_16_28%20PM.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/ChatGPT%20Image%20Jul%2026%2C%202026%2C%2005_16_28%20PM.png",
       "rating": "4.8 (39)"
     },
     {
@@ -278,7 +278,7 @@
       "price": 1599,
       "old": 2399,
       "off": "33% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/ChatGPT%20Image%20Jul%2026%2C%202026%2C%2005_21_06%20PM.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/ChatGPT%20Image%20Jul%2026%2C%202026%2C%2005_21_06%20PM.png",
       "rating": "4.9 (44)"
     },
     {
@@ -287,7 +287,7 @@
       "price": 999,
       "old": 1499,
       "off": "33% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/pencil-sketch-frame-1.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/pencil-sketch-frame-1.png",
       "rating": "4.8 (36)"
     },
     {
@@ -296,7 +296,7 @@
       "price": 1049,
       "old": 1549,
       "off": "32% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/pencil-sketch-frame-2.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/pencil-sketch-frame-2.png",
       "rating": "4.9 (45)"
     },
     {
@@ -305,7 +305,7 @@
       "price": 1299,
       "old": 1899,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/qr-voice-frame-1.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/qr-voice-frame-1.png",
       "rating": "4.9 (29)"
     },
     {
@@ -314,7 +314,7 @@
       "price": 1349,
       "old": 1949,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/qr-voice-frame-2.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/qr-voice-frame-2.jpg",
       "rating": "4.8 (34)"
     },
     {
@@ -323,7 +323,7 @@
       "price": 799,
       "old": 1199,
       "off": "33% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/34--magic%20mirror%20round.webp",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/34--magic%20mirror%20round.webp",
       "rating": "4.9 (64)"
     },
     {
@@ -332,7 +332,7 @@
       "price": 849,
       "old": 1299,
       "off": "35% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/34--magic%20mirror-02.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/34--magic%20mirror-02.jpg",
       "rating": "4.9 (58)"
     },
     {
@@ -341,7 +341,7 @@
       "price": 899,
       "old": 1399,
       "off": "36% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/35--magic%20mirror-01.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/35--magic%20mirror-01.jpg",
       "rating": "4.8 (47)"
     },
     {
@@ -350,7 +350,7 @@
       "price": 699,
       "old": 999,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/magic%20mirror%20%281%29.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/magic%20mirror%20%281%29.png",
       "rating": "4.7 (52)"
     },
     {
@@ -359,7 +359,7 @@
       "price": 749,
       "old": 1099,
       "off": "32% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/34--magic%20mirror-01.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/34--magic%20mirror-01.jpg",
       "rating": "4.8 (39)"
     },
     {
@@ -368,7 +368,7 @@
       "price": 899,
       "old": 1299,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/16--acrylic%20wall%20clocks%20%281%29.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/16--acrylic%20wall%20clocks%20%281%29.jpg",
       "rating": "4.7 (54)"
     },
     {
@@ -377,7 +377,7 @@
       "price": 999,
       "old": 1399,
       "off": "28% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/WALL%20CLOCKS%20ACRYLIC%20%20%281%29.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/WALL%20CLOCKS%20ACRYLIC%20%20%281%29.png",
       "rating": "4.8 (37)"
     },
     {
@@ -386,7 +386,7 @@
       "price": 1099,
       "old": 1599,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/43--12%20photos%20wall%20clock%20%281%29.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/43--12%20photos%20wall%20clock%20%281%29.jpg",
       "rating": "4.9 (62)"
     },
     {
@@ -395,7 +395,7 @@
       "price": 1149,
       "old": 1649,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/43--12%20photos%20wall%20clock%20%282%29.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/43--12%20photos%20wall%20clock%20%282%29.jpg",
       "rating": "4.9 (55)"
     },
     {
@@ -404,7 +404,7 @@
       "price": 949,
       "old": 1399,
       "off": "32% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/16--acrylic%20wall%20clocks%20%282%29.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/16--acrylic%20wall%20clocks%20%282%29.jpg",
       "rating": "4.8 (38)"
     },
     {
@@ -413,7 +413,7 @@
       "price": 999,
       "old": 1449,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/WALL%20CLOCKS%20ACRYLIC%20%20%282%29.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/WALL%20CLOCKS%20ACRYLIC%20%20%282%29.png",
       "rating": "4.8 (43)"
     },
     {
@@ -422,7 +422,7 @@
       "price": 949,
       "old": 1399,
       "off": "32% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/WALL%20CLOCKS%20ACRYLIC%20%20%283%29.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/WALL%20CLOCKS%20ACRYLIC%20%20%283%29.png",
       "rating": "4.7 (36)"
     },
     {
@@ -431,7 +431,7 @@
       "price": 899,
       "old": 1299,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/WALL%20CLOCKS%20ACRYLIC%20%20%284%29.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/WALL%20CLOCKS%20ACRYLIC%20%20%284%29.png",
       "rating": "4.8 (41)"
     },
     {
@@ -440,7 +440,7 @@
       "price": 1049,
       "old": 1499,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/WALL%20CLOCKS%20ACRYLIC%20%20%285%29.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/WALL%20CLOCKS%20ACRYLIC%20%20%285%29.png",
       "rating": "4.9 (47)"
     },
     {
@@ -449,7 +449,7 @@
       "price": 999,
       "old": 1449,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/WALL%20CLOCKS%20ACRYLIC%20%20%286%29.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/WALL%20CLOCKS%20ACRYLIC%20%20%286%29.png",
       "rating": "4.8 (39)"
     },
     {
@@ -458,7 +458,7 @@
       "price": 1099,
       "old": 1599,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/WALL%20CLOCKS%20ACRYLIC%20%20%287%29.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/WALL%20CLOCKS%20ACRYLIC%20%20%287%29.png",
       "rating": "4.9 (51)"
     },
     {
@@ -467,7 +467,7 @@
       "price": 999,
       "old": 1449,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/WALL%20CLOCKS%20ACRYLIC%20%20%288%29.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/WALL%20CLOCKS%20ACRYLIC%20%20%288%29.png",
       "rating": "4.8 (44)"
     },
     {
@@ -476,7 +476,7 @@
       "price": 899,
       "old": 1299,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/wall-clock-1.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/wall-clock-1.jpg",
       "rating": "4.7 (32)"
     },
     {
@@ -485,7 +485,7 @@
       "price": 1099,
       "old": 1599,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/16--acrylic%20wall%20clocks%20%287%29--.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/16--acrylic%20wall%20clocks%20%287%29--.jpg",
       "rating": "4.9 (48)"
     },
     {
@@ -494,7 +494,7 @@
       "price": 449,
       "old": 599,
       "off": "25% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/01-cup.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/01-cup.png",
       "rating": "4.7 (98)"
     },
     {
@@ -503,7 +503,7 @@
       "price": 349,
       "old": 499,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/01--cup-02.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/01--cup-02.jpg",
       "rating": "4.8 (76)"
     },
     {
@@ -512,7 +512,7 @@
       "price": 349,
       "old": 499,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/01--cup-03.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/01--cup-03.jpg",
       "rating": "4.7 (65)"
     },
     {
@@ -521,7 +521,7 @@
       "price": 499,
       "old": 699,
       "off": "28% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/02--heart%20handle%20cup-02-.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/02--heart%20handle%20cup-02-.jpg",
       "rating": "4.8 (74)"
     },
     {
@@ -530,7 +530,7 @@
       "price": 499,
       "old": 699,
       "off": "28% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/02--heart%20handle%20cup.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/02--heart%20handle%20cup.jpg",
       "rating": "4.9 (82)"
     },
     {
@@ -539,7 +539,7 @@
       "price": 549,
       "old": 799,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/03--magic%20cup.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/03--magic%20cup.png",
       "rating": "4.9 (81)"
     },
     {
@@ -548,7 +548,7 @@
       "price": 549,
       "old": 799,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/003%20magic%20cup-01.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/003%20magic%20cup-01.jpg",
       "rating": "4.8 (70)"
     },
     {
@@ -557,7 +557,7 @@
       "price": 399,
       "old": 599,
       "off": "33% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/45--photo%20water%20bottles.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/45--photo%20water%20bottles.png",
       "rating": "4.7 (46)"
     },
     {
@@ -566,7 +566,7 @@
       "price": 499,
       "old": 699,
       "off": "28% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/45--photo%20water%20bottles--%20%281%29.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/45--photo%20water%20bottles--%20%281%29.jpg",
       "rating": "4.8 (52)"
     },
     {
@@ -575,7 +575,7 @@
       "price": 349,
       "old": 499,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/cups%20%281%29%20%281%29.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/cups%20%281%29%20%281%29.png",
       "rating": "4.8 (55)"
     },
     {
@@ -584,7 +584,7 @@
       "price": 349,
       "old": 499,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/cups%20%282%29.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/cups%20%282%29.png",
       "rating": "4.7 (48)"
     },
     {
@@ -593,7 +593,7 @@
       "price": 399,
       "old": 549,
       "off": "27% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/cups%20%283%29.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/cups%20%283%29.png",
       "rating": "4.8 (59)"
     },
     {
@@ -602,7 +602,7 @@
       "price": 349,
       "old": 499,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/cups%20%284%29.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/cups%20%284%29.png",
       "rating": "4.7 (43)"
     },
     {
@@ -611,7 +611,7 @@
       "price": 599,
       "old": 799,
       "off": "25% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/30-%20heart%20pillow%20%282%29.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/30-%20heart%20pillow%20%282%29.jpg",
       "rating": "4.6 (88)"
     },
     {
@@ -620,7 +620,7 @@
       "price": 649,
       "old": 899,
       "off": "27% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/30-%20heart%20pillow%20%281%29.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/30-%20heart%20pillow%20%281%29.jpg",
       "rating": "4.8 (67)"
     },
     {
@@ -629,7 +629,7 @@
       "price": 699,
       "old": 999,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/30-%20heart%20pillow%20%283%29.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/30-%20heart%20pillow%20%283%29.jpg",
       "rating": "4.9 (73)"
     },
     {
@@ -638,7 +638,7 @@
       "price": 649,
       "old": 899,
       "off": "27% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/30-%20HEART%20PILLOW-%284%29.webp",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/30-%20HEART%20PILLOW-%284%29.webp",
       "rating": "4.8 (54)"
     },
     {
@@ -647,7 +647,7 @@
       "price": 699,
       "old": 999,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/30-%20HEART%20PILLOW-5.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/30-%20HEART%20PILLOW-5.jpg",
       "rating": "4.9 (61)"
     },
     {
@@ -656,7 +656,7 @@
       "price": 599,
       "old": 899,
       "off": "33% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/31-%20MAGIC%20PILLOW.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/31-%20MAGIC%20PILLOW.jpg",
       "rating": "4.7 (51)"
     },
     {
@@ -665,7 +665,7 @@
       "price": 649,
       "old": 949,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/magic%20pillow.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/magic%20pillow.png",
       "rating": "4.8 (58)"
     },
     {
@@ -674,7 +674,7 @@
       "price": 449,
       "old": 699,
       "off": "35% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/32-%20KIDS%20PHOTO%20PILLOWS.webp",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/32-%20KIDS%20PHOTO%20PILLOWS.webp",
       "rating": "4.8 (42)"
     },
     {
@@ -683,7 +683,7 @@
       "price": 399,
       "old": 599,
       "off": "33% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/32-%20KIDS%20PHOTO%20PILLOWS-02.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/32-%20KIDS%20PHOTO%20PILLOWS-02.jpg",
       "rating": "4.8 (36)"
     },
     {
@@ -692,7 +692,7 @@
       "price": 449,
       "old": 649,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/32-%20KIDS%20PHOTO%20PILLOWS-01.webp",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/32-%20KIDS%20PHOTO%20PILLOWS-01.webp",
       "rating": "4.8 (35)"
     },
     {
@@ -701,7 +701,7 @@
       "price": 699,
       "old": 999,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/heart%20pillow.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/heart%20pillow.png",
       "rating": "4.9 (44)"
     },
     {
@@ -710,7 +710,7 @@
       "price": 999,
       "old": 1499,
       "off": "33% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/29--3D%20CRYSTAL%20CUBES%20%281%29.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/29--3D%20CRYSTAL%20CUBES%20%281%29.jpg",
       "rating": "4.9 (76)"
     },
     {
@@ -719,7 +719,7 @@
       "price": 1099,
       "old": 1599,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/29--3D%20CRYSTAL%20CUBES%20%282%29.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/29--3D%20CRYSTAL%20CUBES%20%282%29.jpg",
       "rating": "4.9 (68)"
     },
     {
@@ -728,7 +728,7 @@
       "price": 1299,
       "old": 1899,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/36-crystal-photo-frame-317.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/36-crystal-photo-frame-317.jpg",
       "rating": "4.8 (44)"
     },
     {
@@ -737,7 +737,7 @@
       "price": 1349,
       "old": 1999,
       "off": "32% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/36-crystal-photo-frame-317-%20%281%29.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/36-crystal-photo-frame-317-%20%281%29.jpg",
       "rating": "4.9 (38)"
     },
     {
@@ -746,7 +746,7 @@
       "price": 1399,
       "old": 2099,
       "off": "33% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/36-crystal-photo-frame-317-%20%282%29.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/36-crystal-photo-frame-317-%20%282%29.jpg",
       "rating": "4.8 (42)"
     },
     {
@@ -755,7 +755,7 @@
       "price": 1449,
       "old": 2199,
       "off": "34% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/36-crystal-photo-frame-317-%20%283%29.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/36-crystal-photo-frame-317-%20%283%29.jpg",
       "rating": "4.9 (46)"
     },
     {
@@ -764,7 +764,7 @@
       "price": 1799,
       "old": 2599,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/29--3d-crystal.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/29--3d-crystal.jpg",
       "rating": "4.9 (29)"
     },
     {
@@ -773,7 +773,7 @@
       "price": 1899,
       "old": 2699,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/37-%20rotate%20cube-01.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/37-%20rotate%20cube-01.jpg",
       "rating": "4.9 (43)"
     },
     {
@@ -782,7 +782,7 @@
       "price": 1899,
       "old": 2699,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/37-%20rotate%20cube-02.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/37-%20rotate%20cube-02.png",
       "rating": "4.9 (38)"
     },
     {
@@ -791,7 +791,7 @@
       "price": 1899,
       "old": 2699,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/37-%20rotate%20cube-03.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/37-%20rotate%20cube-03.png",
       "rating": "4.9 (41)"
     },
     {
@@ -800,7 +800,7 @@
       "price": 2199,
       "old": 3199,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/XXL_Personalised_Crystal_Photo_Frame.webp",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/XXL_Personalised_Crystal_Photo_Frame.webp",
       "rating": "5.0 (52)"
     },
     {
@@ -809,7 +809,7 @@
       "price": 199,
       "old": 299,
       "off": "33% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/15-fridge%20magnets-01.webp",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/15-fridge%20magnets-01.webp",
       "rating": "4.6 (61)"
     },
     {
@@ -818,7 +818,7 @@
       "price": 249,
       "old": 349,
       "off": "28% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/15-fridge%20magnets.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/15-fridge%20magnets.jpg",
       "rating": "4.7 (45)"
     },
     {
@@ -827,7 +827,7 @@
       "price": 499,
       "old": 699,
       "off": "28% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/kiddy-bank-1.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/kiddy-bank-1.jpg",
       "rating": "4.7 (24)"
     },
     {
@@ -836,7 +836,7 @@
       "price": 549,
       "old": 799,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/kiddy-bank-2.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/kiddy-bank-2.jpg",
       "rating": "4.8 (31)"
     },
     {
@@ -845,7 +845,7 @@
       "price": 199,
       "old": 299,
       "off": "33% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/11-keychains%20%20%281%29.png",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/11-keychains%20%20%281%29.png",
       "rating": "4.7 (93)"
     },
     {
@@ -854,7 +854,7 @@
       "price": 249,
       "old": 349,
       "off": "29% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/40-PHOTO%20KEY%20CHAINS.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/40-PHOTO%20KEY%20CHAINS.jpg",
       "rating": "4.7 (78)"
     },
     {
@@ -863,7 +863,7 @@
       "price": 229,
       "old": 329,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/11-keychains%20%20%282%29.webp",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/11-keychains%20%20%282%29.webp",
       "rating": "4.8 (64)"
     },
     {
@@ -872,7 +872,7 @@
       "price": 249,
       "old": 349,
       "off": "29% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/11-keychains%20%20%283%29.webp",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/11-keychains%20%20%283%29.webp",
       "rating": "4.7 (58)"
     },
     {
@@ -881,7 +881,7 @@
       "price": 279,
       "old": 399,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/11-keychains%20%209.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/11-keychains%20%209.jpg",
       "rating": "4.8 (49)"
     },
     {
@@ -890,7 +890,7 @@
       "price": 699,
       "old": 999,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/08--wallets-02-0.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/08--wallets-02-0.jpg",
       "rating": "4.8 (57)"
     },
     {
@@ -899,7 +899,7 @@
       "price": 749,
       "old": 1099,
       "off": "31% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/08--wallets-01.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/08--wallets-01.jpg",
       "rating": "4.9 (63)"
     },
     {
@@ -908,7 +908,7 @@
       "price": 499,
       "old": 799,
       "off": "37% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/09--dairys-02.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/09--dairys-02.jpg",
       "rating": "4.7 (39)"
     },
     {
@@ -917,7 +917,7 @@
       "price": 549,
       "old": 849,
       "off": "35% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/09-dairys.avif",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/09-dairys.avif",
       "rating": "4.8 (44)"
     },
     {
@@ -926,7 +926,7 @@
       "price": 599,
       "old": 899,
       "off": "33% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/12-table%20top%20pen%20stand%20calenders.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/12-table%20top%20pen%20stand%20calenders.jpg",
       "rating": "4.8 (40)"
     },
     {
@@ -935,7 +935,7 @@
       "price": 899,
       "old": 1299,
       "off": "30% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/10--dairy%20combos-02.webp",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/10--dairy%20combos-02.webp",
       "rating": "4.8 (33)"
     },
     {
@@ -944,7 +944,7 @@
       "price": 999,
       "old": 1499,
       "off": "33% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/10--dairy%20combos-03.webp",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/10--dairy%20combos-03.webp",
       "rating": "4.9 (45)"
     },
     {
@@ -953,7 +953,7 @@
       "price": 799,
       "old": 1099,
       "off": "27% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/12-table%20top%20pen%20stand%20calenders-01.webp",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/12-table%20top%20pen%20stand%20calenders-01.webp",
       "rating": "4.7 (28)"
     },
     {
@@ -962,7 +962,7 @@
       "price": 799,
       "old": 1099,
       "off": "27% OFF",
-      "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/12-table%20top%20pen%20stand%20calenders-04.jpg",
+      "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/12-table%20top%20pen%20stand%20calenders-04.jpg",
       "rating": "4.8 (31)"
     }
   ]

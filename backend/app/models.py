@@ -145,6 +145,10 @@ class Product(Base, TimestampMixin):
     # quantityOptions/purposeOptions/requiresPhotoUpload) - admin edits this as raw JSON
     # rather than each one-off field needing its own migration + form control.
     extra: Mapped[dict] = mapped_column(JSON, default=dict)
+    # Admin-configurable extra customer inputs (upload/dropdown/text), built with the
+    # "Customer Input Fields" form builder - see ProductInputFieldIn. Separate from
+    # `extra` above, which stays reserved for the older pricing-tied qty/purpose config.
+    input_fields: Mapped[list] = mapped_column(JSON, default=list)
 
     category: Mapped["Category"] = relationship(back_populates="products")
     media: Mapped[list["Media"]] = relationship(
@@ -301,6 +305,10 @@ class OrderItem(Base):
     unit_price: Mapped[float] = mapped_column(Numeric(10, 2))
     qty: Mapped[int] = mapped_column(Integer, default=1)
     notes: Mapped[str] = mapped_column(Text, default="")
+    # active | cancel_requested | cancelled - lets one line item in a multi-item
+    # order be cancelled independently of the rest (see OrderCancellationRequest
+    # .order_item_id). Whole-order cancellation still just flips Order.status.
+    status: Mapped[str] = mapped_column(String(20), default="active")
 
     order: Mapped["Order"] = relationship(back_populates="items")
     product: Mapped["Product | None"] = relationship()
@@ -368,6 +376,11 @@ class OrderCancellationRequest(Base, TimestampMixin):
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=uid)
     order_id: Mapped[str] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), index=True)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    # NULL = whole-order request (the original behavior). Set = a request to
+    # cancel just this one line item, leaving the rest of the order untouched.
+    order_item_id: Mapped[str | None] = mapped_column(
+        ForeignKey("order_items.id", ondelete="CASCADE"), nullable=True, index=True
+    )
     reason: Mapped[str] = mapped_column(String(40))
     note: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
@@ -377,6 +390,7 @@ class OrderCancellationRequest(Base, TimestampMixin):
 
     order: Mapped["Order"] = relationship(back_populates="cancellation_requests")
     user: Mapped["User"] = relationship(foreign_keys=[user_id])
+    order_item: Mapped["OrderItem | None"] = relationship(foreign_keys=[order_item_id])
 
 
 class OrderAddressChangeRequest(Base, TimestampMixin):

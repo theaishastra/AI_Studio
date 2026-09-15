@@ -266,6 +266,11 @@ function openProductForm(id) {
         <input id="f_addr_window" type="number" min="0" step="1" value="${p?.address_change_window_hours ?? ""}" placeholder="e.g. 24"></div>
       <label>Features / inclusions (one per line)</label>
       <textarea id="f_features" rows="5">${esc((p?.features || []).join("\n"))}</textarea>
+
+      <label style="margin-top:14px;">Customer Input Fields <span style="font-weight:400;color:var(--text-dim);">— extra questions shown on this product's order form (upload a photo, pick from a dropdown, free text, etc.)</span></label>
+      <div id="inputFieldsRows" class="field-builder"></div>
+      <button type="button" class="btn secondary add-field-btn" id="addFieldBtn">+ Add Field</button>
+
       ${cat.pageSlug === "photography" ? `
       <label>Events &amp; Team Details (table shown on the product page — leave empty to auto-generate from the features above)</label>
       <div id="eventsRows"></div>
@@ -284,6 +289,167 @@ function openProductForm(id) {
       </div>
     </form>
   `);
+
+  // ---- Customer Input Fields (Product.input_fields) ----
+  const FIELD_TYPES = {
+    upload: { icon: "📤", label: "Upload" },
+    dropdown: { icon: "▾", label: "Dropdown" },
+    text: { icon: "✎", label: "Text" },
+  };
+  const fieldsWrap = document.getElementById("inputFieldsRows");
+  let _fieldRowSeq = 0;
+
+  function fieldTypePanelHTML(row, type) {
+    if (type === "upload") {
+      const multiple = row?.multiple ?? false;
+      return `
+        <div class="field-type-panel fp-upload">
+          <div class="fr-upload-mode">
+            <label><input type="radio" name="fr_upload_mode_${row?._rid ?? ""}" class="fr_upload_single" ${!multiple ? "checked" : ""}> Single file</label>
+            <label><input type="radio" name="fr_upload_mode_${row?._rid ?? ""}" class="fr_upload_multiple" ${multiple ? "checked" : ""}> Multiple files</label>
+          </div>
+          <div class="fr_max_files_wrap" style="display:${multiple ? "block" : "none"};max-width:180px;">
+            <label>Maximum files</label>
+            <input type="number" class="fr_max_files" min="2" max="10" value="${row?.max_files && row.max_files >= 2 ? row.max_files : 3}">
+          </div>
+        </div>`;
+    }
+    if (type === "dropdown") {
+      return `
+        <div class="field-type-panel fp-dropdown">
+          <label>Options (one per line)</label>
+          <textarea class="fr_options" rows="3" placeholder="4x6&#10;5x7&#10;Passport Size">${esc((row?.options || []).join("\n"))}</textarea>
+          <label class="inline" style="font-weight:400;"><input type="checkbox" class="fr_multi_select" ${row?.multi_select ? "checked" : ""}> Allow selecting multiple options</label>
+        </div>`;
+    }
+    return `
+      <div class="field-type-panel fp-text">
+        <label>Placeholder (optional)</label>
+        <input class="fr_placeholder" value="${esc(row?.placeholder || "")}" placeholder="e.g. Any special instructions?">
+      </div>`;
+  }
+
+  function refreshFieldTypeUI(rowEl, row) {
+    rowEl.querySelectorAll(".type-checkbox").forEach(chip => {
+      chip.classList.toggle("active", chip.dataset.type === row.type);
+      chip.querySelector("input").checked = chip.dataset.type === row.type;
+    });
+    rowEl.querySelector(".field-type-panel-wrap").innerHTML = fieldTypePanelHTML(row, row.type);
+    wireUploadModeToggle(rowEl);
+  }
+
+  function wireUploadModeToggle(rowEl) {
+    const single = rowEl.querySelector(".fr_upload_single");
+    const multiple = rowEl.querySelector(".fr_upload_multiple");
+    const maxWrap = rowEl.querySelector(".fr_max_files_wrap");
+    if (!single || !multiple) return;
+    [single, multiple].forEach(radio => radio.addEventListener("change", () => {
+      if (maxWrap) maxWrap.style.display = multiple.checked ? "block" : "none";
+    }));
+  }
+
+  function addFieldRow(field) {
+    const rid = `fr${++_fieldRowSeq}`;
+    const row = {
+      _rid: rid,
+      id: field?.id || null,
+      type: field?.type || "upload",
+      label: field?.label || "",
+      required: field?.required ?? false,
+      help_text: field?.help_text || "",
+      multiple: field?.multiple ?? false,
+      max_files: field?.max_files ?? 3,
+      options: field?.options || [],
+      multi_select: field?.multi_select ?? false,
+      placeholder: field?.placeholder || "",
+    };
+    const div = document.createElement("div");
+    div.className = "field-row";
+    div.dataset.rid = rid;
+    div.innerHTML = `
+      <div class="field-row-top">
+        <div class="fr-label">
+          <label style="margin-bottom:4px;">Field heading (shown to the customer)</label>
+          <input class="fr_label" value="${esc(row.label)}" placeholder="e.g. Upload your photo" required>
+        </div>
+        <div class="field-row-side">
+          <label class="field-row-required"><input type="checkbox" class="fr_required" ${row.required ? "checked" : ""}> Required</label>
+          <div class="field-row-order">
+            <button type="button" class="fr_up" title="Move up">▲</button>
+            <button type="button" class="fr_down" title="Move down">▼</button>
+          </div>
+          <button type="button" class="field-row-remove" title="Remove field">×</button>
+        </div>
+      </div>
+      <div class="type-checkbox-group">
+        ${Object.entries(FIELD_TYPES).map(([type, meta]) => `
+          <label class="type-checkbox ${type === row.type ? "active" : ""}" data-type="${type}">
+            <input type="checkbox" ${type === row.type ? "checked" : ""}>
+            <span class="tc-icon">${meta.icon}</span> ${meta.label}
+          </label>`).join("")}
+      </div>
+      <div class="field-type-panel-wrap">${fieldTypePanelHTML(row, row.type)}</div>
+      <div class="fr-help-text" style="margin-top:8px;">
+        <label style="font-weight:400;">Help text (optional)</label>
+        <input class="fr_help_text" value="${esc(row.help_text)}" placeholder="Small note shown under the field">
+      </div>
+    `;
+    div.__field = row;
+    fieldsWrap.appendChild(div);
+    wireUploadModeToggle(div);
+
+    div.querySelectorAll(".type-checkbox").forEach(chip => {
+      chip.addEventListener("click", (e) => {
+        e.preventDefault();
+        row.type = chip.dataset.type;
+        refreshFieldTypeUI(div, row);
+      });
+    });
+    div.querySelector(".field-row-remove").addEventListener("click", () => div.remove());
+    div.querySelector(".fr_up").addEventListener("click", () => {
+      const prev = div.previousElementSibling;
+      if (prev) fieldsWrap.insertBefore(div, prev);
+    });
+    div.querySelector(".fr_down").addEventListener("click", () => {
+      const next = div.nextElementSibling;
+      if (next) fieldsWrap.insertBefore(next, div);
+    });
+  }
+
+  (p?.input_fields || []).slice().sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0)).forEach(addFieldRow);
+  document.getElementById("addFieldBtn").addEventListener("click", () => addFieldRow());
+
+  function collectInputFields() {
+    const input_fields = [];
+    const errors = [];
+    Array.from(fieldsWrap.querySelectorAll(".field-row")).forEach((row, index) => {
+      const type = row.querySelector(".type-checkbox.active")?.dataset.type || "text";
+      const label = row.querySelector(".fr_label").value.trim();
+      if (!label) { errors.push(`Field #${index + 1} needs a heading.`); return; }
+      const field = {
+        id: row.__field.id || `f_${Math.random().toString(36).slice(2, 10)}`,
+        type,
+        label,
+        required: row.querySelector(".fr_required").checked,
+        help_text: row.querySelector(".fr_help_text").value.trim(),
+        sort: index,
+        multiple: false,
+        max_files: 1,
+        options: [],
+        multi_select: false,
+      };
+      if (type === "upload") {
+        field.multiple = !!row.querySelector(".fr_upload_multiple")?.checked;
+        field.max_files = field.multiple ? Math.max(2, Math.min(10, parseInt(row.querySelector(".fr_max_files")?.value || "3", 10))) : 1;
+      } else if (type === "dropdown") {
+        field.options = (row.querySelector(".fr_options")?.value || "").split("\n").map(s => s.trim()).filter(Boolean);
+        field.multi_select = !!row.querySelector(".fr_multi_select")?.checked;
+        if (!field.options.length) errors.push(`Dropdown field "${label}" needs at least one option.`);
+      }
+      input_fields.push(field);
+    });
+    return { input_fields, errors };
+  }
 
   // ---- Events & Team Details rows (extra.events, photography categories only) ----
   const eventsWrap = document.getElementById("eventsRows");
@@ -325,6 +491,11 @@ function openProductForm(id) {
       if (events.length) extra.events = events;
       else delete extra.events;
     }
+    const { input_fields, errors: fieldErrors } = collectInputFields();
+    if (fieldErrors.length) {
+      document.getElementById("formMsg").innerHTML = `<div class="msg error">${fieldErrors.map(esc).join("<br>")}</div>`;
+      return;
+    }
     const data = {
       category_id: CURRENT_CATEGORY_ID,
       tier: document.getElementById("f_tier").value.trim() || null,
@@ -342,6 +513,7 @@ function openProductForm(id) {
       is_active: document.getElementById("f_active").checked,
       sort: parseInt(document.getElementById("f_sort").value || "0", 10),
       extra,
+      input_fields,
     };
     try {
       if (p) await Api.updateProduct(p.id, data);
@@ -381,7 +553,7 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
     <div class="media-list" id="mediaList">
       ${media.map(m => `
         <div class="media-item">
-          <img src="${esc(m.url)}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2290%22 height=%2290%22><rect width=%2290%22 height=%2290%22 fill=%22%23e8e0d8%22/></svg>'">
+          <img src="${esc(mediaUrl(m.url))}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2290%22 height=%2290%22><rect width=%2290%22 height=%2290%22 fill=%22%23e8e0d8%22/></svg>'">
           <button title="Remove" onclick="removeMedia('${m.id}', this)">×</button>
           ${m.alt ? `<div class="cap">${esc(m.alt)}</div>` : ""}
         </div>`).join("") || `<div style="color:var(--text-dim);font-size:13px;">No photos yet.</div>`}
@@ -391,9 +563,12 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
       <input type="file" id="m_file" accept="image/*">
       <span id="mediaUploadStatus" style="color:var(--text-dim);font-size:12px;"></span>
     </form>
-    <p style="color:var(--text-dim);font-size:12px;margin:12px 0 4px;">— or add by URL —</p>
+    <p style="color:var(--text-dim);font-size:12px;margin:12px 0 4px;">— or choose from the Media Library —</p>
+    <button type="button" class="btn secondary" id="openLibraryPickerBtn">📁 Choose from Media Library</button>
+    <div id="mediaLibraryPicker" style="display:none;margin-top:10px;"></div>
+    <p style="color:var(--text-dim);font-size:12px;margin:14px 0 4px;">— or add by URL —</p>
     <form id="mediaForm">
-      <label>Image URL</label><input id="m_url" required placeholder="https://res.cloudinary.com/...">
+      <label>Image URL</label><input id="m_url" required placeholder="https://pub-xxxx.r2.dev/...">
       <label>Caption ${kind === "portfolio" ? "(shown under the photo)" : "(optional)"}</label><input id="m_alt">
       <div class="modal-actions">
         <button type="button" class="btn secondary" onclick="closeModal()">Close</button>
@@ -433,6 +608,64 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
       document.getElementById("formMsg").innerHTML = `<div class="msg error">${esc(err.message)}</div>`;
     }
   });
+
+  // ---- Choose from Media Library ----
+  let libraryLoaded = false;
+  document.getElementById("openLibraryPickerBtn").addEventListener("click", async () => {
+    const picker = document.getElementById("mediaLibraryPicker");
+    const opening = picker.style.display === "none";
+    picker.style.display = opening ? "block" : "none";
+    if (opening && !libraryLoaded) {
+      libraryLoaded = true;
+      await loadMediaLibraryPicker(picker, kind, media, addFn, afterChange);
+    }
+  });
+}
+
+async function loadMediaLibraryPicker(picker, kind, media, addFn, afterChange) {
+  picker.innerHTML = `<div style="color:var(--text-dim);font-size:12px;">Loading library…</div>`;
+  let items;
+  try {
+    items = await Api.mediaLibrary();
+  } catch (err) {
+    picker.innerHTML = `<div class="msg error">${esc(err.message)}</div>`;
+    return;
+  }
+  if (!items.length) {
+    picker.innerHTML = `<div style="color:var(--text-dim);font-size:12px;">No images in the library yet — upload one above, or add one from the Media Library page.</div>`;
+    return;
+  }
+  picker.innerHTML = `
+    <input type="text" id="libraryPickerSearch" placeholder="Search by caption…" style="margin-bottom:8px;">
+    <div class="media-picker-grid" id="libraryPickerGrid"></div>
+  `;
+  const renderGrid = (filter) => {
+    const q = (filter || "").trim().toLowerCase();
+    const filtered = q ? items.filter(m => (m.alt || "").toLowerCase().includes(q)) : items;
+    const grid = document.getElementById("libraryPickerGrid");
+    grid.innerHTML = filtered.map(m => `
+      <button type="button" class="media-picker-tile" title="${esc(m.alt || "Use this photo")}" data-id="${m.id}">
+        <img src="${esc(mediaUrl(m.url))}" loading="lazy">
+      </button>
+    `).join("") || `<div style="color:var(--text-dim);font-size:12px;">No matches.</div>`;
+    grid.querySelectorAll(".media-picker-tile").forEach(tile => {
+      tile.addEventListener("click", async () => {
+        const item = items.find(m => m.id === tile.dataset.id);
+        if (!item) return;
+        tile.disabled = true;
+        try {
+          await addFn({ url: item.url, alt: item.alt || "", kind, sort: media.length });
+          closeModal();
+          afterChange();
+        } catch (err) {
+          document.getElementById("formMsg").innerHTML = `<div class="msg error">${esc(err.message)}</div>`;
+          tile.disabled = false;
+        }
+      });
+    });
+  };
+  renderGrid("");
+  document.getElementById("libraryPickerSearch").addEventListener("input", (e) => renderGrid(e.target.value));
 }
 
 async function removeMedia(id, btnEl) {

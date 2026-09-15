@@ -1,0 +1,129 @@
+/* ---------- SHARED: admin-configured product "Customer Input Fields" ----------
+   Renders upload/dropdown/text fields built in the admin catalog's field
+   builder (see js/shared/product-fields.js). Self-contained (no dependency on
+   any one page's CSS variables) since it's loaded on studio/gifts/corporate/
+   catalog/equipment-details pages alike. */
+
+.pf-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 14px 0;
+}
+
+.pf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pf-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #241a20;
+}
+
+.pf-required {
+  color: #d1373f;
+  margin-left: 2px;
+}
+
+.pf-help {
+  font-size: 11.5px;
+  color: #8a7688;
+  margin-top: -2px;
+}
+
+.pf-text-input,
+.pf-dropdown-input {
+  border: 1.5px solid #e6d7dd;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #241a20;
+  background: #fff;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pf-text-input:focus,
+.pf-dropdown-input:focus {
+  outline: none;
+  border-color: #b3175a;
+}
+
+.pf-upload-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.pf-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  border: 1.5px dashed #d8b9c6;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #5c0930;
+  background: #fdf1f6;
+  cursor: pointer;
+}
+
+.pf-upload-btn:hover { background: #f9e3ee; }
+
+.pf-upload-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.pf-upload-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f3f0f1;
+  border-radius: 20px;
+  padding: 4px 6px 4px 12px;
+  font-size: 11.5px;
+  color: #4a3a43;
+  max-width: 220px;
+}
+
+.pf-upload-chip button {
+  border: none;
+  background: #d8b9c6;
+  color: #5c0930;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.pf-upload-count {
+  font-size: 11px;
+  color: #8a7688;
+  align-self: center;
+}
+
+.pf-error {
+  font-size: 11.5px;
+  color: #d1373f;
+  display: none;
+}
+
+.pf-field-error .pf-text-input,
+.pf-field-error .pf-dropdown-input,
+.pf-field-error .pf-upload-btn {
+  border-color: #d1373f;
+}

@@ -19,7 +19,7 @@ from .models import Category, Media, Product, Setting, SitePage, User
 from .security import hash_password
 from .config import get_settings
 
-CLOUD = "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio"
+CLOUD = "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio"
 SEED_DATA_DIR = Path(__file__).resolve().parent / "seed_data"
 
 

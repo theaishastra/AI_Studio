@@ -10,7 +10,16 @@ let searchQuery = "";
 function cldOpt(url) {
   // Cloudinary account has Strict Transformations enabled — any on-the-fly
   // transform (even a plain resize) 400s. No-op until that's turned off.
-  return url;
+  // Locally-uploaded (admin Media Library) images are relative /media/<file>
+  // paths served by FastAPI itself - route them through the same backend
+  // origin every fetch() on this page already uses, or they resolve against
+  // whatever's hosting this static page instead and 404.
+  if (url && url.startsWith('/media/')) return `${window.SAI_API_BASE || "http://localhost:8000"}${url}`;
+  // images.weserv.nl is a free public resizing/compression proxy - shrinks the
+  // 500KB-1MB+ originals actually being served down to what a card/thumbnail
+  // needs. It can't reach a localhost-only dev URL, so local media stays as-is.
+  if (!url || url.startsWith('data:') || url.startsWith('blob:') || /^https?:\/\/(localhost|127\.0\.0\.1)/.test(url)) return url;
+  return `https://images.weserv.nl/?url=${url.replace(/^https?:\/\//, '')}&w=640&q=75&output=webp&we`;
 }
 
 /* ================= DESKTOP FILTER BAR STATE ================= */
@@ -52,15 +61,15 @@ const heroBadgesHTML = `
 `;
 
 const heroSlideBanners = {
-  photo_printing: { src: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/slide-images/photo_printing.png", bg: "#7a0f3d" },
-  photo_lamination: { src: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/slide-images/photo-lamination.png", bg: "#64b5f6" },
-  photo_restoration: { src: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/slide-images/photo-restoration.png", bg: "#9acb9a" },
-  photo_portrait: { src: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/slide-images/photo-editing.png", bg: "#fce9cc" },
-  id_card_printing: { src: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/slide-images/id-card-printing.png", bg: "#0c2b18" },
-  certificate_printing: { src: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/slide-images/certificate-printing.png", bg: "#1a1408" },
-  scanning: { src: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/slide-images/scanning.png", bg: "#c81e2c" },
-  cd_dvd_copying: { src: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/slide-images/cd-dvd-copying.png", bg: "#d7edb0" },
-  xerox_printing: { src: "https://res.cloudinary.com/ismg8jfl/image/upload/v1788197631/ChatGPT_Image_Aug_31_2026_11_00_54_PM.png", bg: "#f7ede0" }
+  photo_printing: { src: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/slide-images/photo_printing.png", bg: "#7a0f3d" },
+  photo_lamination: { src: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/slide-images/photo-lamination.png", bg: "#64b5f6" },
+  photo_restoration: { src: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/slide-images/photo-restoration.png", bg: "#9acb9a" },
+  photo_portrait: { src: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/slide-images/photo-editing.png", bg: "#fce9cc" },
+  id_card_printing: { src: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/slide-images/id-card-printing.png", bg: "#0c2b18" },
+  certificate_printing: { src: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/slide-images/certificate-printing.png", bg: "#1a1408" },
+  scanning: { src: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/slide-images/scanning.png", bg: "#c81e2c" },
+  cd_dvd_copying: { src: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/slide-images/cd-dvd-copying.png", bg: "#d7edb0" },
+  xerox_printing: { src: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/ChatGPT_Image_Aug_31_2026_11_00_54_PM.png", bg: "#f7ede0" }
 };
 
 function getHeroSlides() {
@@ -68,8 +77,8 @@ function getHeroSlides() {
     key: "all",
     title: "Studio Services",
     desc: "One-stop solution for all your photography and printing needs. Professional quality, fast delivery and affordable prices.",
-    img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/studio_camera_setup.jpg",
-    banner: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/slide-images/all-services.png",
+    img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/studio_camera_setup.jpg",
+    banner: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/slide-images/all-services.png",
     bannerBg: "#f7ede0"
   }];
   Object.keys(categoriesData).forEach(key => {
@@ -241,7 +250,7 @@ function initSidebar() {
   // Desktop Sidebar
   let sidebarHTML = `
     <div class="sidebar-item ${currentCategory === 'all' ? 'active' : ''}" onclick="switchCategory('all', false)" data-key="all">
-      <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/side-bar-icons/all-services.png" alt="All Studio Services">
+      <img src="https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/side-bar-icons/all-services.png" alt="All Studio Services">
       <span>All Services</span>
     </div>
   `;
@@ -259,7 +268,7 @@ function initSidebar() {
   // Mobile Scrolling Bar
   let mobileHTML = `
     <div class="mobile-cat-item ${currentCategory === 'all' ? 'active' : ''}" onclick="switchCategory('all', false)" data-mkey="all">
-      <img src="https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/side-bar-icons/all-services.png" alt="All Studio Services">
+      <img src="https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/side-bar-icons/all-services.png" alt="All Studio Services">
       <span>All Services</span>
     </div>
   `;
@@ -582,6 +591,11 @@ function renderPreviewOptions(pkg) {
   }
 
   uploadGroup.style.display = hasUpload ? 'flex' : 'none';
+
+  const customFieldsWrap = document.getElementById('previewCustomFields');
+  if (customFieldsWrap && window.ProductFields) {
+    ProductFields.renderProductFields(customFieldsWrap, pkg);
+  }
 }
 
 function initStudioProductAccordions() {
@@ -647,6 +661,16 @@ function validatePreviewOptions() {
 
   if (!valid) {
     alert(`Please choose ${missing.join(' and ')} before continuing.`);
+    return false;
+  }
+
+  const customFieldsWrap = document.getElementById('previewCustomFields');
+  if (customFieldsWrap && window.ProductFields) {
+    const fieldErrors = ProductFields.validateProductFields(customFieldsWrap, activePreviewPkg);
+    if (fieldErrors.length) {
+      alert(fieldErrors.join('\n'));
+      return false;
+    }
   }
 
   return valid;
@@ -733,12 +757,25 @@ function readActivePreviewPhoto() {
   });
 }
 
+// Returns { fields: {fieldId: value}, fieldLabels: {fieldId: label} } so the
+// order-detail views (admin/js/orders.js, js/my-orders.js) can show a real
+// label instead of the raw field id - or null if this product has none.
+async function collectPreviewCustomFields() {
+  const wrap = document.getElementById('previewCustomFields');
+  if (!wrap || !window.ProductFields || !activePreviewPkg) return null;
+  const fields = await ProductFields.collectProductFields(wrap, activePreviewPkg);
+  if (!Object.keys(fields).length) return null;
+  const fieldLabels = Object.fromEntries((activePreviewPkg.input_fields || []).map(f => [f.id, f.label]));
+  return { fields, fieldLabels };
+}
+
 async function previewAddToCart() {
   if (!activePreviewPkg) return;
   if (!validatePreviewOptions()) return;
   const price = activePreviewQtyOption ? `₹${activePreviewQtyOption.price}` : activePreviewPkg.price;
   const photoData = await readActivePreviewPhoto();
-  const customization = photoData ? { photoData } : null;
+  const custom = await collectPreviewCustomFields();
+  const customization = (photoData || custom) ? { ...(photoData ? { photoData } : {}), ...(custom || {}) } : null;
   const requirement = activePreviewPkg.requiresPhotoUpload
     ? { label: 'Upload your photo', fields: ['photoData'], editUrl: `studio.html?category=${currentCategory}&openProduct=${encodeURIComponent(activePreviewPkg.name)}${activePreviewPkg.id ? `&pid=${encodeURIComponent(activePreviewPkg.id)}` : ''}` }
     : null;
@@ -767,7 +804,8 @@ async function previewBuyNow() {
   if (!validatePreviewOptions()) return;
   const price = activePreviewQtyOption ? `₹${activePreviewQtyOption.price}` : activePreviewPkg.price;
   const photoData = await readActivePreviewPhoto();
-  const customization = photoData ? { photoData } : null;
+  const custom = await collectPreviewCustomFields();
+  const customization = (photoData || custom) ? { ...(photoData ? { photoData } : {}), ...(custom || {}) } : null;
   const requirement = activePreviewPkg.requiresPhotoUpload
     ? { label: 'Upload your photo', fields: ['photoData'], editUrl: `studio.html?category=${currentCategory}&openProduct=${encodeURIComponent(activePreviewPkg.name)}${activePreviewPkg.id ? `&pid=${encodeURIComponent(activePreviewPkg.id)}` : ''}` }
     : null;
@@ -1078,6 +1116,7 @@ async function loadStudioCatalog() {
         if (extra.purposeLabel) pkg.purposeLabel = extra.purposeLabel;
         if (extra.purposeOptions) pkg.purposeOptions = extra.purposeOptions;
         if (extra.requiresPhotoUpload) pkg.requiresPhotoUpload = extra.requiresPhotoUpload;
+        pkg.input_fields = p.input_fields || [];
         return pkg;
       }),
     };

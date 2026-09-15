@@ -1,6 +1,4 @@
 import io
-import secrets
-from pathlib import Path
 
 from PIL import Image
 
@@ -10,7 +8,11 @@ MAX_DIMENSION = 4096
 ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP"}
 
 
-def process_image(data: bytes, out_dir: Path, to_webp: bool = True) -> tuple[str, str, int]:
+def process_image(data: bytes, to_webp: bool = True) -> tuple[bytes, str, str]:
+    """Validates and re-encodes an uploaded image. Returns (bytes, ext, mime) -
+    callers decide where the result is persisted (Cloudinary, previously local
+    disk) rather than this function writing anywhere itself, so the same
+    validation/conversion logic works regardless of storage backend."""
     if len(data) > MAX_SIZE:
         raise ValueError("Image too large (max 10MB)")
     if len(data) < MIN_SIZE:
@@ -24,7 +26,6 @@ def process_image(data: bytes, out_dir: Path, to_webp: bool = True) -> tuple[str
     if max(img.size) > MAX_DIMENSION:
         img.thumbnail((MAX_DIMENSION, MAX_DIMENSION))
 
-    out_dir.mkdir(parents=True, exist_ok=True)
     buffer = io.BytesIO()
 
     if to_webp:
@@ -38,6 +39,4 @@ def process_image(data: bytes, out_dir: Path, to_webp: bool = True) -> tuple[str
         img.convert("RGB").save(buffer, format="JPEG", quality=88)
         ext, mime = ".jpg", "image/jpeg"
 
-    filename = secrets.token_hex(16) + ext
-    (out_dir / filename).write_bytes(buffer.getvalue())
-    return filename, mime, buffer.tell()
+    return buffer.getvalue(), ext, mime

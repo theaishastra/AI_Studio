@@ -13,12 +13,19 @@ logger = logging.getLogger("migrations")
 _COLUMN_MIGRATIONS: dict[str, list[str]] = {
     "products": [
         "ADD COLUMN IF NOT EXISTS address_change_window_hours INTEGER",
+        "ADD COLUMN IF NOT EXISTS input_fields JSON DEFAULT '[]'::json",
     ],
     "orders": [
         "ADD COLUMN IF NOT EXISTS carrier VARCHAR(80)",
         "ADD COLUMN IF NOT EXISTS tracking_number VARCHAR(120)",
         "ADD COLUMN IF NOT EXISTS tracking_url TEXT",
         "ADD COLUMN IF NOT EXISTS expected_delivery DATE",
+    ],
+    "order_items": [
+        "ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'",
+    ],
+    "order_cancellation_requests": [
+        "ADD COLUMN IF NOT EXISTS order_item_id UUID REFERENCES order_items(id) ON DELETE CASCADE",
     ],
 }
 
@@ -44,6 +51,10 @@ _INDEX_MIGRATIONS: dict[str, list[str]] = {
     "orders": [
         "CREATE INDEX IF NOT EXISTS ix_orders_created_at ON orders (created_at DESC)",
         "CREATE INDEX IF NOT EXISTS ix_orders_status_created_at ON orders (status, created_at DESC)",
+    ],
+    "order_cancellation_requests": [
+        "CREATE INDEX IF NOT EXISTS ix_order_cancellation_requests_order_item_id "
+        "ON order_cancellation_requests (order_item_id)",
     ],
 }
 

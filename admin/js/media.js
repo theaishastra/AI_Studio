@@ -38,7 +38,7 @@ async function loadMediaGrid() {
   }
   grid.innerHTML = items.map(m => `
     <figure class="media-tile" data-id="${m.id}">
-      <img src="${esc(m.url)}" title="Click to copy URL" onclick="copyMediaUrl('${esc(m.url)}')">
+      <img src="${esc(mediaUrl(m.url))}" title="Click to copy URL" onclick="copyMediaUrl('${esc(m.url)}')">
       <figcaption>${esc(m.alt || m.url)}</figcaption>
       <button class="media-tile-delete" title="Delete" onclick="deleteMediaLibraryItem('${m.id}')">×</button>
     </figure>

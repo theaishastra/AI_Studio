@@ -965,6 +965,13 @@ a {
   }
 }
 
+/* Same standalone-detail-page treatment as above, but for the desktop site
+   header/nav - studio.html's product overlay hides it at every width, not just
+   mobile, so match that here too. */
+body.gifts-module-route:not(.gifts-view-category) .header-sticky-wrap {
+  display: none !important;
+}
+
 .hero {
   width: min(1400px, calc(100% - 56px));
   min-height: 430px;
@@ -1024,22 +1031,22 @@ a {
 /* Slide 1: Complete Banner Background Image */
 .hero-slide:nth-child(1),
 .hero-slide-clone {
-  background: url("https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/hero-slide-1.png") no-repeat center / cover !important;
+  background: url("https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/hero-slide-1.png") no-repeat center / cover !important;
 }
 
 /* Slide 2: Complete Banner Background Image */
 .hero-slide:nth-child(2) {
-  background: url("https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/hero-slide-2.png") no-repeat center / cover !important;
+  background: url("https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/hero-slide-2.png") no-repeat center / cover !important;
 }
 
 /* Slide 3: Complete Banner Background Image */
 .hero-slide:nth-child(3) {
-  background: url("https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/hero-slide-3.png") no-repeat center / cover !important;
+  background: url("https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/hero-slide-3.png") no-repeat center / cover !important;
 }
 
 /* Slide 4: Complete Banner Background Image */
 .hero-slide:nth-child(4) {
-  background: url("https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/hero-slide-4.png") no-repeat center / cover !important;
+  background: url("https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/hero-slide-4.png") no-repeat center / cover !important;
 }
 
 .hero-inner {
@@ -7726,6 +7733,29 @@ body.gifts-module-route .details-page {
   padding: 22px 0 72px;
 }
 
+/* Match corporate.html's product-detail overlay: a light-gray page backdrop
+   behind a narrower, centered card instead of the details page stretching
+   edge to edge at the same 1440px width as the category grid. */
+body:has(> .details-page) {
+  background: #F5F6F7 !important;
+}
+
+body.gifts-module-route .details-page.container {
+  width: min(1240px, calc(100% - 40px));
+}
+
+/* Gallery gets the same light-gray frame + inset white image card as
+   corporate's .modal-gallery-col / .modal-gallery-main. */
+body.gifts-module-route .details-gallery {
+  background: #EEF0F2;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+body.gifts-module-route .gallery-main {
+  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.06);
+}
+
 /* --- Purchase section: sits directly under the "Personalise this gift" box,
    before the About/Instructions/Delivery accordion, so Quantity/Add to Cart/
    Buy Now are visible right after the required customisation fields instead
@@ -7901,10 +7931,10 @@ body.gifts-module-route .gallery-thumb img {
 
 body.gifts-module-route .gallery-main {
   position: relative;
-  /* Compact, fixed-height frame instead of a tall 520-590px block - keeps
-     the whole product section (image + copy + buy card) visible together
-     without the page feeling like it needs extra scrolling for one photo. */
-  height: 420px;
+  /* Square frame (matches the product photos, which are shot/cropped 1:1) -
+     height tracks the column width instead of a fixed px value. */
+  aspect-ratio: 1 / 1;
+  height: auto;
   overflow: hidden;
   display: grid;
   place-items: center;
@@ -9366,7 +9396,8 @@ body.gifts-module-route .related-offer {
   }
 
   body.gifts-module-route .gallery-main {
-    min-height: 420px;
+    aspect-ratio: 1 / 1;
+    height: auto;
   }
 
   body.gifts-module-route .purchase-box {
@@ -9806,11 +9837,8 @@ body.gifts-module-route .related-offer {
   }
 
   body.gifts-module-route .gallery-main {
-    min-height: 300px;
-  }
-
-  body.gifts-module-route .gallery-main img {
-    max-height: 420px;
+    aspect-ratio: 1 / 1;
+    height: auto;
   }
 
   body.gifts-module-route .gallery-thumb {
@@ -10277,10 +10305,9 @@ body.gifts-module-route .breadcrumb {
 }
 
 body.gifts-module-route .details-page .breadcrumb {
-  /* Studio's product-preview page (css/studio.css's .preview-breadcrumb)
-     shows this "Home / Category / Product" trail on desktop and hides it
-     on mobile (where the "‹ PRODUCT DETAILS" topbar below takes over that
-     role instead) - match that here rather than hiding it everywhere. */
+  /* Studio's product-preview page (css/studio.css's .preview-topbar) shows
+     just the "‹ PRODUCT DETAILS" back link at every width, with no
+     Home/Category/Product path alongside it - match that here. */
   display: flex !important;
   font-size: 11.5px !important;
   color: #8C7B70 !important;
@@ -10288,9 +10315,9 @@ body.gifts-module-route .details-page .breadcrumb {
 }
 
 body.gifts-module-route .details-page .breadcrumb-back-btn {
-  /* Mobile-only back link - plain text + chevron, no pill/background, so it
-     reads as a compact page header instead of a floating CTA button. */
-  display: none !important;
+  /* Plain text + chevron, no pill/background, so it reads as a compact page
+     header instead of a floating CTA button. */
+  display: inline-flex !important;
   align-items: center !important;
   gap: 6px !important;
   background: none !important;
@@ -10309,10 +10336,6 @@ body.gifts-module-route .details-page .breadcrumb-back-btn {
 }
 
 @media (max-width: 768px) {
-  body.gifts-module-route .details-page .breadcrumb-back-btn {
-    display: inline-flex !important;
-  }
-
   body.gifts-module-route .details-page .breadcrumb {
     display: flex !important;
     align-items: center !important;
@@ -10329,22 +10352,8 @@ body.gifts-module-route .details-page .breadcrumb-back-btn:hover {
 }
 
 body.gifts-module-route .details-page .breadcrumb-links {
-  display: flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  flex-wrap: wrap !important;
-}
-
-/* The back link already gives a way back - the "Home / Customised Gifts /
-   Category" trail underneath it was a second wasted row on mobile, so it's
-   dropped there entirely (this must come after the unconditional
-   .breadcrumb-links rule above - same selector/specificity, so source order
-   decides, and this needs to win on mobile). Desktop is unaffected since
-   .breadcrumb itself (this row's parent) is already display:none there. */
-@media (max-width: 768px) {
-  body.gifts-module-route .details-page .breadcrumb-links {
-    display: none !important;
-  }
+  /* Replaced by the "‹ PRODUCT DETAILS" back link above at every width. */
+  display: none !important;
 }
 
 body.gifts-module-route .breadcrumb a {

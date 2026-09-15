@@ -3,6 +3,15 @@
    dev where the admin is opened as a static file instead of via FastAPI). */
 const API_BASE = window.API_BASE || "";
 
+/* Media Library uploads are served by FastAPI itself at /media/<file> (see
+   backend/app/main.py), so a relative URL only resolves correctly when the
+   admin is loaded from that same origin. Opened as a static file instead
+   (Live Server etc.), the relative path resolves against the static server's
+   own origin and 404s - route it through API_BASE like every other request. */
+function mediaUrl(url) {
+  return url && url.startsWith("/media/") ? `${API_BASE}${url}` : url;
+}
+
 function getToken() {
   return localStorage.getItem("admin_token");
 }

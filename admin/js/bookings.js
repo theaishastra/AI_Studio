@@ -10,23 +10,23 @@ const BOOKING_STATUS_LABELS = {
    no details.image, so the service's own hero photo stands in — the same images
    photography.html/booking.html use, keyed the same way. */
 const BOOKING_CATEGORY_IMAGES = {
-  wedding: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/wedding.png",
-  prewedding: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/pre-wedding.png",
-  maternity: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/maternity.jpg",
-  baby: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/baby-shower.jpg",
-  birthday: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/birthday-event.jpg",
-  outdoor: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/outdoor.jpg",
-  drone: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/drone.jpg",
-  video: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/video.jpg",
-  album: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/album%20designing.jpg",
-  event: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/wedding.png",
-  housewarming: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/wedding.png",
-  sareefunction: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/saree%20ceremony.png",
-  traditionalphoto: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png",
-  traditionalvideo: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg",
-  cinematicvideo: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png",
-  candidphoto: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-1.png",
-  ledscreens: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png",
+  wedding: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/wedding.png",
+  prewedding: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/pre-wedding.png",
+  maternity: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/maternity.jpg",
+  baby: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/baby-shower.jpg",
+  birthday: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/birthday-event.jpg",
+  outdoor: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/outdoor.jpg",
+  drone: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/drone.jpg",
+  video: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/video.jpg",
+  album: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/album%20designing.jpg",
+  event: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/wedding.png",
+  housewarming: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/wedding.png",
+  sareefunction: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/saree%20ceremony.png",
+  traditionalphoto: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png",
+  traditionalvideo: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg",
+  cinematicvideo: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png",
+  candidphoto: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-1.png",
+  ledscreens: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png",
 };
 
 function bookingImage(details) {
@@ -41,14 +41,14 @@ function bookingImage(details) {
 // BOOKING_CATEGORY_IMAGES above, which is each category's own hero banner —
 // a different, less specific photo). */
 const ADDON_NAME_IMAGES = {
-  "Candid Photography": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-1.png",
-  "Drone Videography": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/drone_1.jpg",
-  "Cinematic Videography": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png",
-  "Album Designing": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/album_1.jpg",
-  "Traditional Photography": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png",
-  "Traditional Videography": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg",
-  "LED Screens": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png",
-  "Outdoor Photography": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_1.jpg",
+  "Candid Photography": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-1.png",
+  "Drone Videography": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/drone_1.jpg",
+  "Cinematic Videography": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png",
+  "Album Designing": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/album_1.jpg",
+  "Traditional Photography": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png",
+  "Traditional Videography": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg",
+  "LED Screens": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png",
+  "Outdoor Photography": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_1.jpg",
 };
 
 // Same idea for the emoji shown when even the name-based image lookup misses

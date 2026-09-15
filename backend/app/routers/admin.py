@@ -1,7 +1,6 @@
 import csv
 import io
 from datetime import datetime, timezone
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
 from fastapi.responses import StreamingResponse
@@ -26,7 +25,8 @@ from ..security import hash_password
 from ..services.media import process_image
 from ..services.notifications import notify, order_event
 from ..services.policy import annotate_order, annotate_orders
-from ..services.storage import CUSTOM_UPLOAD_FIELDS
+from ..services.pricing import money
+from ..services.storage import CUSTOM_UPLOAD_FIELDS, upload_media_library_asset
 from .catalog import invalidate_catalog_cache
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -54,8 +54,6 @@ ORDER_ADMIN_LOAD = (
     selectinload(Order.address_change_requests),
 )
 
-BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
-MEDIA_DIR = BACKEND_DIR / "storage" / "media"
 HOMEPAGE_KEY = "homepage_layout"
 
 # Checkout now uploads these fields to Supabase Storage and stores a URL
@@ -580,8 +578,13 @@ def update_order_tracking(order_id: str, body: TrackingUpdateIn, request: Reques
 # ---------------------------------------------------------------- order cancellation requests
 
 def _cancellation_out(req: OrderCancellationRequest) -> dict:
+    item = None
+    if req.order_item_id and req.order:
+        item = next((i for i in req.order.items if i.id == req.order_item_id), None)
     return {
-        "id": req.id, "order_id": req.order_id, "reason": req.reason, "note": req.note,
+        "id": req.id, "order_id": req.order_id, "order_item_id": req.order_item_id,
+        "item_title": (item.product_snapshot or {}).get("title") if item else None,
+        "reason": req.reason, "note": req.note,
         "status": req.status, "admin_note": req.admin_note,
         "created_at": req.created_at, "resolved_at": req.resolved_at,
         "order_number": req.order.number if req.order else None,
@@ -594,7 +597,8 @@ def _cancellation_out(req: OrderCancellationRequest) -> dict:
 def list_cancellation_requests(status_filter: str | None = None,
                                admin: User = Depends(require_staff), db: Session = Depends(get_db)):
     query = db.query(OrderCancellationRequest).options(
-        selectinload(OrderCancellationRequest.order), selectinload(OrderCancellationRequest.user),
+        selectinload(OrderCancellationRequest.order).selectinload(Order.items),
+        selectinload(OrderCancellationRequest.user),
     )
     if status_filter:
         query = query.filter(OrderCancellationRequest.status == status_filter)
@@ -619,7 +623,9 @@ def decide_cancellation_request(request_id: str, body: CancellationDecisionIn, r
     req.resolved_by = admin.id
     req.resolved_at = datetime.now(timezone.utc)
 
-    if body.action == "approve":
+    if req.order_item_id:
+        _decide_item_cancellation(db, req, order, body, admin)
+    elif body.action == "approve":
         req.status = "approved"
         if order.status in ("cod_confirmed", "paid", "in_production", "shipped"):
             product_ids = [item.product_id for item in order.items if item.product_id]
@@ -644,6 +650,36 @@ def decide_cancellation_request(request_id: str, body: CancellationDecisionIn, r
     db.commit()
     db.refresh(req)
     return _cancellation_out(req)
+
+
+def _decide_item_cancellation(db: Session, req: OrderCancellationRequest, order: Order,
+                              body: CancellationDecisionIn, admin: User) -> None:
+    """Approve/reject a single-line-item cancellation request - leaves the rest
+    of the order (and Order.status) untouched, unlike the whole-order path."""
+    item = next((i for i in order.items if i.id == req.order_item_id), None)
+    title = (item.product_snapshot or {}).get("title") if item else "Item"
+
+    if body.action == "approve":
+        req.status = "approved"
+        if item:
+            item.status = "cancelled"
+            product = db.get(Product, item.product_id) if item.product_id else None
+            if product and product.type == "product" and product.stock is not None:
+                product.stock += item.qty
+            line_amount = money(item.unit_price) * item.qty
+            order.subtotal = max(money(0), money(order.subtotal) - line_amount)
+            order.total = max(money(0), money(order.total) - line_amount)
+        db.add(OrderTrackingEvent(
+            order_id=order.id, status=order.status, title=f"Item cancelled: {title}",
+            description=f"Cancellation request approved. Reason: {req.reason}",
+        ))
+    else:
+        req.status = "rejected"
+        if item and item.status == "cancel_requested":
+            item.status = "active"
+        notify(db, req.user_id, "Cancellation request declined",
+               f"Your request to cancel \"{title}\" from order {order.number} was declined."
+               + (f" {body.admin_note}" if body.admin_note else ""))
 
 
 # ---------------------------------------------------------------- order address-change requests
@@ -855,27 +891,44 @@ def list_reviews(admin: User = Depends(require_staff), db: Session = Depends(get
 @router.post("/media/upload")
 def upload_media(file: UploadFile, request: Request,
                  admin: User = Depends(require_staff), db: Session = Depends(get_db)):
-    # Plain `def`, not `async def` - process_image() below is a blocking Pillow
-    # encode + disk write. FastAPI runs sync routes in a worker thread automatically;
-    # an `async def` route doing that same work would block the whole event loop
+    # Plain `def`, not `async def` - process_image()/Cloudinary upload below are
+    # blocking. FastAPI runs sync routes in a worker thread automatically; an
+    # `async def` route doing that same work would block the whole event loop
     # (every other concurrent request) for its duration.
     data = file.file.read()
     try:
-        filename, mime, size = process_image(data, MEDIA_DIR, to_webp=True)
+        image_bytes, _ext, mime = process_image(data, to_webp=True)
     except ValueError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
 
-    media = Media(url=f"/media/{filename}", alt=file.filename or "", kind="library")
+    # Uploaded to Cloudinary rather than this server's local disk - this app's
+    # DB is a shared, hosted Postgres instance, so a file saved locally is
+    # invisible to every other environment (another deploy, another machine)
+    # reading the same Media row.
+    url = upload_media_library_asset(image_bytes)
+    if not url:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Image upload failed — try again")
+
+    media = Media(url=url, alt=file.filename or "", kind="library")
     db.add(media)
     audit(db, admin, "upload", "media", media.id, {"url": media.url}, request)
     db.commit()
     db.refresh(media)
-    return {"id": media.id, "url": media.url, "alt": media.alt, "mime": mime, "size": size}
+    return {"id": media.id, "url": media.url, "alt": media.alt, "mime": mime, "size": len(image_bytes)}
 
 
 @router.get("/media", response_model=list[MediaOut])
 def list_media(admin: User = Depends(require_staff), db: Session = Depends(get_db)):
-    return db.query(Media).order_by(Media.created_at.desc()).limit(500).all()
+    # Every image in the app lives in this one table - uploads made directly on this
+    # page (kind="library") plus every category portfolio photo and product package
+    # photo (kind="portfolio"/"package") - shown together so this page is a full
+    # inventory of every image in use, not just ad hoc uploads.
+    return (
+        db.query(Media)
+        .order_by(Media.created_at.desc())
+        .limit(1000)
+        .all()
+    )
 
 
 # ---------------------------------------------------------------- settings (all keys)

@@ -1,13 +1,18 @@
+import logging
+import re
+import threading
 import time
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
-from ..database import get_db
+from ..database import SessionLocal, get_db
 from ..deps import get_current_user
 from ..models import Category, Coupon, Media, Product, Review, Setting, SitePage, User
 from ..schemas import ReviewIn, ReviewOut
+
+logger = logging.getLogger("catalog")
 
 router = APIRouter(prefix="/api/catalog", tags=["catalog"])
 
@@ -19,21 +24,42 @@ HOMEPAGE_KEY = "homepage_layout"  # same Setting row admin.py's homepage builder
 # is in a different region from wherever this API is served. That per-request cost
 # can't be fixed by better queries; caching the response is what removes it, since
 # this data (categories/products/portfolio images) only changes when an admin edits
-# it. TTL is a deliberate staleness/latency trade-off - an admin change can take up
-# to this long to show up on the live site.
-_PAGE_BUNDLE_CACHE_TTL_SECONDS = 30
+# it. The TTL below only bounds staleness for a change made *outside* this app
+# (a direct DB edit) - every admin write endpoint already calls
+# invalidate_catalog_cache() right after commit, so a normal admin edit is live
+# immediately regardless of TTL. That means the TTL can be generous (minutes, not
+# seconds) purely to cut how often a visitor pays the ~1.5s DB round trip, with
+# no real staleness cost.
+_PAGE_BUNDLE_CACHE_TTL_SECONDS = 300
 _page_bundle_cache: dict[str, tuple[float, dict]] = {}
+# One lock per page_slug so concurrent requests landing in the same cold window
+# don't all independently pay the ~1.5s DB cost - the first one populates the
+# cache, the rest just wait on the lock and then read what it wrote.
+_page_bundle_locks: dict[str, threading.Lock] = {}
+_page_bundle_locks_guard = threading.Lock()
+
+
+def _lock_for(page_slug: str) -> threading.Lock:
+    with _page_bundle_locks_guard:
+        return _page_bundle_locks.setdefault(page_slug, threading.Lock())
+
+
+_WESERV_SKIP = re.compile(r"^https?://(localhost|127\.0\.0\.1)")
 
 
 def cld_optimize(url: str | None) -> str | None:
-    """Would insert Cloudinary's f_auto,q_auto into every Cloudinary-hosted URL -
-    left a no-op because this Cloudinary account has Strict Transformations
-    enabled, so any on-the-fly transform (even a plain resize) 400s instead of
-    serving the image (same constraint js/photography.js's cldOpt() hit
-    client-side). Re-enable by returning the transformed URL once Strict
-    Transformations is turned off in the Cloudinary dashboard, or the specific
-    f_auto,q_auto derivative is added to that account's allowed list."""
-    return url
+    """Routes every image URL through images.weserv.nl, a free public resizing/
+    compression proxy, instead of shipping the ~500KB-1MB R2 originals as-is for
+    what's usually rendered as a small card thumbnail (mirrors the identical
+    rewrite in every storefront page's client-side cldOpt(), e.g. js/photography.js).
+    R2 itself is a plain object store with no on-the-fly transform API (unlike
+    Cloudinary's old f_auto,q_auto), so this proxy is what actually does the
+    resizing. It can't reach a localhost-only dev URL, so local dev media passes
+    through unchanged."""
+    if not url or _WESERV_SKIP.match(url):
+        return url
+    stripped = re.sub(r"^https?://", "", url)
+    return f"https://images.weserv.nl/?url={stripped}&w=640&q=75&output=webp&we"
 
 
 def format_price(product: Product) -> str:
@@ -92,6 +118,19 @@ def page_bundle(page_slug: str, db: Session = Depends(get_db)):
     if cached and time.monotonic() - cached[0] < _PAGE_BUNDLE_CACHE_TTL_SECONDS:
         return cached[1]
 
+    # Only the first request in a cold window actually hits the DB; anyone else
+    # landing here at the same time just waits on this lock and then reads the
+    # cache entry that request filled in, instead of each paying the ~1.5s cost.
+    with _lock_for(page_slug):
+        cached = _page_bundle_cache.get(page_slug)
+        if cached and time.monotonic() - cached[0] < _PAGE_BUNDLE_CACHE_TTL_SECONDS:
+            return cached[1]
+        result = _build_page_bundle(page_slug, db)
+        _page_bundle_cache[page_slug] = (time.monotonic(), result)
+        return result
+
+
+def _build_page_bundle(page_slug: str, db: Session) -> dict:
     page = db.query(SitePage).filter(SitePage.slug == page_slug, SitePage.is_active == True).first()
     if not page:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Page not found")
@@ -159,6 +198,7 @@ def page_bundle(page_slug: str, db: Session = Depends(get_db)):
                 "images": [cld_optimize(m.url) for m in p.media],
                 "rating": ratings.get(p.id),
                 "extra": p.extra or {},
+                "input_fields": p.input_fields or [],
             }
             for p in active_products
         ]
@@ -181,7 +221,6 @@ def page_bundle(page_slug: str, db: Session = Depends(get_db)):
         "category_images": category_images,
         "hero": hero,
     }
-    _page_bundle_cache[page_slug] = (time.monotonic(), result)
     return result
 
 
@@ -221,6 +260,7 @@ def get_product(product_id: str, db: Session = Depends(get_db)):
         "images": [cld_optimize(m.url) for m in package_media],
         "rating": round(float(avg_rating), 1) if avg_rating else None,
         "extra": product.extra or {},
+        "input_fields": product.input_fields or [],
     }
 
 
@@ -242,6 +282,29 @@ def invalidate_catalog_cache() -> None:
     _page_bundle_cache.clear()
     _homepage_cache.clear()
     _products_cache.clear()
+
+
+def warm_catalog_cache() -> None:
+    """Called once at app startup (see main.py's lifespan) so the *first* real
+    visitor after a deploy/restart doesn't land on a cold cache and pay the
+    ~1.5s Supabase round trip that page_bundle()/public_homepage() would
+    otherwise only pay on demand. Best-effort: a failure here (e.g. DB not
+    reachable yet) just means the first real request warms the cache the
+    normal way instead - it must never block or crash startup."""
+    db = SessionLocal()
+    try:
+        slugs = [p.slug for p in db.query(SitePage).filter(SitePage.is_active == True).all()]
+        for slug in slugs:
+            try:
+                page_bundle(slug, db)
+            except Exception:
+                logger.warning("Cache warm-up failed for page %r", slug, exc_info=True)
+        try:
+            public_homepage(db)
+        except Exception:
+            logger.warning("Cache warm-up failed for homepage", exc_info=True)
+    finally:
+        db.close()
 
 
 @reviews_router.get("/api/homepage")

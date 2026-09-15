@@ -70,7 +70,7 @@ order1 = make_order(
     status="paid",
     items=[{
         "title": "Personalised Photo Mug",
-        "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/01-cup.png",
+        "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/01-cup.png",
         "unit_price": 449, "qty": 1,
         "customization": {
             "photoData": TINY_PNG, "photoName": "family-photo.png",
@@ -98,7 +98,7 @@ order2 = make_order(
     status="in_production",
     items=[{
         "title": "Premium Wooden Photo Frame",
-        "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/wooden-frame-2.png",
+        "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/wooden-frame-2.png",
         "unit_price": 699, "qty": 2,
         "customization": {
             "photoData": TINY_PNG, "photoName": "portrait.jpg",
@@ -121,7 +121,7 @@ order3 = make_order(
     status="cod_confirmed",
     items=[{
         "title": "Engraved Corporate Plaque",
-        "image": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate-assets/plaque-01.jpg",
+        "image": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate-assets/plaque-01.jpg",
         "unit_price": 1299, "qty": 1,
         "customization": {
             "logoData": TINY_PNG, "logoName": "company-logo.png",

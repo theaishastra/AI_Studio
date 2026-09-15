@@ -173,12 +173,22 @@
     // Rendered separately (artwork, message) or pure live-preview/internal state
     // with nothing meaningful to tell the customer after the fact (which
     // rendering path the 3D preview used, echoing the product name back, etc).
+    // `fields`/`fieldLabels` (Product.input_fields answers) are unpacked
+    // separately below rather than hidden entirely.
     const CUSTOM_HIDDEN_FIELDS = new Set([
       ...CUSTOM_IMAGE_FIELDS, ...CUSTOM_TEXT_FIELDS,
       'photoCrop', 'rotationX', 'rotationY', 'zoom',
       'photoZoom', 'photoX', 'photoY', 'photoFit',
-      'previewTemplate', 'previewMode',
+      'previewTemplate', 'previewMode', 'fields', 'fieldLabels',
     ]);
+
+    function customFieldLabel(cust, fieldId) {
+      return (cust && cust.fieldLabels && cust.fieldLabels[fieldId]) || fieldId;
+    }
+
+    function looksLikeUpload(value) {
+      return typeof value === 'string' && (value.startsWith('data:') || /^https?:\/\//i.test(value));
+    }
 
     const CUSTOM_FIELD_LABELS = {
       photoName: 'Uploaded File', logoName: 'Uploaded File', fileName: 'Uploaded File',
@@ -217,6 +227,14 @@
         const value = cust[field];
         if (typeof value === 'string' && (value.startsWith('data:image/') || /^https?:\/\//.test(value))) return value;
       }
+      const fields = cust.fields;
+      if (fields && typeof fields === 'object') {
+        for (const value of Object.values(fields)) {
+          const candidates = Array.isArray(value) ? value : [value];
+          const hit = candidates.find(v => typeof v === 'string' && (v.startsWith('data:image/') || /^https?:\/\//.test(v)));
+          if (hit) return hit;
+        }
+      }
       return '';
     }
 
@@ -251,10 +269,28 @@
           });
         }
       });
+      const fields = cust.fields;
+      if (fields && typeof fields === 'object') {
+        Object.entries(fields).forEach(([fieldId, value]) => {
+          if (value == null || value === '') return;
+          const label = customFieldLabel(cust, fieldId);
+          if (Array.isArray(value)) {
+            const text = value.filter(v => typeof v === 'string' && !looksLikeUpload(v)).join(', ');
+            if (text) specs.push([label, text]);
+          } else if (typeof value === 'string' && !looksLikeUpload(value)) {
+            specs.push([label, value]);
+          }
+        });
+      }
       return specs;
     }
 
-    function orderItemHTML(item) {
+    const ITEM_STATUS_LABELS = {
+      cancel_requested: 'Cancellation requested',
+      cancelled: 'Cancelled',
+    };
+
+    function orderItemHTML(item, order) {
       const snapshot = item.product_snapshot || {};
       const title = snapshot.title || 'Item';
       const image = resolveOrderImagePath(snapshot.image);
@@ -263,6 +299,10 @@
       const customText = orderItemCustomText(customization);
       const specs = orderItemCustomSpecs(customization);
       const lineTotal = Math.round(item.unit_price * item.qty);
+      const itemStatus = item.status || 'active';
+      const activeCount = (order.items || []).filter(i => (i.status || 'active') === 'active').length;
+      const hasPendingItemRequest = (order.cancellation_requests || []).some(r => r.order_item_id === item.id && r.status === 'pending');
+      const canCancelThisItem = order.can_cancel && itemStatus === 'active' && activeCount > 1 && !hasPendingItemRequest;
 
       const personalisation = (uploaded || customText || specs.length) ? `
         <div class="order-item-custom">
@@ -283,7 +323,7 @@
         </div>` : '';
 
       return `
-        <div class="order-item-card">
+        <div class="order-item-card${itemStatus !== 'active' ? ' order-item-inactive' : ''}">
           <div class="order-item-thumb">
             ${image
               ? `<img src="${escapeOrdAttr(image)}" alt="${escapeOrdAttr(title)}" loading="lazy" onerror="this.remove();">`
@@ -295,9 +335,11 @@
               <span>&#8377;${Math.round(item.unit_price)} each</span>
               <span class="order-item-dot">&middot;</span>
               <span>Qty ${item.qty}</span>
+              ${ITEM_STATUS_LABELS[itemStatus] ? `<span class="order-item-dot">&middot;</span><span class="order-item-status order-item-status-${itemStatus}">${ITEM_STATUS_LABELS[itemStatus]}</span>` : ''}
             </div>
             ${item.notes ? `<p class="order-item-note">${escapeOrdHTML(item.notes)}</p>` : ''}
             ${personalisation}
+            ${canCancelThisItem ? `<button type="button" class="order-item-cancel-btn" onclick="openCancelItemModal('${order.id}', '${item.id}', '${escapeOrdAttr(title).replace(/'/g, "&#39;")}')">Cancel this item</button>` : ''}
           </div>
           <div class="order-item-amount">&#8377;${lineTotal}</div>
         </div>`;
@@ -374,12 +416,13 @@
     function orderRequestsHTML(order) {
       const notes = [];
       (order.cancellation_requests || []).forEach(request => {
+        const scope = request.item_title ? `&ldquo;${escapeOrdHTML(request.item_title)}&rdquo; ` : '';
         if (request.status === 'pending') {
-          notes.push(['pending', 'Cancellation requested &mdash; awaiting review.']);
+          notes.push(['pending', `Cancellation requested for ${scope || 'this order'} &mdash; awaiting review.`]);
         } else if (request.status === 'approved') {
-          notes.push(['ok', `Cancellation approved${request.admin_note ? ` &mdash; ${escapeOrdHTML(request.admin_note)}` : ''}.`]);
+          notes.push(['ok', `Cancellation of ${scope || 'this order'}approved${request.admin_note ? ` &mdash; ${escapeOrdHTML(request.admin_note)}` : ''}.`]);
         } else if (request.status === 'rejected') {
-          notes.push(['bad', `Cancellation declined${request.admin_note ? ` &mdash; ${escapeOrdHTML(request.admin_note)}` : ''}.`]);
+          notes.push(['bad', `Cancellation of ${scope || 'this order'}declined${request.admin_note ? ` &mdash; ${escapeOrdHTML(request.admin_note)}` : ''}.`]);
         }
       });
       (order.address_change_requests || []).forEach(request => {
@@ -414,7 +457,7 @@
 
           <div class="order-section">
             <h5 class="order-section-title">Items in this order</h5>
-            <div class="order-items-list">${order.items.map(orderItemHTML).join('')}</div>
+            <div class="order-items-list">${order.items.map(item => orderItemHTML(item, order)).join('')}</div>
           </div>
 
           ${orderSummaryHTML(order)}
@@ -526,14 +569,34 @@
       `);
     }
 
-    async function submitCancelOrder(orderId) {
+    // Same form as the whole-order cancel, scoped to one line item - approving
+    // this only removes that item's amount from the order, the rest ships as normal.
+    function openCancelItemModal(orderId, itemId, itemTitle) {
+      openOrdersModal(`
+        <h3 class="panel-title">Cancel Item</h3>
+        <p class="cart-login-sub">Cancelling &ldquo;${escapeOrdHTML(itemTitle)}&rdquo; only &mdash; the rest of your order is unaffected.</p>
+        <div id="cancelOrderMsg" class="cart-form-msg" style="display:none;"></div>
+        <label class="cart-field-label">Reason for cancelling</label>
+        <select id="cancelReasonSelect" class="cart-field-input">
+          ${CANCELLATION_REASONS.map(r => `<option value="${r.value}">${escapeOrdHTML(r.label)}</option>`).join('')}
+        </select>
+        <label class="cart-field-label">Anything else we should know? (optional)</label>
+        <textarea id="cancelReasonNote" class="cart-field-input" rows="3"></textarea>
+        <div class="cart-step-actions">
+          <button type="button" class="btn-secondary-cart" onclick="closeOrdersModal()">Keep Item</button>
+          <button type="button" class="btn-primary-cart" id="cancelOrderSubmitBtn" onclick="submitCancelOrder('${orderId}', '${itemId}')">Submit Cancellation</button>
+        </div>
+      `);
+    }
+
+    async function submitCancelOrder(orderId, itemId) {
       const reason = document.getElementById('cancelReasonSelect').value;
       const note = document.getElementById('cancelReasonNote').value.trim();
       const msgEl = document.getElementById('cancelOrderMsg');
       const btn = document.getElementById('cancelOrderSubmitBtn');
       btn.disabled = true;
       try {
-        const updated = await CustomerAuth.requestCancellation(orderId, reason, note);
+        const updated = await CustomerAuth.requestCancellation(orderId, reason, note, itemId);
         _myOrders = _myOrders.map(o => o.id === updated.id ? updated : o);
         closeOrdersModal();
         renderOrdersList(_myOrders);

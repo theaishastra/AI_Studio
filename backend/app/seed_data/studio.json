@@ -2,7 +2,7 @@
   "photo_printing": {
     "title": "Photo Printing",
     "desc": "High-grade premium photographic printing in glossy, matte, or satin finishes in all standard dimensions.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/side-bar-icons/photo-printing.png",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/side-bar-icons/photo-printing.png",
     "packages": [
       {
         "name": "Print Passport Size Photo",
@@ -12,13 +12,13 @@
         "tag": "Pack of 8",
         "badge": "Popular",
         "turnaround": "20 min",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p1-m1.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p1-m1.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p1-m1.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p1-m2.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p1-m3.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p1-m4.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p1-m5.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p1-m1.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p1-m2.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p1-m3.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p1-m4.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p1-m5.png"
         ],
         "highlights": [
           "Regular Passport Photo (35x45mm)",
@@ -52,13 +52,13 @@
         "price": "₹159",
         "oldPrice": "₹183",
         "tag": "4x6 Inch",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p2-m1.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p2-m1.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p2-m1.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p2-m2.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p2-m3.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p2-m4.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p2-m5.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p2-m1.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p2-m2.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p2-m3.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p2-m4.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p2-m5.png"
         ],
         "quantityOptions": [
           {
@@ -101,12 +101,12 @@
         "price": "₹200",
         "oldPrice": "₹246",
         "tag": "8 Photos",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1787804777/Gemini_Generated_Image_3f175k3f175k3f17.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_3f175k3f175k3f17.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1787804777/Gemini_Generated_Image_3f175k3f175k3f17.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1787804949/Gemini_Generated_Image_meyiatmeyiatmeyi.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1787803017/Gemini_Generated_Image_gor05rgor05rgor0.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1787804922/Gemini_Generated_Image_1a536q1a536q1a53.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_3f175k3f175k3f17.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_meyiatmeyiatmeyi.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_gor05rgor05rgor0.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_1a536q1a536q1a53.png"
         ],
         "quantityOptions": [
           {
@@ -138,12 +138,12 @@
         "price": "₹150",
         "oldPrice": "₹168",
         "tag": "Multi-Country",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788195985/Gemini_Generated_Image_8kj3s78kj3s78kj3-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_8kj3s78kj3s78kj3-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788195985/Gemini_Generated_Image_8kj3s78kj3s78kj3-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788195990/Gemini_Generated_Image_4k0ua34k0ua34k0u-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788079572/f2e2d631-40f2-4610-9152-6cc88189f9ad.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788195984/Gemini_Generated_Image_l40tdol40tdol40t-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_8kj3s78kj3s78kj3-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_4k0ua34k0ua34k0u-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/f2e2d631-40f2-4610-9152-6cc88189f9ad.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_l40tdol40tdol40t-clean.png"
         ],
         "quantityOptions": [
           {
@@ -176,7 +176,7 @@
   "photo_lamination": {
     "title": "Photo Lamination",
     "desc": "Shield your precious prints, certifications, and portraits with long-lasting water-resistant pouch lamination.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/side-bar-icons/photo-lamination.png",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/side-bar-icons/photo-lamination.png",
     "packages": [
       {
         "name": "Classic Photo Lamination",
@@ -184,12 +184,12 @@
         "price": "₹30",
         "oldPrice": "₹35",
         "tag": "Small",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788091549/Gemini_Generated_Image_q8xflnq8xflnq8xf-clean.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_q8xflnq8xflnq8xf-clean.jpg",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788091549/Gemini_Generated_Image_q8xflnq8xflnq8xf-clean.jpg",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788091471/Gemini_Generated_Image_wxydftwxydftwxyd-clean.jpg",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788091699/Gemini_Generated_Image_t8az21t8az21t8az-clean.jpg",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788091373/Gemini_Generated_Image_co8szkco8szkco8s-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_q8xflnq8xflnq8xf-clean.jpg",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_wxydftwxydftwxyd-clean.jpg",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_t8az21t8az21t8az-clean.jpg",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_co8szkco8szkco8s-clean.png"
         ],
         "purposeLabel": "Printing & Frame Size",
         "purposeOptions": [
@@ -231,7 +231,7 @@
   "photo_restoration": {
     "title": "Photo Restoration",
     "desc": "Preserve historical memories by digitally removing creases, scratches, stains, and restoring colors to old photos.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/side-bar-icons/photo-restoration.png",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/side-bar-icons/photo-restoration.png",
     "packages": [
       {
         "name": "Full Restoration & Colorization",
@@ -239,12 +239,12 @@
         "price": "₹399",
         "oldPrice": "₹496",
         "tag": "Premium",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788095969/ChatGPT_Image_Aug_30_2026_06_31_51_PM.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/ChatGPT_Image_Aug_30_2026_06_31_51_PM.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788095969/ChatGPT_Image_Aug_30_2026_06_31_51_PM.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788095968/e0814301-a3a0-4f3d-b7df-d9892b1ca03e.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788095966/ChatGPT_Image_Aug_30_2026_06_25_07_PM.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788095966/ChatGPT_Image_Aug_30_2026_06_39_28_PM.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/ChatGPT_Image_Aug_30_2026_06_31_51_PM.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/e0814301-a3a0-4f3d-b7df-d9892b1ca03e.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/ChatGPT_Image_Aug_30_2026_06_25_07_PM.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/ChatGPT_Image_Aug_30_2026_06_39_28_PM.png"
         ]
       }
     ]
@@ -252,7 +252,7 @@
   "photo_portrait": {
     "title": "Photo Portrait",
     "desc": "Professionally lit studio portraits and print-ready headshots for individuals, families, and professional profiles.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/side-bar-icons/photo-editing.png",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/side-bar-icons/photo-editing.png",
     "packages": [
       {
         "name": "Mosaic Design",
@@ -260,11 +260,11 @@
         "price": "₹300",
         "oldPrice": "₹346",
         "tag": "Single",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788101559/Gemini_Generated_Image_u2y9xau2y9xau2y9-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_u2y9xau2y9xau2y9-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788101559/Gemini_Generated_Image_u2y9xau2y9xau2y9-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788103091/Gemini_Generated_Image_eormjeormjeormje-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788103093/Gemini_Generated_Image_tnvfg1tnvfg1tnvf-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_u2y9xau2y9xau2y9-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_eormjeormjeormje-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_tnvfg1tnvfg1tnvf-clean.png"
         ]
       },
       {
@@ -273,12 +273,12 @@
         "price": "₹499",
         "oldPrice": "₹588",
         "tag": "Pack of 5",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788105067/Gemini_Generated_Image_m1m16vm1m16vm1m1-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_m1m16vm1m16vm1m1-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788105067/Gemini_Generated_Image_m1m16vm1m16vm1m1-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788101957/Gemini_Generated_Image_w6xxcqw6xxcqw6xx-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788104255/Gemini_Generated_Image_er8k01er8k01er8k_1_-clean_1.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788105072/Gemini_Generated_Image_up47buup47buup47.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_m1m16vm1m16vm1m1-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_w6xxcqw6xxcqw6xx-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_er8k01er8k01er8k_1_-clean_1.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_up47buup47buup47.png"
         ]
       },
       {
@@ -287,12 +287,12 @@
         "price": "₹349",
         "oldPrice": "₹399",
         "tag": "Custom",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788107265/Gemini_Generated_Image_q36ub0q36ub0q36u-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_q36ub0q36ub0q36u-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788107265/Gemini_Generated_Image_q36ub0q36ub0q36u-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788108087/Gemini_Generated_Image_onawgsonawgsonaw-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788106949/Gemini_Generated_Image_pzkd45pzkd45pzkd.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788106668/Gemini_Generated_Image_ixhg16ixhg16ixhg.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_q36ub0q36ub0q36u-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_onawgsonawgsonaw-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_pzkd45pzkd45pzkd.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_ixhg16ixhg16ixhg.png"
         ]
       },
       {
@@ -301,12 +301,12 @@
         "price": "₹249",
         "oldPrice": "₹288",
         "tag": "Single",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788109090/Gemini_Generated_Image_g0idnyg0idnyg0id-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_g0idnyg0idnyg0id-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788109090/Gemini_Generated_Image_g0idnyg0idnyg0id-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788109085/Gemini_Generated_Image_v7bcotv7bcotv7bc-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788109084/Gemini_Generated_Image_r7doy7r7doy7r7do-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788109079/Gemini_Generated_Image_wxlyabwxlyabwxly-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_g0idnyg0idnyg0id-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_v7bcotv7bcotv7bc-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_r7doy7r7doy7r7do-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_wxlyabwxlyabwxly-clean.png"
         ]
       },
       {
@@ -315,12 +315,12 @@
         "price": "₹399",
         "oldPrice": "₹460",
         "tag": "Occasion",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788110875/Gemini_Generated_Image_zc2ak1zc2ak1zc2a-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_zc2ak1zc2ak1zc2a-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788110875/Gemini_Generated_Image_zc2ak1zc2ak1zc2a-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788110869/Gemini_Generated_Image_r4qij4r4qij4r4qi-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788110878/Gemini_Generated_Image_6tizd56tizd56tiz-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788110879/Gemini_Generated_Image_e3dwre3dwre3dwre-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_zc2ak1zc2ak1zc2a-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_r4qij4r4qij4r4qi-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_6tizd56tizd56tiz-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_e3dwre3dwre3dwre-clean.png"
         ]
       },
       {
@@ -329,11 +329,11 @@
         "price": "₹499",
         "oldPrice": "₹575",
         "tag": "Occasion",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788154559/Gemini_Generated_Image_2f93rm2f93rm2f93-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_2f93rm2f93rm2f93-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788154559/Gemini_Generated_Image_2f93rm2f93rm2f93-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788154561/Gemini_Generated_Image_ho6z0kho6z0kho6z-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788154569/Gemini_Generated_Image_pj4wdwpj4wdwpj4w-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_2f93rm2f93rm2f93-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_ho6z0kho6z0kho6z-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_pj4wdwpj4wdwpj4w-clean.png"
         ]
       },
       {
@@ -342,12 +342,12 @@
         "price": "₹299",
         "oldPrice": "₹345",
         "tag": "Occasion",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788155447/Gemini_Generated_Image_v4ykdgv4ykdgv4yk-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_v4ykdgv4ykdgv4yk-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788155447/Gemini_Generated_Image_v4ykdgv4ykdgv4yk-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788155447/Gemini_Generated_Image_2lxxn32lxxn32lxx-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788155448/Gemini_Generated_Image_2337812337812337-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788155446/Gemini_Generated_Image_rithm7rithm7rith-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_v4ykdgv4ykdgv4yk-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_2lxxn32lxxn32lxx-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_2337812337812337-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_rithm7rithm7rith-clean.png"
         ]
       }
     ]
@@ -355,7 +355,7 @@
   "id_card_printing": {
     "title": "ID Card Printing",
     "desc": "High-grade PVC card printing for employee badges, students, and membership cards with barcode support.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/side-bar-icons/id-card-printing.png",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/side-bar-icons/id-card-printing.png",
     "packages": [
       {
         "name": "Single PVC ID Card",
@@ -363,12 +363,12 @@
         "price": "₹99",
         "oldPrice": "₹115",
         "tag": "Single",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788156584/Gemini_Generated_Image_aulo4daulo4daulo-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_aulo4daulo4daulo-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788156584/Gemini_Generated_Image_aulo4daulo4daulo-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788156576/Gemini_Generated_Image_6mrsxi6mrsxi6mrs-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788156574/Gemini_Generated_Image_ibzsn4ibzsn4ibzs-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788156572/Gemini_Generated_Image_ezry6yezry6yezry-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_aulo4daulo4daulo-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_6mrsxi6mrsxi6mrs-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_ibzsn4ibzsn4ibzs-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_ezry6yezry6yezry-clean.png"
         ]
       },
       {
@@ -377,12 +377,12 @@
         "price": "₹49",
         "oldPrice": "₹61",
         "tag": "Bulk Rate",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788157604/Gemini_Generated_Image_fpgi7wfpgi7wfpgi-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_fpgi7wfpgi7wfpgi-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788157604/Gemini_Generated_Image_fpgi7wfpgi7wfpgi-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788157600/Gemini_Generated_Image_fg1w9afg1w9afg1w-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788157604/Gemini_Generated_Image_88haqj88haqj88ha-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788157598/Gemini_Generated_Image_zbvimgzbvimgzbvi-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_fpgi7wfpgi7wfpgi-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_fg1w9afg1w9afg1w-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_88haqj88haqj88ha-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_zbvimgzbvimgzbvi-clean.png"
         ]
       }
     ]
@@ -390,7 +390,7 @@
   "certificate_printing": {
     "title": "Certificate Printing",
     "desc": "Beautiful print outputs on heavy cardstock, textured linen, parchment, or gold-foil bordered certificates.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/side-bar-icons/certificate-printing.png",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/side-bar-icons/certificate-printing.png",
     "packages": [
       {
         "name": "Standard 300gsm A4 Certificate",
@@ -398,12 +398,12 @@
         "price": "₹30",
         "oldPrice": "₹34",
         "tag": "A4 Card",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788158534/Gemini_Generated_Image_eizyyyeizyyyeizy-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_eizyyyeizyyyeizy-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788158534/Gemini_Generated_Image_eizyyyeizyyyeizy-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788158532/Gemini_Generated_Image_fvntwpfvntwpfvnt-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788158529/Gemini_Generated_Image_de7mh3de7mh3de7m-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788158524/Gemini_Generated_Image_1dh72a1dh72a1dh7-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_eizyyyeizyyyeizy-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_fvntwpfvntwpfvnt-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_de7mh3de7mh3de7m-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_1dh72a1dh72a1dh7-clean.png"
         ]
       },
       {
@@ -412,12 +412,12 @@
         "price": "₹75",
         "oldPrice": "₹87",
         "tag": "Premium",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788159342/Gemini_Generated_Image_cki53ycki53ycki5-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_cki53ycki53ycki5-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788159342/Gemini_Generated_Image_cki53ycki53ycki5-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788159344/Gemini_Generated_Image_k55daek55daek55d-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788159337/Gemini_Generated_Image_lf2t8zlf2t8zlf2t-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788159347/Gemini_Generated_Image_fsrt4yfsrt4yfsrt-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_cki53ycki53ycki5-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_k55daek55daek55d-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_lf2t8zlf2t8zlf2t-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_fsrt4yfsrt4yfsrt-clean.png"
         ]
       },
       {
@@ -426,12 +426,12 @@
         "price": "₹299",
         "oldPrice": "₹372",
         "tag": "Gift Grade",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788160005/Gemini_Generated_Image_te26tyte26tyte26-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_te26tyte26tyte26-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788160005/Gemini_Generated_Image_te26tyte26tyte26-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788160010/Gemini_Generated_Image_62slzx62slzx62sl-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788160005/Gemini_Generated_Image_ih1mzrih1mzrih1m-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788160004/Gemini_Generated_Image_nz87cnnz87cnnz87-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_te26tyte26tyte26-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_62slzx62slzx62sl-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_ih1mzrih1mzrih1m-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_nz87cnnz87cnnz87-clean.png"
         ]
       }
     ]
@@ -439,7 +439,7 @@
   "scanning": {
     "title": "Scanning",
     "desc": "Convert documents, brochures, and print photos into searchable digital PDFs or high-resolution JPEGs.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/side-bar-icons/scanning.png",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/side-bar-icons/scanning.png",
     "packages": [
       {
         "name": "High-Speed Document Scan",
@@ -447,12 +447,12 @@
         "price": "₹10",
         "oldPrice": "₹11",
         "tag": "PDF Format",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788160707/Gemini_Generated_Image_191xnk191xnk191x-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_191xnk191xnk191x-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788160707/Gemini_Generated_Image_191xnk191xnk191x-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788160704/Gemini_Generated_Image_nngp6gnngp6gnngp-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788160707/Gemini_Generated_Image_inrva7inrva7inrv-clean-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788160713/Gemini_Generated_Image_j1hl73j1hl73j1hl-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_191xnk191xnk191x-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_nngp6gnngp6gnngp-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_inrva7inrva7inrv-clean-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_j1hl73j1hl73j1hl-clean.png"
         ]
       },
       {
@@ -461,12 +461,12 @@
         "price": "₹20",
         "oldPrice": "₹23",
         "tag": "JPEG Format",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788161505/Gemini_Generated_Image_6nromr6nromr6nro-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_6nromr6nromr6nro-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788161505/Gemini_Generated_Image_6nromr6nromr6nro-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788161505/Gemini_Generated_Image_t88d94t88d94t88d-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788161508/Gemini_Generated_Image_raitsvraitsvrait-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788161509/Gemini_Generated_Image_rlvt0yrlvt0yrlvt-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_6nromr6nromr6nro-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_t88d94t88d94t88d-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_raitsvraitsvrait-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_rlvt0yrlvt0yrlvt-clean.png"
         ]
       }
     ]
@@ -474,7 +474,7 @@
   "cd_dvd_copying": {
     "title": "CD/DVD Copying",
     "desc": "Copy, duplicate, recover, or transfer video archives and photos onto premium long-lasting discs.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/side-bar-icons/cd-dvd-copying.png",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/side-bar-icons/cd-dvd-copying.png",
     "packages": [
       {
         "name": "CD/DVD Data Duplication",
@@ -482,12 +482,12 @@
         "price": "₹99",
         "oldPrice": "₹123",
         "tag": "Per Disc",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788163293/Gemini_Generated_Image_kio4ndkio4ndkio4-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_kio4ndkio4ndkio4-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788163293/Gemini_Generated_Image_kio4ndkio4ndkio4-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788163287/Gemini_Generated_Image_z8d3t5z8d3t5z8d3-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788163288/Gemini_Generated_Image_w83oow83oow83oow-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788163290/Gemini_Generated_Image_lg3g2clg3g2clg3g-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_kio4ndkio4ndkio4-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_z8d3t5z8d3t5z8d3-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_w83oow83oow83oow-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_lg3g2clg3g2clg3g-clean.png"
         ]
       },
       {
@@ -496,12 +496,12 @@
         "price": "₹299",
         "oldPrice": "₹335",
         "tag": "Per Tape",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788164081/Gemini_Generated_Image_qblhj5qblhj5qblh-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_qblhj5qblhj5qblh-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788164081/Gemini_Generated_Image_qblhj5qblhj5qblh-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788164076/Gemini_Generated_Image_qs8dsuqs8dsuqs8d-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788164072/Gemini_Generated_Image_iicj3eiicj3eiicj-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788164071/Gemini_Generated_Image_3oqp303oqp303oqp-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_qblhj5qblhj5qblh-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_qs8dsuqs8dsuqs8d-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_iicj3eiicj3eiicj-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_3oqp303oqp303oqp-clean.png"
         ]
       },
       {
@@ -510,12 +510,12 @@
         "price": "₹750",
         "oldPrice": "₹850",
         "tag": "1 Hour Video",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788164982/Gemini_Generated_Image_fpnoc1fpnoc1fpno-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_fpnoc1fpnoc1fpno-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788164982/Gemini_Generated_Image_fpnoc1fpnoc1fpno-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788164958/Gemini_Generated_Image_kqo556kqo556kqo5-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788164987/Gemini_Generated_Image_49fk4n49fk4n49fk-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788165555/Gemini_Generated_Image_anmh5uanmh5uanmh-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_fpnoc1fpnoc1fpno-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_kqo556kqo556kqo5-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_49fk4n49fk4n49fk-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_anmh5uanmh5uanmh-clean.png"
         ],
         "purposeLabel": "Tape Format",
         "purposeOptions": [
@@ -530,12 +530,12 @@
         "price": "₹500",
         "oldPrice": "₹575",
         "tag": "Add-on",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788165956/Gemini_Generated_Image_bc4i8zbc4i8zbc4i-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_bc4i8zbc4i8zbc4i-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788165956/Gemini_Generated_Image_bc4i8zbc4i8zbc4i-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788165953/Gemini_Generated_Image_wipy37wipy37wipy-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788165954/Gemini_Generated_Image_nokom4nokom4noko-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788166230/Gemini_Generated_Image_1ommx01ommx01omm-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_bc4i8zbc4i8zbc4i-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_wipy37wipy37wipy-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_nokom4nokom4noko-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_1ommx01ommx01omm-clean.png"
         ]
       },
       {
@@ -544,12 +544,12 @@
         "price": "₹500",
         "oldPrice": "₹575",
         "tag": "Per Set",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788166858/Gemini_Generated_Image_xb3czoxb3czoxb3c-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_xb3czoxb3czoxb3c-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788166858/Gemini_Generated_Image_xb3czoxb3czoxb3c-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788166788/Gemini_Generated_Image_u6ymhou6ymhou6ym-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788166794/Gemini_Generated_Image_xygntjxygntjxygn-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788166796/Gemini_Generated_Image_xb3czoxb3czoxb3c.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_xb3czoxb3czoxb3c-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_u6ymhou6ymhou6ym-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_xygntjxygntjxygn-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_xb3czoxb3czoxb3c.png"
         ]
       }
     ]
@@ -557,7 +557,7 @@
   "xerox_printing": {
     "title": "Xerox & Printing",
     "desc": "Fast black & white and color laser Xerox and print-outs on plain, card, and sticker paper in A4 and A3 sizes.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/side-bar-icons/canvas-printing.png",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/side-bar-icons/canvas-printing.png",
     "packages": [
       {
         "name": "B&W Laser Xerox",
@@ -565,12 +565,12 @@
         "price": "₹3",
         "oldPrice": "₹4",
         "tag": "A4",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788176025/Gemini_Generated_Image_yvw3nlyvw3nlyvw3-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_yvw3nlyvw3nlyvw3-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788176025/Gemini_Generated_Image_yvw3nlyvw3nlyvw3-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788176023/Gemini_Generated_Image_gv2bu3gv2bu3gv2b-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788176020/Gemini_Generated_Image_mwhe76mwhe76mwhe-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788175486/Gemini_Generated_Image_z37e4iz37e4iz37e-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_yvw3nlyvw3nlyvw3-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_gv2bu3gv2bu3gv2b-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_mwhe76mwhe76mwhe-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_z37e4iz37e4iz37e-clean.png"
         ],
         "qtyLabel": "Paper Size",
         "quantityOptions": [
@@ -602,12 +602,12 @@
         "price": "₹5",
         "oldPrice": "₹6",
         "tag": "A4",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788195075/Gemini_Generated_Image_j3yk3wj3yk3wj3yk-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_j3yk3wj3yk3wj3yk-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788195075/Gemini_Generated_Image_j3yk3wj3yk3wj3yk-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788195077/Gemini_Generated_Image_t3bmi4t3bmi4t3bm-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788195076/Gemini_Generated_Image_vl13esvl13esvl13-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788195073/Gemini_Generated_Image_j1cqi9j1cqi9j1cq-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_j3yk3wj3yk3wj3yk-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_t3bmi4t3bmi4t3bm-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_vl13esvl13esvl13-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_j1cqi9j1cqi9j1cq-clean.png"
         ],
         "highlights": [
           "1 or 2 page print outs are ₹10 each flat rate"
@@ -642,12 +642,12 @@
         "price": "₹20",
         "oldPrice": "₹24",
         "tag": "A4",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/v1788175487/Gemini_Generated_Image_xdmgvpxdmgvpxdmg-clean.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_xdmgvpxdmgvpxdmg-clean.png",
         "images": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788175487/Gemini_Generated_Image_xdmgvpxdmgvpxdmg-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788175486/Gemini_Generated_Image_uip145uip145uip1-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788175484/Gemini_Generated_Image_21odj21odj21odj2-clean.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/v1788175486/Gemini_Generated_Image_z37e4iz37e4iz37e-clean.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_xdmgvpxdmgvpxdmg-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_uip145uip145uip1-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_21odj21odj21odj2-clean.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Gemini_Generated_Image_z37e4iz37e4iz37e-clean.png"
         ],
         "qtyLabel": "Paper Type & Size",
         "quantityOptions": [

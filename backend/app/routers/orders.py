@@ -18,6 +18,7 @@ from ..services.policy import (
     address_change_deadline, annotate_order, annotate_orders,
 )
 from ..services.pricing import money, price_cart
+from ..services.product_fields import validate_product_field_values
 from ..services.razorpay_service import create_rzp_order
 from ..services.storage import CUSTOM_UPLOAD_FIELDS, upload_data_uri
 
@@ -40,6 +41,24 @@ def _externalize_customization(customization: dict | None, order_number: str) ->
             url = upload_data_uri(value, subfolder=order_number)
             if url:
                 out[field] = url
+
+    # Admin-configured dynamic upload fields (Product.input_fields) land under
+    # customization.fields[fieldId] as a single data: URI or a list of them
+    # (multi-upload fields) - externalize those the same way.
+    fields = out.get("fields")
+    if isinstance(fields, dict):
+        new_fields = dict(fields)
+        for key, value in fields.items():
+            if isinstance(value, str) and value.startswith("data:"):
+                url = upload_data_uri(value, subfolder=order_number)
+                if url:
+                    new_fields[key] = url
+            elif isinstance(value, list):
+                new_fields[key] = [
+                    (upload_data_uri(v, subfolder=order_number) or v) if isinstance(v, str) and v.startswith("data:") else v
+                    for v in value
+                ]
+        out["fields"] = new_fields
     return out
 
 ORDER_LOAD = (
@@ -94,6 +113,11 @@ def checkout(body: CheckoutIn, user: User = Depends(get_current_user), db: Sessi
             raise HTTPException(status.HTTP_400_BAD_REQUEST, f'"{entry.title}" is no longer available')
         if product.type == "product" and product.stock is not None and product.stock < entry.qty:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, f'"{product.title}" is out of stock')
+        field_errors = validate_product_field_values(
+            product, (entry.customization or {}).get("fields") if entry.customization else None
+        )
+        if field_errors:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, f'"{product.title}": {"; ".join(field_errors)}')
 
     priced = price_cart(
         db,
@@ -217,10 +241,16 @@ def cancel_order(order_id: str, body: CancellationRequestIn,
     immediately - nothing to refund or unwind yet. Once payment has gone
     through or production has started, it instead files a cancellation
     request for staff to approve or reject (they may already be mid-production
-    or have a courier booked), visible on the admin Orders page."""
+    or have a courier booked), visible on the admin Orders page.
+
+    When body.order_item_id is set, only that line item is targeted - the rest
+    of the order (and Order.status) is left untouched. See cancel_order_item()."""
     order = db.query(Order).options(*ORDER_LOAD).filter(Order.id == order_id, Order.user_id == user.id).first()
     if not order:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Order not found")
+
+    if body.order_item_id:
+        return _cancel_order_item(db, order, body, user)
 
     if order.status in IMMEDIATE_CANCEL_STATUSES:
         order.status = "cancelled"
@@ -237,6 +267,46 @@ def cancel_order(order_id: str, body: CancellationRequestIn,
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "A cancellation request is already pending for this order")
 
     db.add(OrderCancellationRequest(order_id=order.id, user_id=user.id, reason=body.reason, note=body.note))
+    db.commit()
+    db.refresh(order)
+    return annotate_order(db, order)
+
+
+def _cancel_order_item(db: Session, order: Order, body: CancellationRequestIn, user: User) -> OrderOut:
+    item = next((i for i in order.items if i.id == body.order_item_id), None)
+    if not item:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Order item not found")
+    if item.status != "active":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "This item has already been cancelled or has a pending cancellation")
+    active_items = [i for i in order.items if i.status == "active"]
+    if len(active_items) <= 1:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "This is the last item in your order - please cancel the entire order instead",
+        )
+    if order.status not in (IMMEDIATE_CANCEL_STATUSES + REQUESTABLE_CANCEL_STATUSES):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "This order can no longer be cancelled")
+    if any(r.status == "pending" for r in order.cancellation_requests):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "A cancellation request is already pending for this order")
+
+    title = (item.product_snapshot or {}).get("title") or "Item"
+
+    if order.status in IMMEDIATE_CANCEL_STATUSES:
+        item.status = "cancelled"
+        line_amount = money(item.unit_price) * item.qty
+        order.subtotal = max(money(0), money(order.subtotal) - line_amount)
+        order.total = max(money(0), money(order.total) - line_amount)
+        db.add(OrderTrackingEvent(order_id=order.id, status=order.status, title=f"Item cancelled: {title}",
+                                   description=f"Cancelled by customer. Reason: {body.reason}"))
+        db.commit()
+        db.refresh(order)
+        return annotate_order(db, order)
+
+    item.status = "cancel_requested"
+    db.add(OrderCancellationRequest(
+        order_id=order.id, user_id=user.id, order_item_id=item.id,
+        reason=body.reason, note=body.note,
+    ))
     db.commit()
     db.refresh(order)
     return annotate_order(db, order)

@@ -10,7 +10,16 @@
     function cldOpt(url) {
       // Cloudinary account has Strict Transformations enabled — any on-the-fly
       // transform (even a plain resize) 400s. No-op until that's turned off.
-      return url;
+      // Locally-uploaded (admin Media Library) images are relative /media/<file>
+      // paths served by FastAPI itself - route them through the same backend
+      // origin every fetch() on this page already uses, or they resolve against
+      // whatever's hosting this static page instead and 404.
+      if (url && url.startsWith('/media/')) return `${window.SAI_API_BASE || "http://localhost:8000"}${url}`;
+      // images.weserv.nl is a free public resizing/compression proxy - shrinks the
+      // 500KB-1MB+ originals actually being served down to what a card/thumbnail
+      // needs. It can't reach a localhost-only dev URL, so local media stays as-is.
+      if (!url || url.startsWith('data:') || url.startsWith('blob:') || /^https?:\/\/(localhost|127\.0\.0\.1)/.test(url)) return url;
+      return `https://images.weserv.nl/?url=${url.replace(/^https?:\/\//, '')}&w=640&q=75&output=webp&we`;
     }
 
     // --- Category Page Data ---
@@ -25,8 +34,8 @@
         products: [
           { name: "Wedding Photo Album Box", price: "₹2,499", img: "https://img.magnific.com/premium-psd/beautiful-brides-wedding-photos-precious-moments_584879-3347.jpg?w=740" },
           { name: "Anniversary LED Acrylic Frame", price: "₹899", img: "https://img.magnific.com/free-photo/front-view-people-celebrating-tamil-new-year_23-2151210797.jpg?w=740" },
-          { name: "Birthday Magic Photo Mug", price: "₹399", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/magic_photo_mug.jpg" },
-          { name: "Executive Metallic Pen Set", price: "₹499", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/pen_gift_set.jpg" }
+          { name: "Birthday Magic Photo Mug", price: "₹399", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/magic_photo_mug.jpg" },
+          { name: "Executive Metallic Pen Set", price: "₹499", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/pen_gift_set.jpg" }
         ]
       },
       personalised: {
@@ -34,10 +43,10 @@
         desc: "Custom photo printed gifts, engraved crystals, and unique customized keepsakes.",
         catKey: "all",
         products: [
-          { name: "Customized Photo Wall Clock", price: "₹899", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/photographer_banner.png" },
-          { name: "3D Laser Crystal Cube", price: "₹999", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/crystal_cube.jpg" },
-          { name: "Personalized Steel Flask", price: "₹399", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/photo_water_bottle.jpg" },
-          { name: "Custom Acrylic Keychain", price: "₹149", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/magic_photo_mug.jpg" }
+          { name: "Customized Photo Wall Clock", price: "₹899", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/photographer_banner.png" },
+          { name: "3D Laser Crystal Cube", price: "₹999", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/crystal_cube.jpg" },
+          { name: "Personalized Steel Flask", price: "₹399", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/photo_water_bottle.jpg" },
+          { name: "Custom Acrylic Keychain", price: "₹149", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/magic_photo_mug.jpg" }
         ]
       },
       frames: {
@@ -56,10 +65,10 @@
         desc: "Heat-sensitive color changing ceramic magic mugs, heart handle mugs, and printed bottles.",
         catKey: "promotional",
         products: [
-          { name: "Standard Color Changing Magic Mug", price: "₹399", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/magic_photo_mug.jpg" },
+          { name: "Standard Color Changing Magic Mug", price: "₹399", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/magic_photo_mug.jpg" },
           { name: "Heart Handle Magic Mug", price: "₹499", img: "https://img.magnific.com/premium-photo/heart-coffee-cup-gray-background_762785-30576.jpg?w=740" },
-          { name: "Personalized Steel Water Bottle", price: "₹399", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/photo_water_bottle.jpg" },
-          { name: "Custom Ceramic Coffee Mug", price: "₹299", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/magic_photo_mug.jpg" }
+          { name: "Personalized Steel Water Bottle", price: "₹399", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/photo_water_bottle.jpg" },
+          { name: "Custom Ceramic Coffee Mug", price: "₹299", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/magic_photo_mug.jpg" }
         ]
       },
       crystals: {
@@ -67,10 +76,10 @@
         desc: "3D laser engraved crystal photo cubes and rotating LED crystal light stands.",
         catKey: "mementos",
         products: [
-          { name: "3D Laser Engraved Crystal Cube", price: "₹999", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/crystal_cube.jpg" },
-          { name: "Luminous Glass Photo Stand", price: "₹1,299", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/crystal_cube.jpg" },
-          { name: "Rotating LED Crystal Base Set", price: "₹1,799", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/crystal_cube.jpg" },
-          { name: "Heart Glass Crystal Block", price: "₹1,199", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/crystal_cube.jpg" }
+          { name: "3D Laser Engraved Crystal Cube", price: "₹999", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/crystal_cube.jpg" },
+          { name: "Luminous Glass Photo Stand", price: "₹1,299", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/crystal_cube.jpg" },
+          { name: "Rotating LED Crystal Base Set", price: "₹1,799", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/crystal_cube.jpg" },
+          { name: "Heart Glass Crystal Block", price: "₹1,199", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/crystal_cube.jpg" }
         ]
       },
       albums: {
@@ -78,10 +87,10 @@
         desc: "High-definition layflat photo albums, photobooks, and professional digital studio prints.",
         catKey: "all",
         products: [
-          { name: "HD Photobook Hardcover Album", price: "₹2,999", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/photographer_banner.png" },
-          { name: "Passport Photo Print Pack", price: "₹99", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/studio_camera_setup.jpg" },
-          { name: "Instant Digital Print 4x6 Set", price: "₹149", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/studio_camera_setup.jpg" },
-          { name: "Custom Canvas Wall Print", price: "₹1,499", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/photographer_banner.png" }
+          { name: "HD Photobook Hardcover Album", price: "₹2,999", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/photographer_banner.png" },
+          { name: "Passport Photo Print Pack", price: "₹99", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/studio_camera_setup.jpg" },
+          { name: "Instant Digital Print 4x6 Set", price: "₹149", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/studio_camera_setup.jpg" },
+          { name: "Custom Canvas Wall Print", price: "₹1,499", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/photographer_banner.png" }
         ]
       },
       bestsellers: {
@@ -89,10 +98,10 @@
         desc: "Top trending customized gifts loved by 10,000+ customers.",
         catKey: "all",
         products: [
-          { name: "Standard Color Changing Magic Mug", price: "₹399", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/magic_photo_mug.jpg" },
+          { name: "Standard Color Changing Magic Mug", price: "₹399", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/magic_photo_mug.jpg" },
           { name: "Warm LED Acrylic Photo Frame", price: "₹899", img: "https://img.magnific.com/free-photo/front-view-people-celebrating-tamil-new-year_23-2151210797.jpg?w=740" },
-          { name: "Personalized Steel Water Bottle", price: "₹399", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/photo_water_bottle.jpg" },
-          { name: "3D Laser Engraved Crystal Cube", price: "₹999", img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/crystal_cube.jpg" }
+          { name: "Personalized Steel Water Bottle", price: "₹399", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/photo_water_bottle.jpg" },
+          { name: "3D Laser Engraved Crystal Cube", price: "₹999", img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/crystal_cube.jpg" }
         ]
       }
     };
@@ -509,8 +518,25 @@
       estimateEl.textContent = `Delivered by ${estDate} to ${pincode}.`;
     };
 
+    // Looks up a product's full backend record (for its input_fields) by id
+    // across every loaded category - orderNowDirect() only receives the bare
+    // name/price/img/id a product card passes it, not the full object.
+    function findCorporateProductById(id) {
+      if (!id) return null;
+      for (const cat of Object.values(categoriesData)) {
+        const found = (cat.products || []).find(p => p.id === id);
+        if (found) return found;
+      }
+      return null;
+    }
+
     window.orderNowDirect = function (name, price, img, productId, opts = {}) {
-      window.activeModalProduct = activeModalProduct = { name, price, img, id: productId || null };
+      const product = findCorporateProductById(productId);
+      window.activeModalProduct = activeModalProduct = { name, price, img, id: productId || null, input_fields: product?.input_fields || [] };
+      const customFieldsWrap = document.getElementById('modalCustomFields');
+      if (customFieldsWrap && window.ProductFields) {
+        ProductFields.renderProductFields(customFieldsWrap, activeModalProduct);
+      }
       modalSelectedQty = 1;
       modalSelectedColor = "Black";
       currentModalImgIndex = 0;
@@ -811,9 +837,30 @@
       if (previewWrapper) previewWrapper.style.display = 'none';
     };
 
-    window.addModalItemToCart = function () {
+    // Validates admin-configured custom fields (if any) and reads any uploads
+    // in them into data: URIs, returning { fields, fieldLabels } (fieldLabels
+    // lets order-detail views show a real label instead of the raw field id)
+    // - or null if validation fails (errors are already shown inline by
+    // ProductFields.validateProductFields).
+    async function collectModalCustomFields() {
+      const wrap = document.getElementById('modalCustomFields');
+      if (!wrap || !window.ProductFields || !activeModalProduct) return {};
+      const errors = ProductFields.validateProductFields(wrap, activeModalProduct);
+      if (errors.length) {
+        alert(errors.join('\n'));
+        return null;
+      }
+      const fields = await ProductFields.collectProductFields(wrap, activeModalProduct);
+      if (!Object.keys(fields).length) return {};
+      const fieldLabels = Object.fromEntries((activeModalProduct.input_fields || []).map(f => [f.id, f.label]));
+      return { fields, fieldLabels };
+    }
+
+    window.addModalItemToCart = async function () {
       if (!activeModalProduct) return;
       if (corporateEngravingMissing()) { showEngravingRequiredError(); return; }
+      const custom = await collectModalCustomFields();
+      if (custom === null) return;
       updateCartQty(
         activeModalProduct.name,
         modalSelectedQty,
@@ -824,7 +871,8 @@
           logoName: modalUploadedLogoFileName,
           logoData: modalUploadedLogoData,
           technique: modalEngravingTechnique,
-          color: modalSelectedColor
+          color: modalSelectedColor,
+          ...custom
         },
         {
           label: 'Add your company name or upload a logo',
@@ -839,9 +887,11 @@
       // which is the one real cart everywhere on the site.
     };
 
-    window.modalBuyNowWhatsApp = function () {
+    window.modalBuyNowWhatsApp = async function () {
       if (!activeModalProduct) return;
       if (corporateEngravingMissing()) { showEngravingRequiredError(); return; }
+      const custom = await collectModalCustomFields();
+      if (custom === null) return;
       updateCartQty(
         activeModalProduct.name,
         modalSelectedQty,
@@ -852,7 +902,8 @@
           logoName: modalUploadedLogoFileName,
           logoData: modalUploadedLogoData,
           technique: modalEngravingTechnique,
-          color: modalSelectedColor
+          color: modalSelectedColor,
+          ...custom
         },
         {
           label: 'Add your company name or upload a logo',
@@ -1065,7 +1116,7 @@
         if (items.length > 1) {
           productDetailsContainer.innerHTML = items.map(it => `
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; width: 100%;">
-              <img src="${cldOpt(it.img || 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/welcome_kit.jpg')}" alt="${it.name}" style="width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb;">
+              <img src="${cldOpt(it.img || 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/welcome_kit.jpg')}" alt="${it.name}" style="width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb;">
               <div style="flex: 1;">
                 <h4 style="margin: 0; font-size: 13.5px; font-weight: 700; color: #1f2937;">${it.name}</h4>
                 <p style="margin: 2px 0 0; font-size: 12px; color: #6b7280;">Qty: ${it.qty || 1}</p>
@@ -1078,7 +1129,7 @@
           const first = items[0];
           productDetailsContainer.innerHTML = `
             <div class="product-thumb">
-              <img id="checkoutProductImg" src="${cldOpt(first.img || 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/welcome_kit.jpg')}" alt="${first.name}" style="width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb;">
+              <img id="checkoutProductImg" src="${cldOpt(first.img || 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/welcome_kit.jpg')}" alt="${first.name}" style="width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb;">
             </div>
             <div class="product-info" style="flex: 1; margin-left: 12px;">
               <h3 id="checkoutProductName" style="margin: 0; font-size: 14px; font-weight: 700; color: #1f2937;">${first.name}</h3>
@@ -1398,7 +1449,7 @@
     const studioState = {
       mode: 'catalog', // 'catalog' or 'upload'
       productName: 'Smart Temperature LED Bottle',
-      productImgSrc: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/water%20bottle%2005.jpg',
+      productImgSrc: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/water%20bottle%2005.jpg',
       logoX: 300,
       logoY: 260,
       logoScale: 1.0,
@@ -1449,7 +1500,7 @@
         if (catalogPane) catalogPane.style.display = 'block';
         if (uploadPane) uploadPane.style.display = 'none';
         if (!studioState.customProductImg) {
-          window.selectPresetProduct('bottle', 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/water%20bottle%2005.jpg', 'Smart Temperature LED Bottle');
+          window.selectPresetProduct('bottle', 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/water%20bottle%2005.jpg', 'Smart Temperature LED Bottle');
         } else {
           renderCanvas();
         }
@@ -2237,6 +2288,7 @@
                 subtitle: p.description || "",
               };
               if (p.mrp) prod.oldPrice = p.mrp;
+              prod.input_fields = p.input_fields || [];
               return prod;
             }),
           };

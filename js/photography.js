@@ -5,7 +5,7 @@
        in before the first render. "All Services" is a client-side pseudo-category
        (not a real DB row - it's a navigation affordance, not content), so it's the
        one piece still hardcoded here and gets prepended once the real ones arrive. */
-    const ALL_CATEGORY = { id: "all", icon: "📷", name: "All Services", image: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/All%20Services/Photo%20icon.png" };
+    const ALL_CATEGORY = { id: "all", icon: "📷", name: "All Services", image: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/All%20Services/Photo%20icon.png" };
     let CATEGORIES = [ALL_CATEGORY];
     let PACKAGES = {};
     let FOLIO = {};
@@ -17,7 +17,16 @@
     function cldOpt(url) {
       // Cloudinary account has Strict Transformations enabled — any on-the-fly
       // transform (even a plain resize) 400s. No-op until that's turned off.
-      return url;
+      // Locally-uploaded (admin Media Library) images are relative /media/<file>
+      // paths served by FastAPI itself - route them through the same backend
+      // origin every fetch() on this page already uses, or they resolve against
+      // whatever's hosting this static page instead and 404.
+      if (url && url.startsWith('/media/')) return `${window.SAI_API_BASE || "http://localhost:8000"}${url}`;
+      // images.weserv.nl is a free public resizing/compression proxy - shrinks the
+      // 500KB-1MB+ originals actually being served down to what a card/thumbnail
+      // needs. It can't reach a localhost-only dev URL, so local media stays as-is.
+      if (!url || url.startsWith('data:') || url.startsWith('blob:') || /^https?:\/\/(localhost|127\.0\.0\.1)/.test(url)) return url;
+      return `https://images.weserv.nl/?url=${url.replace(/^https?:\/\//, '')}&w=640&q=75&output=webp&we`;
     }
 
     function resolveCategoryImage(cat) {
@@ -32,12 +41,9 @@
     /* ============ RENDER ============ */
     /* Grouping for the sidebar list & the "All Services" grid only — CATEGORIES itself
        (and its order) stays untouched since it also drives packages/folio/deep-links.
-       SIDEBAR_EQUIPMENT_IDS keeps its original meaning (which ids pop the Equipment
-       Details modal instead of navigating in-page — see selectCat()); the two lists
-       below are a separate, subject-based split (Photography vs Videography) used only
-       to decide which section a category's card appears under. */
+       This is a subject-based split (Photography vs Videography) used only to decide
+       which section a category's card appears under. */
     const SIDEBAR_FUNCTION_IDS = ["wedding", "prewedding", "maternity", "baby", "birthday", "housewarming", "sareefunction", "event"];
-    const SIDEBAR_EQUIPMENT_IDS = ["drone", "outdoor", "video", "album", "traditionalphoto", "traditionalvideo", "cinematicvideo", "candidphoto", "ledscreens"];
     const SIDEBAR_PHOTOGRAPHY_IDS = ["wedding", "prewedding", "maternity", "baby", "birthday", "housewarming", "sareefunction", "event", "outdoor", "album", "traditionalphoto", "candidphoto"];
     const SIDEBAR_VIDEOGRAPHY_IDS = ["drone", "video", "traditionalvideo", "cinematicvideo", "ledscreens"];
 
@@ -552,16 +558,22 @@
         anchor.scrollIntoView({ behavior, block: "start" });
       }
     }
+    /* Sidebar clicks always land the visitor on that category's own product card(s)
+       (portfolio + package grid) in the main column instead of booking anything on
+       their behalf — including equipment-only categories (Drone, Candid Photography, ...),
+       which used to skip straight to booking.html with no card ever shown. The visitor
+       reviews the card(s) there and clicks one themselves (Book Now / the card image)
+       when they're actually interested. */
     function selectCat(id) {
-      if (SIDEBAR_EQUIPMENT_IDS.includes(id)) {
-        directBookEquip(id);
-        return;
-      }
       applyCategorySelection(id);
       /* bring the newly-selected content into view (instead of jumping to the page top) —
          scroll-margin-top on the anchor keeps it clear of the sticky nav. "All Services"
-         has no portfolio/packages of its own, so it scrolls to its own grid instead. */
-      const anchor = id === "all" ? document.getElementById("allServicesAnchor") : document.getElementById("folioAnchor");
+         has no portfolio/packages of its own, so it scrolls to its own grid instead; a
+         category with no portfolio of its own (most equipment-only ones) scrolls straight
+         to its package card(s) since the portfolio anchor stays hidden for it. */
+      const anchor = id === "all"
+        ? document.getElementById("allServicesAnchor")
+        : (FOLIO[current] && FOLIO[current].length ? document.getElementById("folioAnchor") : document.getElementById("pkgAnchor"));
       scrollToAnchor(anchor);
     }
     /* "View Packages" (hero-go button): same category switch as selectCat(), but scrolls
@@ -927,7 +939,9 @@
         /* land straight on that category's portfolio/packages (same anchor selectCat()
            scrolls to on click) instead of leaving the visitor at the top hero slider —
            a ?category= link is meant to show that category's products, not the slider. */
-        const anchor = deepLinkCat === "all" ? document.getElementById("allServicesAnchor") : document.getElementById("folioAnchor");
+        const anchor = deepLinkCat === "all"
+          ? document.getElementById("allServicesAnchor")
+          : (FOLIO[deepLinkCat] && FOLIO[deepLinkCat].length ? document.getElementById("folioAnchor") : document.getElementById("pkgAnchor"));
         if (anchor) scrollToAnchor(anchor, "auto");
       } else {
         renderSidebar(); renderFolio(); renderPackages();

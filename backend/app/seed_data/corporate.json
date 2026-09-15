@@ -2,14 +2,14 @@
   "sets": {
     "title": "Corporate Gift Sets",
     "desc": "Curated executive combos of pens, diaries, flasks, wallets, and tech items in custom logo gift boxes.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/executive_diary_set.jpg",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/executive_diary_set.jpg",
     "products": [
       {
         "name": "Executive Diary Combo Gift Set",
         "price": "₹899",
         "oldPrice": "₹1,249",
         "discount": "28% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/10--dairy%20combos-06.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/10--dairy%20combos-06.jpg",
         "subtitle": "Diary + Pen + Keychain"
       },
       {
@@ -17,7 +17,7 @@
         "price": "₹1,699",
         "oldPrice": "₹2,599",
         "discount": "35% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/corporate_hamper.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/corporate_hamper.jpg",
         "subtitle": "Curated accessories in gift box"
       },
       {
@@ -25,7 +25,7 @@
         "price": "₹1,099",
         "oldPrice": "₹1,699",
         "discount": "35% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/executive_diary_set.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/executive_diary_set.jpg",
         "subtitle": "Diary + Pen in premium box"
       },
       {
@@ -33,7 +33,7 @@
         "price": "₹499",
         "oldPrice": "₹829",
         "discount": "40% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/pen_gift_set.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/pen_gift_set.jpg",
         "subtitle": "Laser engraving ready combo"
       }
     ]
@@ -41,14 +41,14 @@
   "kits": {
     "title": "Employee Welcome Kits",
     "desc": "Complete onboarding welcome hampers featuring corporate essentials, mugs, pens, and accessories.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/welcome_kit.jpg",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/welcome_kit.jpg",
     "products": [
       {
         "name": "Standard Employee Welcome Kit",
         "price": "₹999",
         "oldPrice": "₹1,499",
         "discount": "33% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/welcome_kit.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/welcome_kit.jpg",
         "subtitle": "Mug + Pen + Notebook + Badge"
       },
       {
@@ -56,7 +56,7 @@
         "price": "₹1,299",
         "oldPrice": "₹1,899",
         "discount": "32% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/premium_welcome_kit.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/premium_welcome_kit.jpg",
         "subtitle": "Corporate starter hamper"
       }
     ]
@@ -64,14 +64,14 @@
   "pens": {
     "title": "Pens",
     "desc": "Logo engraved and name printed metal rollerballs, executive pens, and bulk corporate writing gifts.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/pen_gift_set.jpg",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/pen_gift_set.jpg",
     "products": [
       {
         "name": "Premium Metallic Roller Ball Pen",
         "price": "₹399",
         "oldPrice": "₹529",
         "discount": "25% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/06%20%281%29.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/06%20%281%29.png",
         "subtitle": "Gold finish, laser engraving"
       },
       {
@@ -79,7 +79,7 @@
         "price": "₹299",
         "oldPrice": "₹375",
         "discount": "20% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/06--pen%20-06.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/06--pen%20-06.jpg",
         "subtitle": "Silver tone, smooth writing"
       },
       {
@@ -87,7 +87,7 @@
         "price": "₹349",
         "oldPrice": "₹499",
         "discount": "30% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/06-pen-02.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/06-pen-02.jpg",
         "subtitle": "Bulk gifting option"
       },
       {
@@ -95,7 +95,7 @@
         "price": "₹449",
         "oldPrice": "₹629",
         "discount": "28% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/06-pen-03.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/06-pen-03.jpg",
         "subtitle": "Matte executive finish"
       },
       {
@@ -103,7 +103,7 @@
         "price": "₹399",
         "oldPrice": "₹599",
         "discount": "33% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/06-pen-05.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/06-pen-05.jpg",
         "subtitle": "Custom name engraving"
       },
       {
@@ -111,7 +111,7 @@
         "price": "₹599",
         "oldPrice": "₹899",
         "discount": "33% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/06-pen-06.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/06-pen-06.jpg",
         "subtitle": "Premium ink, custom logo"
       }
     ]
@@ -119,14 +119,14 @@
   "diaries": {
     "title": "Diaries",
     "desc": "Yearly organizers, branded planners, and hardbound notebooks with logo printing and embossing.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/executive_diary_set.jpg",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/executive_diary_set.jpg",
     "products": [
       {
         "name": "Executive Leatherette Diary",
         "price": "₹599",
         "oldPrice": "₹899",
         "discount": "33% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/dairies%2001.webp",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/dairies%2001.webp",
         "subtitle": "A5 size, premium finish"
       },
       {
@@ -134,7 +134,7 @@
         "price": "₹499",
         "oldPrice": "₹639",
         "discount": "22% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/dairies%2002.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/dairies%2002.jpg",
         "subtitle": "Ruled pages, daily planning"
       },
       {
@@ -142,7 +142,7 @@
         "price": "₹549",
         "oldPrice": "₹799",
         "discount": "31% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/dairies%2003.webp",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/dairies%2003.webp",
         "subtitle": "Logo branding available"
       },
       {
@@ -150,7 +150,7 @@
         "price": "₹699",
         "oldPrice": "₹999",
         "discount": "30% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/dairies%2005.avif",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/dairies%2005.avif",
         "subtitle": "Premium corporate organizer"
       },
       {
@@ -158,7 +158,7 @@
         "price": "₹399",
         "oldPrice": "₹599",
         "discount": "33% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/dairies%2006.webp",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/dairies%2006.webp",
         "subtitle": "Compact professional notebook"
       },
       {
@@ -166,7 +166,7 @@
         "price": "₹449",
         "oldPrice": "₹699",
         "discount": "36% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/dairies%2007.avif",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/dairies%2007.avif",
         "subtitle": "Custom cover printing"
       },
       {
@@ -174,7 +174,7 @@
         "price": "₹499",
         "oldPrice": "₹749",
         "discount": "33% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/dairies-02.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/dairies-02.jpg",
         "subtitle": "Portable branded planner"
       }
     ]
@@ -182,14 +182,14 @@
   "bottles": {
     "title": "Water Bottles",
     "desc": "Vacuum insulated steel bottles, thermal flasks, sippers, and temperature display bottles.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/water%20bottle%2005.jpg",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/water%20bottle%2005.jpg",
     "products": [
       {
         "name": "Stainless Steel Insulated Bottle",
         "price": "₹599",
         "oldPrice": "₹829",
         "discount": "28% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/07-water%20bottle.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/07-water%20bottle.jpg",
         "subtitle": "500ml, UV print ready"
       },
       {
@@ -197,7 +197,7 @@
         "price": "₹749",
         "oldPrice": "₹1,149",
         "discount": "35% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/07-water%20bottle-02.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/07-water%20bottle-02.jpg",
         "subtitle": "Touch display lid"
       },
       {
@@ -205,7 +205,7 @@
         "price": "₹699",
         "oldPrice": "₹999",
         "discount": "30% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/07-water%20bottle-02.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/07-water%20bottle-02.jpg",
         "subtitle": "Laser engraving ready"
       },
       {
@@ -213,7 +213,7 @@
         "price": "₹899",
         "oldPrice": "₹1,329",
         "discount": "32% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/07-water%20bottle-03.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/07-water%20bottle-03.jpg",
         "subtitle": "750ml, double wall insulated"
       },
       {
@@ -221,7 +221,7 @@
         "price": "₹549",
         "oldPrice": "₹799",
         "discount": "31% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/07-water%20bottle-04.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/07-water%20bottle-04.jpg",
         "subtitle": "Everyday branded drinkware"
       },
       {
@@ -229,7 +229,7 @@
         "price": "₹799",
         "oldPrice": "₹1,149",
         "discount": "30% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/water%20bottle%2005.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/water%20bottle%2005.jpg",
         "subtitle": "Full color UV printing"
       },
       {
@@ -237,7 +237,7 @@
         "price": "₹849",
         "oldPrice": "₹1,199",
         "discount": "29% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/water%20bottle%2005%20%282%29.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/water%20bottle%2005%20%282%29.jpg",
         "subtitle": "Corporate logo branding"
       },
       {
@@ -245,7 +245,7 @@
         "price": "₹999",
         "oldPrice": "₹1,499",
         "discount": "33% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/water%20bottle%2006.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/water%20bottle%2006.jpg",
         "subtitle": "Premium thermal finish"
       }
     ]
@@ -253,14 +253,14 @@
   "wallets": {
     "title": "Wallets",
     "desc": "Leatherette wallets and card holders with logo branding for executive gifting.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/08--wallets-01.jpg",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/08--wallets-01.jpg",
     "products": [
       {
         "name": "Executive Leatherette Wallet",
         "price": "₹499",
         "oldPrice": "₹799",
         "discount": "38% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/08--wallets-01.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/08--wallets-01.jpg",
         "subtitle": "Logo embossing available"
       },
       {
@@ -268,7 +268,7 @@
         "price": "₹449",
         "oldPrice": "₹699",
         "discount": "36% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/corporate_card_wallet.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/corporate_card_wallet.jpg",
         "subtitle": "Compact business accessory"
       }
     ]
@@ -276,14 +276,14 @@
   "mementos": {
     "title": "Mementos",
     "desc": "Wooden and glass plaques, crystal-style awards, frames, and conference speaker mementos.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/glass%20momentos%2001.png",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/glass%20momentos%2001.png",
     "products": [
       {
         "name": "Glass Memento Award",
         "price": "₹799",
         "oldPrice": "₹1,109",
         "discount": "28% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/glass%20momentos%2001.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/glass%20momentos%2001.png",
         "subtitle": "Laser engraved logo"
       },
       {
@@ -291,7 +291,7 @@
         "price": "₹899",
         "oldPrice": "₹1,219",
         "discount": "26% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/memontos%20%282%29.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/memontos%20%282%29.jpg",
         "subtitle": "Premium 3D laser engraving"
       },
       {
@@ -299,7 +299,7 @@
         "price": "₹749",
         "oldPrice": "₹989",
         "discount": "24% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/memontos%2003.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/memontos%2003.jpg",
         "subtitle": "Handcrafted and customizable"
       },
       {
@@ -307,7 +307,7 @@
         "price": "₹999",
         "oldPrice": "₹1,499",
         "discount": "33% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/momentos%2001.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/momentos%2001.jpg",
         "subtitle": "Custom award plaque"
       },
       {
@@ -315,7 +315,7 @@
         "price": "₹699",
         "oldPrice": "₹999",
         "discount": "30% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/wodden%20frames.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/wodden%20frames.png",
         "subtitle": "Personalized desk frame"
       }
     ]
@@ -323,14 +323,14 @@
   "shields": {
     "title": "Laser Engraved Shields",
     "desc": "Custom laser-engraved recognition shields in high-polish wooden backing with gold or silver citation plates.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/memento_shield.jpg",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/memento_shield.jpg",
     "products": [
       {
         "name": "Laser Engraved Excellence Shield",
         "price": "₹2,499",
         "oldPrice": "₹3,499",
         "discount": "29% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/memento_shield.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/memento_shield.jpg",
         "subtitle": "Mahogany Backing • Engraved Gold Crest"
       },
       {
@@ -338,7 +338,7 @@
         "price": "₹2,899",
         "oldPrice": "₹3,999",
         "discount": "28% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/memento_shield%2001.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/memento_shield%2001.jpg",
         "subtitle": "24K Foil Engraved Name & Citation"
       },
       {
@@ -346,7 +346,7 @@
         "price": "₹3,499",
         "oldPrice": "₹4,999",
         "discount": "30% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/executive_star_shield.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/executive_star_shield.jpg",
         "subtitle": "High Polish Walnut & Gold Star"
       },
       {
@@ -354,7 +354,7 @@
         "price": "₹3,899",
         "oldPrice": "₹5,299",
         "discount": "26% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/memento_shield%2003.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/memento_shield%2003.jpg",
         "subtitle": "Custom Metal Engraving & Logo Proof"
       },
       {
@@ -362,7 +362,7 @@
         "price": "₹2,699",
         "oldPrice": "₹3,699",
         "discount": "27% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/precision_plaque_shield.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/precision_plaque_shield.jpg",
         "subtitle": "Piano Lacquer & Brushed Silver Plate"
       },
       {
@@ -370,7 +370,7 @@
         "price": "₹2,299",
         "oldPrice": "₹3,199",
         "discount": "28% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/memento_shield%2005.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/memento_shield%2005.png",
         "subtitle": "Laser Cut Logo & Text Engraving"
       },
       {
@@ -378,7 +378,7 @@
         "price": "₹4,499",
         "oldPrice": "₹5,999",
         "discount": "25% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/vip_ceremonial_shield.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/vip_ceremonial_shield.jpg",
         "subtitle": "Handcrafted Rosewood & Velvet Box Case"
       }
     ]
@@ -386,14 +386,14 @@
   "trophies": {
     "title": "Trophies",
     "desc": "Gold cup trophies, star achiever pillars, and modern recognition awards.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/trophies%2001.avif",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/trophies%2001.avif",
     "products": [
       {
         "name": "Golden Star Achiever Trophy",
         "price": "₹999",
         "oldPrice": "₹1,499",
         "discount": "33% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/trophies%2001.avif",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/trophies%2001.avif",
         "subtitle": "Gold finish recognition trophy"
       },
       {
@@ -401,7 +401,7 @@
         "price": "₹1,099",
         "oldPrice": "₹1,699",
         "discount": "35% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/trophies%2002.webp",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/trophies%2002.webp",
         "subtitle": "Annual award trophy"
       }
     ]
@@ -409,14 +409,14 @@
   "promotional": {
     "title": "Mugs",
     "desc": "Custom printed ceramic mugs, magic color reveal mugs, and executive corporate coffee drinkware.",
-    "icon": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/mugs%2001.jpg",
+    "icon": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/mugs%2001.jpg",
     "products": [
       {
         "name": "Custom Printed Ceramic Mug",
         "price": "₹299",
         "oldPrice": "₹499",
         "discount": "40% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/mugs%2001.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/mugs%2001.jpg",
         "subtitle": "Photo and logo printing"
       },
       {
@@ -424,7 +424,7 @@
         "price": "₹249",
         "oldPrice": "₹379",
         "discount": "35% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/cups%20%288%29.png",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/cups%20%288%29.png",
         "subtitle": "Full color printing, 350ml"
       },
       {
@@ -432,7 +432,7 @@
         "price": "₹449",
         "oldPrice": "₹699",
         "discount": "36% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/executive_matte_mug.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/executive_matte_mug.jpg",
         "subtitle": "Matte Black & Gold Handle"
       },
       {
@@ -440,7 +440,7 @@
         "price": "₹399",
         "oldPrice": "₹599",
         "discount": "33% OFF",
-        "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/corporate_assets/magic_photo_mug.jpg",
+        "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/magic_photo_mug.jpg",
         "subtitle": "Heat Activated Color Reveal"
       }
     ]

@@ -557,6 +557,17 @@ td .actions button { font-size: 12px; padding: 5px 10px; }
 .media-tile figcaption { padding: 7px 9px; font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .media-tile-delete { position: absolute; top: 6px; right: 6px; background: var(--danger); color: #fff; border: 2px solid #fff; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 13px; line-height: 1; }
 
+#mediaLibraryPicker { max-height: 320px; overflow-y: auto; padding: 10px; background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--radius); }
+#libraryPickerSearch { width: 100%; }
+.media-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; }
+.media-picker-tile {
+  padding: 0; margin: 0; border: 2px solid transparent; border-radius: var(--radius-sm);
+  overflow: hidden; cursor: pointer; background: var(--panel); line-height: 0;
+}
+.media-picker-tile img { width: 100%; height: 80px; object-fit: cover; display: block; }
+.media-picker-tile:hover { border-color: var(--accent); }
+.media-picker-tile:disabled { opacity: .5; cursor: wait; }
+
 /* ---------- drag-reorder list (homepage builder, arrange) ---------- */
 .drag-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 6px; cursor: grab; box-shadow: 0 1px 2px rgba(43, 36, 32, .03); }
 .drag-row:hover { border-color: var(--accent-2); }
@@ -667,3 +678,51 @@ select.order-status-select:focus { box-shadow: 0 0 0 3px rgba(92, 9, 48, .12); }
 @media (max-width: 560px) {
   .order-detail-grid { grid-template-columns: 1fr; }
 }
+
+/* ---------------------------------------------------------------- product "Customer Input Fields" builder */
+
+.field-builder { margin-top: 4px; }
+.field-row {
+  border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px;
+  margin-bottom: 10px; background: var(--panel-2);
+}
+.field-row-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.field-row-top .fr-label { flex: 1 1 auto; }
+.field-row-top .fr-label input { margin-bottom: 0; }
+.field-row-side { display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding-top: 6px; }
+.field-row-order { display: flex; flex-direction: column; gap: 2px; }
+.field-row-order button {
+  width: 22px; height: 18px; line-height: 1; padding: 0; font-size: 10px;
+  border: 1px solid var(--border); background: var(--panel); color: var(--text-dim);
+  border-radius: 4px; cursor: pointer;
+}
+.field-row-order button:hover { background: var(--panel-2); color: var(--text); }
+.field-row-remove {
+  width: 26px; height: 26px; border-radius: 50%; border: none; background: var(--danger);
+  color: #fff; font-size: 14px; line-height: 1; cursor: pointer; flex-shrink: 0;
+}
+.field-row-required { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+
+.type-checkbox-group { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.type-checkbox {
+  display: flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 8px;
+  border: 1.5px solid var(--border); background: var(--panel); cursor: pointer;
+  font-size: 13px; font-weight: 600; color: var(--text-dim); user-select: none;
+  transition: border-color .12s, background .12s, color .12s;
+}
+.type-checkbox input { margin: 0; accent-color: var(--accent); }
+.type-checkbox .tc-icon { font-size: 15px; }
+.type-checkbox.active {
+  border-color: var(--accent); background: color-mix(in srgb, var(--accent-2) 12%, white); color: var(--accent);
+}
+.type-checkbox:hover { border-color: var(--accent-2); }
+
+.field-type-panel { border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 2px; }
+.field-type-panel label { font-size: 12px; }
+.field-type-panel .two-col { gap: 0 10px; }
+.fr-upload-mode { display: flex; gap: 16px; margin-bottom: 8px; }
+.fr-upload-mode label { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 400; color: var(--text); margin: 0; }
+.fr-help-text input { margin-bottom: 0; }
+
+.add-field-btn { margin-top: 2px; }
+.field-builder-empty { font-size: 12.5px; color: var(--text-dim); padding: 8px 0 12px; }

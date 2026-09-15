@@ -132,8 +132,8 @@ const CustomerAuth = {
   verifyPayment: (body) => customerApi("/api/payments/verify", { method: "POST", body: JSON.stringify(body) }),
   myOrders: () => customerApi("/api/orders/my"),
   getOrder: (orderId) => customerApi(`/api/orders/${orderId}`),
-  requestCancellation: (orderId, reason, note) =>
-    customerApi(`/api/orders/${orderId}/cancel`, { method: "POST", body: JSON.stringify({ reason, note: note || "" }) }),
+  requestCancellation: (orderId, reason, note, orderItemId) =>
+    customerApi(`/api/orders/${orderId}/cancel`, { method: "POST", body: JSON.stringify({ reason, note: note || "", order_item_id: orderItemId || null }) }),
   requestAddressChange: (orderId, address) =>
     customerApi(`/api/orders/${orderId}/address-change`, { method: "POST", body: JSON.stringify(address) }),
   myBookings: () => customerApi("/api/bookings/my"),

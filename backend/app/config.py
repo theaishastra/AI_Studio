@@ -28,6 +28,13 @@ class Settings(BaseSettings):
     cloudinary_api_secret: str = ""
     cloudinary_folder: str = "sai_kumar_studio"
 
+    # Cloudflare R2 (replacing Cloudinary as the image store)
+    r2_account_id: str = ""
+    r2_access_key: str = ""
+    r2_secret_key: str = ""
+    r2_bucket: str = ""
+    r2_public_base_url: str = ""  # e.g. https://pub-xxxx.r2.dev or a bound custom domain, no trailing slash
+
     admin_email: str = "owner@saikumarstudio.in"
     admin_password: str = "ChangeMe@2026"
     admin_name: str = "Studio Owner"
@@ -56,6 +63,16 @@ class Settings(BaseSettings):
     @property
     def cloudinary_configured(self) -> bool:
         return bool(self.cloudinary_cloud_name and self.cloudinary_api_key and self.cloudinary_api_secret)
+
+    @property
+    def r2_configured(self) -> bool:
+        return bool(
+            self.r2_account_id
+            and self.r2_access_key
+            and self.r2_secret_key
+            and self.r2_bucket
+            and self.r2_public_base_url
+        )
 
     @property
     def razorpay_mock(self) -> bool:

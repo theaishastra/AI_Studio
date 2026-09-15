@@ -1,7 +1,8 @@
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -27,6 +28,7 @@ async def lifespan(app: FastAPI):
     run_column_migrations(engine)
     run_index_migrations(engine)
     ensure_storage_ready()
+    catalog.warm_catalog_cache()
     yield
 
 
@@ -38,6 +40,16 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
     redoc_url=None,
 )
+
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    # Server-side processing time (route handler + DB round trips), exposed so
+    # latency testing can separate "backend+DB" time from pure network transit.
+    start = time.perf_counter()
+    response = await call_next(request)
+    response.headers["X-Process-Time-Ms"] = f"{(time.perf_counter() - start) * 1000:.1f}"
+    return response
+
 
 app.add_middleware(
     CORSMiddleware,

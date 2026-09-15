@@ -7,7 +7,16 @@
 function cldOpt(url) {
   // Cloudinary account has Strict Transformations enabled — any on-the-fly
   // transform (even a plain resize) 400s. No-op until that's turned off.
-  return url;
+  // Locally-uploaded (admin Media Library) images are relative /media/<file>
+  // paths served by FastAPI itself - route them through the same backend
+  // origin every fetch() on this page already uses, or they resolve against
+  // whatever's hosting this static page instead and 404.
+  if (url && url.startsWith('/media/')) return `${window.SAI_API_BASE || "http://localhost:8000"}${url}`;
+  // images.weserv.nl is a free public resizing/compression proxy - shrinks the
+  // 500KB-1MB+ originals actually being served down to what a card/thumbnail
+  // needs. It can't reach a localhost-only dev URL, so local media stays as-is.
+  if (!url || url.startsWith('data:') || url.startsWith('blob:') || /^https?:\/\/(localhost|127\.0\.0\.1)/.test(url)) return url;
+  return `https://images.weserv.nl/?url=${url.replace(/^https?:\/\//, '')}&w=640&q=75&output=webp&we`;
 }
 
 const ITEMS = {
@@ -20,9 +29,9 @@ const ITEMS = {
       { icon: "🧑‍✈️", title: "Professional Team", sub: "Experienced drone pilots" },
     ],
     gallery: [
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/drone_1.jpg", caption: "Wedding Aerial View", video: true },
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/drone_2.jpg", caption: "Beach Pre-Wedding Shoot", video: true },
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/drone_3.jpg", caption: "Venue Flyover", video: true },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/drone_1.jpg", caption: "Wedding Aerial View", video: true },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/drone_2.jpg", caption: "Beach Pre-Wedding Shoot", video: true },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/drone_3.jpg", caption: "Venue Flyover", video: true },
     ],
     whatWeOffer: [
       { icon: "🚁", title: "Aerial Videography", desc: "High quality aerial videos captured with precision." },
@@ -50,9 +59,9 @@ const ITEMS = {
       { icon: "🎨", title: "Creative Direction", sub: "Posing & styling guidance" },
     ],
     gallery: [
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_1.jpg", caption: "Golden Hour Portrait", video: false },
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_2.jpg", caption: "Nature Trail Session", video: false },
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_3.jpg", caption: "Lake View Shoot", video: false },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_1.jpg", caption: "Golden Hour Portrait", video: false },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_2.jpg", caption: "Nature Trail Session", video: false },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_3.jpg", caption: "Lake View Shoot", video: false },
     ],
     whatWeOffer: [
       { icon: "📷", title: "Portrait Sessions", desc: "Individual & solo portraits in natural settings." },
@@ -80,9 +89,9 @@ const ITEMS = {
       { icon: "⚡", title: "Fast Turnaround", sub: "Same-day highlight reels" },
     ],
     gallery: [
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg", caption: "Wedding Highlight Reel", video: true },
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/video_2.jpg", caption: "Cinematic Love Story", video: true },
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/video_3.jpg", caption: "Same-Day Edit Preview", video: true },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg", caption: "Wedding Highlight Reel", video: true },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/video_2.jpg", caption: "Cinematic Love Story", video: true },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/video_3.jpg", caption: "Same-Day Edit Preview", video: true },
     ],
     whatWeOffer: [
       { icon: "🎞️", title: "Highlight Films", desc: "Short, emotion-packed highlight reels." },
@@ -110,9 +119,9 @@ const ITEMS = {
       { icon: "✨", title: "Gold Foil Finish", sub: "Elegant embossed detailing" },
     ],
     gallery: [
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/album_1.jpg", caption: "Lay-Flat Spread", video: false },
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/album_2.jpg", caption: "Leather Bound Cover", video: false },
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/album_3.jpg", caption: "Gold Foil Embossing", video: false },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/album_1.jpg", caption: "Lay-Flat Spread", video: false },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/album_2.jpg", caption: "Leather Bound Cover", video: false },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/album_3.jpg", caption: "Gold Foil Embossing", video: false },
     ],
     whatWeOffer: [
       { icon: "🎨", title: "Custom Layouts", desc: "Page designs tailored to your story." },
@@ -140,9 +149,9 @@ const ITEMS = {
       { icon: "🖼️", title: "Classic Framing", sub: "Timeless, formal compositions" },
     ],
     gallery: [
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png", caption: "Ceremony Rituals", video: false },
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-2.png", caption: "Family Blessings", video: false },
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-3.png", caption: "Traditional Portraits", video: false },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png", caption: "Ceremony Rituals", video: false },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-2.png", caption: "Family Blessings", video: false },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-3.png", caption: "Traditional Portraits", video: false },
     ],
     whatWeOffer: [
       { icon: "🪔", title: "Ritual Photography", desc: "Every ceremony moment captured respectfully." },
@@ -200,9 +209,9 @@ const ITEMS = {
       { icon: "🏆", title: "Award-Style Editing", sub: "Festival-quality highlight films" },
     ],
     gallery: [
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png", caption: "Cinematic Highlight Film", video: true },
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-2.png", caption: "Love Story Teaser", video: true },
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-3.png", caption: "Feature Film Edit", video: true },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png", caption: "Cinematic Highlight Film", video: true },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-2.png", caption: "Love Story Teaser", video: true },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-3.png", caption: "Feature Film Edit", video: true },
     ],
     whatWeOffer: [
       { icon: "🎬", title: "Cinematic Highlight Films", desc: "Emotion-driven, film-style edits." },
@@ -260,9 +269,9 @@ const ITEMS = {
       { icon: "🛠️", title: "On-Site Setup Team", sub: "Full installation & operation" },
     ],
     gallery: [
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png", caption: "Stage LED Backdrop", video: false },
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-2.png", caption: "Live Event Screen", video: false },
-      { img: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-3.png", caption: "Wedding Stage Display", video: false },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png", caption: "Stage LED Backdrop", video: false },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-2.png", caption: "Live Event Screen", video: false },
+      { img: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-3.png", caption: "Wedding Stage Display", video: false },
     ],
     whatWeOffer: [
       { icon: "💡", title: "LED Wall Rental", desc: "Large-format LED walls for any stage." },

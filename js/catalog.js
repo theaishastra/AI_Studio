@@ -2,7 +2,16 @@
     function cldOpt(url) {
       // Cloudinary account has Strict Transformations enabled — any on-the-fly
       // transform (even a plain resize) 400s. No-op until that's turned off.
-      return url;
+      // Locally-uploaded (admin Media Library) images are relative /media/<file>
+      // paths served by FastAPI itself - route them through the same backend
+      // origin every fetch() on this page already uses, or they resolve against
+      // whatever's hosting this static page instead and 404.
+      if (url && url.startsWith('/media/')) return `${window.SAI_API_BASE || "http://localhost:8000"}${url}`;
+      // images.weserv.nl is a free public resizing/compression proxy - shrinks the
+      // 500KB-1MB+ originals actually being served down to what a card/thumbnail
+      // needs. It can't reach a localhost-only dev URL, so local media stays as-is.
+      if (!url || url.startsWith('data:') || url.startsWith('blob:') || /^https?:\/\/(localhost|127\.0\.0\.1)/.test(url)) return url;
+      return `https://images.weserv.nl/?url=${url.replace(/^https?:\/\//, '')}&w=640&q=75&output=webp&we`;
     }
 
     // ─── Master Catalog Data (All Categories) ───
@@ -16,7 +25,7 @@
         price: 699,
         origPrice: 999,
         discount: '30% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/led_photo_frame.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/led_photo_frame.jpg',
         badge: 'Best Seller',
         badgeType: 'bestseller-badge',
         speed: 'same_day',
@@ -35,7 +44,7 @@
         price: 349,
         origPrice: 499,
         discount: '30% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/magic_photo_mug.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/magic_photo_mug.jpg',
         badge: '15-Min Ready',
         badgeType: 'express-badge',
         speed: 'express_15min',
@@ -54,7 +63,7 @@
         price: 1299,
         origPrice: 1899,
         discount: '32% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/crystal_cube.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/crystal_cube.jpg',
         badge: 'Premium',
         badgeType: 'card-badge-top',
         speed: 'same_day',
@@ -73,7 +82,7 @@
         price: 499,
         origPrice: 749,
         discount: '33% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/photo_cushion.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/photo_cushion.jpg',
         badge: 'Trending',
         badgeType: 'card-badge-top',
         speed: 'same_day',
@@ -92,7 +101,7 @@
         price: 549,
         origPrice: 799,
         discount: '31% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/photo_water_bottle.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/photo_water_bottle.jpg',
         badge: 'Hot Deal',
         badgeType: 'discount-badge',
         speed: 'same_day',
@@ -111,7 +120,7 @@
         price: 149,
         origPrice: 249,
         discount: '40% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/40-PHOTO%20KEY%20CHAINS.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/40-PHOTO%20KEY%20CHAINS.jpg',
         badge: 'Budget Pick',
         badgeType: 'express-badge',
         speed: 'express_15min',
@@ -130,7 +139,7 @@
         price: 799,
         origPrice: 1199,
         discount: '33% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/34--magic%20mirror%20round.webp',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/34--magic%20mirror%20round.webp',
         badge: 'Trending',
         badgeType: 'card-badge-top',
         speed: 'same_day',
@@ -149,7 +158,7 @@
         price: 1899,
         origPrice: 2699,
         discount: '30% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/37-%20rotate%20cube-01.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/37-%20rotate%20cube-01.jpg',
         badge: 'Premium',
         badgeType: 'bestseller-badge',
         speed: 'same_day',
@@ -168,7 +177,7 @@
         price: 1099,
         origPrice: 1599,
         discount: '31% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/43--12%20photos%20wall%20clock%20%281%29.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/43--12%20photos%20wall%20clock%20%281%29.jpg',
         badge: 'Hot Deal',
         badgeType: 'discount-badge',
         speed: 'same_day',
@@ -187,7 +196,7 @@
         price: 599,
         origPrice: 899,
         discount: '33% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/gifts-assets/31-%20MAGIC%20PILLOW.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/31-%20MAGIC%20PILLOW.jpg',
         badge: 'Fun Pick',
         badgeType: 'express-badge',
         speed: 'same_day',
@@ -208,7 +217,7 @@
         price: 35000,
         origPrice: 48000,
         discount: '27% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/wedding_photography.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/wedding_photography.jpg',
         badge: 'Signature',
         badgeType: 'bestseller-badge',
         speed: 'standard',
@@ -227,7 +236,7 @@
         price: 14999,
         origPrice: 21999,
         discount: '32% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/prewedding_shoot.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/prewedding_shoot.jpg',
         badge: 'Popular',
         badgeType: 'bestseller-badge',
         speed: 'standard',
@@ -246,7 +255,7 @@
         price: 7999,
         origPrice: 11999,
         discount: '33% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/maternity_photoshoot.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/maternity_photoshoot.jpg',
         badge: 'Trending',
         badgeType: 'card-badge-top',
         speed: 'standard',
@@ -265,7 +274,7 @@
         price: 5999,
         origPrice: 8999,
         discount: '33% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/baby_photoshoot.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/baby_photoshoot.jpg',
         badge: 'Cute Picks',
         badgeType: 'card-badge-top',
         speed: 'standard',
@@ -284,7 +293,7 @@
         price: 4499,
         origPrice: 6500,
         discount: '30% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/birthday_photoshoot.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/birthday_photoshoot.jpg',
         badge: 'Best Value',
         badgeType: 'express-badge',
         speed: 'standard',
@@ -305,7 +314,7 @@
         price: 99,
         origPrice: 150,
         discount: '34% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/photographer_banner.png',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/photographer_banner.png',
         badge: '15-Min Express',
         badgeType: 'express-badge',
         speed: 'express_15min',
@@ -324,7 +333,7 @@
         price: 399,
         origPrice: 600,
         discount: '33% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/studio_camera_setup.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/studio_camera_setup.jpg',
         badge: 'Lab Service',
         badgeType: 'card-badge-top',
         speed: 'same_day',
@@ -343,7 +352,7 @@
         price: 1999,
         origPrice: 2999,
         discount: '33% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/customized_gifts_card.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/customized_gifts_card.jpg',
         badge: 'Top Quality',
         badgeType: 'bestseller-badge',
         speed: 'standard',
@@ -364,7 +373,7 @@
         price: 899,
         origPrice: 1299,
         discount: '30% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/welcome_kit.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/welcome_kit.jpg',
         badge: 'Corporate Pick',
         badgeType: 'bestseller-badge',
         speed: 'standard',
@@ -383,7 +392,7 @@
         price: 499,
         origPrice: 750,
         discount: '33% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/executive_diary_set.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/executive_diary_set.jpg',
         badge: 'Fast Moving',
         badgeType: 'card-badge-top',
         speed: 'same_day',
@@ -402,7 +411,7 @@
         price: 649,
         origPrice: 950,
         discount: '31% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/award_trophy.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/award_trophy.jpg',
         badge: 'Recognition',
         badgeType: 'card-badge-top',
         speed: 'same_day',
@@ -421,7 +430,7 @@
         price: 799,
         origPrice: 1199,
         discount: '33% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/memento_shield.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/memento_shield.jpg',
         badge: 'Traditional',
         badgeType: 'card-badge-top',
         speed: 'same_day',
@@ -440,7 +449,7 @@
         price: 1499,
         origPrice: 2200,
         discount: '32% OFF',
-        img: 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/corporate_hamper.jpg',
+        img: 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/corporate_hamper.jpg',
         badge: 'Festive Special',
         badgeType: 'bestseller-badge',
         speed: 'standard',
@@ -600,7 +609,7 @@
                 title="${isWishlisted ? 'Remove from wishlist' : 'Save to wishlist'}">
                 <span class="material-symbols-outlined">${isWishlisted ? 'favorite' : 'favorite_border'}</span>
               </button>
-              <img src="${cldOpt(product.img)}" alt="${product.title}" loading="lazy" onerror="this.onerror=null;this.src='https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/customized_gifts_card.jpg'">
+              <img src="${cldOpt(product.img)}" alt="${product.title}" loading="lazy" onerror="this.onerror=null;this.src='https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/customized_gifts_card.jpg'">
               <button class="quick-view-overlay-btn" onclick="openQuickViewModal('${product.id}')">
                 <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
                 <span>Quick View</span>
@@ -955,7 +964,7 @@
         return `
           <div class="drawer-item-row">
             <div class="drawer-item-thumb">
-              <img src="${cldOpt(item.img || 'https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/customized_gifts_card.jpg')}" alt="${item.name}" onerror="this.onerror=null;this.src='https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/customized_gifts_card.jpg'">
+              <img src="${cldOpt(item.img || 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/customized_gifts_card.jpg')}" alt="${item.name}" onerror="this.onerror=null;this.src='https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/customized_gifts_card.jpg'">
             </div>
             <div class="drawer-item-info">
               <h4 class="drawer-item-name" title="${item.name}">${item.name}</h4>

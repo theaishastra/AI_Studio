@@ -183,13 +183,25 @@ const CUSTOM_NAME_FIELDS = ["photoName", "logoName", "fileName"];
 
 // Rendered on their own (artwork, message, print-placement geometry) or pure
 // internal/live-preview state with nothing production needs (which rendering
-// path the 3D preview used, echoing the product name back, etc).
+// path the 3D preview used, echoing the product name back, etc). `fields`/
+// `fieldLabels` (Product.input_fields answers) are unpacked separately below
+// rather than hidden entirely - they're real customer-supplied data too.
 const CUSTOM_HIDDEN_FIELDS = new Set([
   ...CUSTOM_IMAGE_FIELDS, ...CUSTOM_TEXT_FIELDS,
   "photoCrop", "rotationX", "rotationY", "zoom",
   "photoZoom", "photoX", "photoY", "photoFit",
-  "previewTemplate", "previewMode",
+  "previewTemplate", "previewMode", "fields", "fieldLabels",
 ]);
+
+function customFieldLabel(customization, fieldId) {
+  return (customization && customization.fieldLabels && customization.fieldLabels[fieldId]) || fieldId;
+}
+
+// True for anything that looks like an uploaded file (a data: URI or an R2/
+// http(s) URL) as opposed to a plain text/dropdown answer.
+function looksLikeUpload(value) {
+  return typeof value === "string" && (value.startsWith("data:") || /^https?:\/\//i.test(value));
+}
 
 const CUSTOM_FIELD_LABELS = {
   photoName: "Uploaded file", logoName: "Uploaded file", fileName: "Uploaded file",
@@ -238,6 +250,22 @@ function orderItemCustomSpecs(customization) {
       });
     }
   });
+  // Admin-configured text/dropdown fields (Product.input_fields answers) -
+  // upload-type field values are shown as artwork by orderItemUploads()
+  // instead, not listed here.
+  const fields = customization.fields;
+  if (fields && typeof fields === "object") {
+    Object.entries(fields).forEach(([fieldId, value]) => {
+      if (value == null || value === "") return;
+      const label = customFieldLabel(customization, fieldId);
+      if (Array.isArray(value)) {
+        const text = value.filter(v => typeof v === "string" && !looksLikeUpload(v)).join(", ");
+        if (text) specs.push([label, text]);
+      } else if (typeof value === "string" && !looksLikeUpload(value)) {
+        specs.push([label, value]);
+      }
+    });
+  }
   return specs;
 }
 
@@ -314,8 +342,7 @@ function orderItemUploads(item, itemIndex, orderNumber) {
     .find((v) => typeof v === "string" && v.trim()) || "";
 
   const uploads = [];
-  CUSTOM_IMAGE_FIELDS.forEach((field) => {
-    const data = customization[field];
+  function pushUpload(field, data, label) {
     if (typeof data !== "string") return;
     const isDataUri = data.startsWith("data:image/");
     const isUrl = /^https?:\/\//i.test(data);
@@ -323,13 +350,28 @@ function orderItemUploads(item, itemIndex, orderNumber) {
     const comma = isDataUri ? data.indexOf(",") : -1;
     const mime = isDataUri ? (data.slice(5, comma).split(";")[0] || "image/png").toLowerCase() : mimeFromUrl(data);
     const ext = ARTWORK_EXTENSIONS[mime] || "img";
-    const base = artworkFilenameSafe(originalName || (item.product_snapshot || {}).title);
+    const base = artworkFilenameSafe(label || originalName || (item.product_snapshot || {}).title);
     uploads.push({
-      field, data, mime, originalName, isDataUri,
+      field, data, mime, originalName: label || originalName, isDataUri,
       bytes: isDataUri ? base64ByteLength(data.slice(comma + 1)) : null,
       filename: `${orderNumber}_item${itemIndex + 1}_${base}.${ext}`,
     });
-  });
+  }
+  CUSTOM_IMAGE_FIELDS.forEach((field) => pushUpload(field, customization[field]));
+
+  // Admin-configured upload fields (Product.input_fields) - addressed as
+  // "fields.<fieldId>" (single) or "fields.<fieldId>.<index>" (multi-upload).
+  const dynFields = customization.fields;
+  if (dynFields && typeof dynFields === "object") {
+    Object.entries(dynFields).forEach(([fieldId, value]) => {
+      const label = customFieldLabel(customization, fieldId);
+      if (Array.isArray(value)) {
+        value.forEach((v, i) => pushUpload(`fields.${fieldId}.${i}`, v, `${label} ${i + 1}`));
+      } else {
+        pushUpload(`fields.${fieldId}`, value, label);
+      }
+    });
+  }
   return uploads;
 }
 
@@ -443,12 +485,13 @@ function pendingRequestHTML(order) {
   const addr = (order.address_change_requests || []).find(r => r.status === "pending");
   let html = "";
   if (cancel) {
+    const scoped = !!cancel.order_item_id;
     html += `
       <div class="request-card">
-        <div class="request-card-head"><b>Cancellation requested</b><span class="badge req-pending">Pending</span></div>
+        <div class="request-card-head"><b>${scoped ? `Cancellation requested — ${esc(cancel.item_title || "one item")}` : "Cancellation requested (whole order)"}</b><span class="badge req-pending">Pending</span></div>
         <p>Reason: ${esc(CANCELLATION_REASON_LABELS[cancel.reason] || cancel.reason)}${cancel.note ? ` — “${esc(cancel.note)}”` : ""}</p>
         <div class="modal-actions" style="justify-content:flex-start;">
-          <button type="button" class="btn" onclick="decideRequest('cancellation', '${cancel.id}', 'approve')">Approve (cancel order)</button>
+          <button type="button" class="btn" onclick="decideRequest('cancellation', '${cancel.id}', 'approve')">Approve ${scoped ? "(cancel this item)" : "(cancel order)"}</button>
           <button type="button" class="btn secondary" onclick="decideRequest('cancellation', '${cancel.id}', 'reject')">Reject</button>
         </div>
       </div>`;
@@ -488,6 +531,11 @@ async function decideRequest(kind, id, action) {
   }
 }
 
+const ITEM_STATUS_BADGE = {
+  cancel_requested: `<span class="badge req-pending">Cancellation requested</span>`,
+  cancelled: `<span class="badge off">Cancelled</span>`,
+};
+
 function orderItemDetailHTML(order, item, index) {
   const snap = item.product_snapshot || {};
   const customization = snap.customization || null;
@@ -495,6 +543,8 @@ function orderItemDetailHTML(order, item, index) {
   const specs = orderItemCustomSpecs(customization);
   const placement = orderItemPlacement(customization);
   const uploads = orderItemUploads(item, index, order.number);
+  const itemStatus = item.status || "active";
+  const pendingItemRequest = (order.cancellation_requests || []).find(r => r.order_item_id === item.id && r.status === "pending");
 
   return `
     <div class="order-item-detail-row">
@@ -503,9 +553,19 @@ function orderItemDetailHTML(order, item, index) {
         <div class="oid-title-row">
           <b>${esc(snap.title || "—")}</b>
           <span class="mono">${item.product_id ? `Product ID: ${esc(item.product_id)}` : "Custom item (no catalog ID)"}</span>
+          ${ITEM_STATUS_BADGE[itemStatus] || ""}
         </div>
         <div class="oid-pricing">${item.qty} × ${fmtINR(item.unit_price)} = <b>${fmtINR(item.unit_price * item.qty)}</b></div>
         ${item.notes ? `<div class="oid-note">Note: ${esc(item.notes)}</div>` : ""}
+        ${pendingItemRequest ? `
+        <div class="request-card" style="margin-top:8px;">
+          <div class="request-card-head"><b>Cancellation requested</b><span class="badge req-pending">Pending</span></div>
+          <p>Reason: ${esc(CANCELLATION_REASON_LABELS[pendingItemRequest.reason] || pendingItemRequest.reason)}${pendingItemRequest.note ? ` — “${esc(pendingItemRequest.note)}”` : ""}</p>
+          <div class="modal-actions" style="justify-content:flex-start;">
+            <button type="button" class="btn" onclick="decideRequest('cancellation', '${pendingItemRequest.id}', 'approve')">Approve (cancel this item)</button>
+            <button type="button" class="btn secondary" onclick="decideRequest('cancellation', '${pendingItemRequest.id}', 'reject')">Reject</button>
+          </div>
+        </div>` : ""}
 
         ${uploads.length ? `
         <div class="oid-artwork">
@@ -709,12 +769,13 @@ async function renderCancellationRequests(body) {
   }
   body.innerHTML = `
     <table>
-      <thead><tr><th>Order #</th><th>Customer</th><th>Reason</th><th>Note</th><th>Status</th><th>Raised</th><th></th></tr></thead>
+      <thead><tr><th>Order #</th><th>Customer</th><th>Scope</th><th>Reason</th><th>Note</th><th>Status</th><th>Raised</th><th></th></tr></thead>
       <tbody>
         ${reqs.map(r => `
           <tr>
             <td><b>${esc(r.order_number || "—")}</b></td>
             <td>${esc(r.customer_name || r.customer_email || "—")}</td>
+            <td>${r.order_item_id ? `Item: ${esc(r.item_title || "—")}` : "Whole order"}</td>
             <td>${esc(CANCELLATION_REASON_LABELS[r.reason] || r.reason)}</td>
             <td>${esc(r.note || "—")}</td>
             <td><span class="badge ${r.status === "pending" ? "req-pending" : r.status === "approved" ? "on" : "off"}">${esc(r.status)}</span></td>

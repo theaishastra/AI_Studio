@@ -15,7 +15,8 @@
       "Bash(.venv/Scripts/python.exe -c ' *)",
       "PowerShell(Try { $response = Invoke-WebRequest -Uri \"http://localhost:8000/api/health\" -ErrorAction Stop; $response.StatusCode } Catch { \"Backend not responding: $_\" })",
       "Bash(awk 'NR==26{print length\\($0\\)}' js/gifts.js)",
-      "Bash(python -c \"from app.routers.orders import _externalize_customization; r = _externalize_customization\\({'photoData': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'text': 'Happy Birthday'}, 'SK_TEST_VERIFY'\\); print\\(r\\)\")"
+      "Bash(python -c \"from app.routers.orders import _externalize_customization; r = _externalize_customization\\({'photoData': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'text': 'Happy Birthday'}, 'SK_TEST_VERIFY'\\); print\\(r\\)\")",
+      "Bash(python -m py_compile app/models.py app/schemas.py app/migrations.py app/routers/orders.py app/routers/admin.py app/routers/catalog.py app/services/product_fields.py app/services/storage.py app/services/pricing.py app/services/policy.py)"
     ]
   }
 }

@@ -26,26 +26,26 @@
       "ledscreens": "LED Screens"
     },
     "CATEGORY_IMAGES": {
-      "wedding": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/wedding.png",
-      "prewedding": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/pre-wedding.png",
-      "maternity": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/maternity.jpg",
-      "baby": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/baby-shower.jpg",
-      "birthday": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/birthday-event.jpg",
-      "outdoor": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/outdoor.jpg",
-      "drone": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/drone.jpg",
-      "video": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/video.jpg",
-      "album": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/album%20designing.jpg",
-      "event": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/wedding.png",
-      "housewarming": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/wedding.png",
-      "sareefunction": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/saree%20ceremony.png",
-      "traditionalphoto": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png",
-      "traditionalvideo": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg",
-      "cinematicvideo": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png",
-      "candidphoto": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-1.png",
-      "ledscreens": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png"
+      "wedding": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/wedding.png",
+      "prewedding": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/pre-wedding.png",
+      "maternity": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/maternity.jpg",
+      "baby": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/baby-shower.jpg",
+      "birthday": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/birthday-event.jpg",
+      "outdoor": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/outdoor.jpg",
+      "drone": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/drone.jpg",
+      "video": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/video.jpg",
+      "album": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/album%20designing.jpg",
+      "event": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/wedding.png",
+      "housewarming": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/wedding.png",
+      "sareefunction": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/saree%20ceremony.png",
+      "traditionalphoto": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png",
+      "traditionalvideo": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg",
+      "cinematicvideo": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png",
+      "candidphoto": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-1.png",
+      "ledscreens": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png"
     },
     "PACKAGE_IMAGES": {
-      "_note": "cloudinary base for all files below is https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/packages/",
+      "_note": "cloudinary base for all files below is https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/packages/",
       "wedding|standard": ["wedding%20standard-1.jpg", "wedding%20standard-2.jpg", "wedding%20standard-3.jpg"],
       "wedding|premium": ["wedding%20premium-1.jpg", "wedding%20premium-2.jpg", "wedding%20premium-3.jpg"],
       "wedding|platinum": ["wedding%20platinum-1.jpg", "wedding%20platinum-2.jpg", "wedding%20platinum-3.jpg"],
@@ -93,7 +93,7 @@
       "ledscreens|platinum": ["led-screens-platinum-1.png", "led-screens-platinum-2.png", "led-screens-platinum-3.png"]
     },
     "EQUIPMENT_GALLERIES": {
-      "_note": "cloudinary base is https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/ — used as gallery fallback for equipment/coverage add-ons that have no tiered package of their own",
+      "_note": "cloudinary base is https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/ — used as gallery fallback for equipment/coverage add-ons that have no tiered package of their own",
       "traditionalphoto": ["traditional-photography-1.png", "traditional-photography-2.png", "traditional-photography-3.png"],
       "traditionalvideo": ["video_1.jpg", "video_2.jpg", "video_3.jpg"],
       "cinematicvideo": ["cinematic-videography-1.png", "cinematic-videography-2.png", "cinematic-videography-3.png"],
@@ -172,11 +172,11 @@
           "All Raw Unedited Images on USB Flash Drive"
         ],
         "priceAdd": "₹8,000",
-        "bgImage": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-1.png",
+        "bgImage": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-1.png",
         "gallery": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-1.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-2.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-3.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-1.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-2.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-3.png"
         ]
       },
       "drone": {
@@ -198,11 +198,11 @@
           "Stunning 20MP Aerial Panoramic Photographs"
         ],
         "priceAdd": "₹6,000",
-        "bgImage": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/drone_1.jpg",
+        "bgImage": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/drone_1.jpg",
         "gallery": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/drone_1.jpg",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/drone_2.jpg",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/drone_3.jpg"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/drone_1.jpg",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/drone_2.jpg",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/drone_3.jpg"
         ]
       },
       "cinematicvideo": {
@@ -224,11 +224,11 @@
           "Custom Composed Background Score & Dialogue Mix"
         ],
         "priceAdd": "₹12,000",
-        "bgImage": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png",
+        "bgImage": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png",
         "gallery": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-2.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-3.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-2.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-3.png"
         ]
       },
       "album": {
@@ -250,11 +250,11 @@
           "1 Mini Replica Album for Parents / Gifting"
         ],
         "priceAdd": "₹7,500",
-        "bgImage": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/album_1.jpg",
+        "bgImage": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/album_1.jpg",
         "gallery": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/album_1.jpg",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/album_2.jpg",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/album_3.jpg"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/album_1.jpg",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/album_2.jpg",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/album_3.jpg"
         ]
       },
       "traditionalphoto": {
@@ -276,11 +276,11 @@
           "High-Resolution Print-Ready JPEG Files"
         ],
         "priceAdd": "₹5,000",
-        "bgImage": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png",
+        "bgImage": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png",
         "gallery": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-2.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-3.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-2.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-3.png"
         ]
       },
       "traditionalvideo": {
@@ -302,11 +302,11 @@
           "Direct Mobile-Streamable Digital Download Link"
         ],
         "priceAdd": "₹6,500",
-        "bgImage": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg",
+        "bgImage": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg",
         "gallery": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/video_2.jpg",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/video_3.jpg"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/video_2.jpg",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/video_3.jpg"
         ]
       },
       "ledscreens": {
@@ -328,11 +328,11 @@
           "Complete On-Site Technical Management"
         ],
         "priceAdd": "₹10,000",
-        "bgImage": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png",
+        "bgImage": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png",
         "gallery": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-2.png",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-3.png"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-2.png",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-3.png"
         ]
       },
       "outdoor": {
@@ -354,11 +354,11 @@
           "Full Resolution Digital Download Gallery"
         ],
         "priceAdd": "₹7,000",
-        "bgImage": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_1.jpg",
+        "bgImage": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_1.jpg",
         "gallery": [
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_1.jpg",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_2.jpg",
-          "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_3.jpg"
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_1.jpg",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_2.jpg",
+          "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_3.jpg"
         ]
       }
     }
@@ -377,9 +377,9 @@
           { "icon": "🧑‍✈️", "title": "Professional Team", "sub": "Experienced drone pilots" }
         ],
         "gallery": [
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/drone_1.jpg", "caption": "Wedding Aerial View", "video": true },
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/drone_2.jpg", "caption": "Beach Pre-Wedding Shoot", "video": true },
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/drone_3.jpg", "caption": "Venue Flyover", "video": true }
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/drone_1.jpg", "caption": "Wedding Aerial View", "video": true },
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/drone_2.jpg", "caption": "Beach Pre-Wedding Shoot", "video": true },
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/drone_3.jpg", "caption": "Venue Flyover", "video": true }
         ],
         "whatWeOffer": [
           { "icon": "🚁", "title": "Aerial Videography", "desc": "High quality aerial videos captured with precision." },
@@ -407,9 +407,9 @@
           { "icon": "🎨", "title": "Creative Direction", "sub": "Posing & styling guidance" }
         ],
         "gallery": [
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_1.jpg", "caption": "Golden Hour Portrait", "video": false },
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_2.jpg", "caption": "Nature Trail Session", "video": false },
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_3.jpg", "caption": "Lake View Shoot", "video": false }
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_1.jpg", "caption": "Golden Hour Portrait", "video": false },
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_2.jpg", "caption": "Nature Trail Session", "video": false },
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_3.jpg", "caption": "Lake View Shoot", "video": false }
         ],
         "whatWeOffer": [
           { "icon": "📷", "title": "Portrait Sessions", "desc": "Individual & solo portraits in natural settings." },
@@ -437,9 +437,9 @@
           { "icon": "⚡", "title": "Fast Turnaround", "sub": "Same-day highlight reels" }
         ],
         "gallery": [
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg", "caption": "Wedding Highlight Reel", "video": true },
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/video_2.jpg", "caption": "Cinematic Love Story", "video": true },
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/video_3.jpg", "caption": "Same-Day Edit Preview", "video": true }
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg", "caption": "Wedding Highlight Reel", "video": true },
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/video_2.jpg", "caption": "Cinematic Love Story", "video": true },
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/video_3.jpg", "caption": "Same-Day Edit Preview", "video": true }
         ],
         "whatWeOffer": [
           { "icon": "🎞️", "title": "Highlight Films", "desc": "Short, emotion-packed highlight reels." },
@@ -467,9 +467,9 @@
           { "icon": "✨", "title": "Gold Foil Finish", "sub": "Elegant embossed detailing" }
         ],
         "gallery": [
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/album_1.jpg", "caption": "Lay-Flat Spread", "video": false },
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/album_2.jpg", "caption": "Leather Bound Cover", "video": false },
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/album_3.jpg", "caption": "Gold Foil Embossing", "video": false }
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/album_1.jpg", "caption": "Lay-Flat Spread", "video": false },
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/album_2.jpg", "caption": "Leather Bound Cover", "video": false },
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/album_3.jpg", "caption": "Gold Foil Embossing", "video": false }
         ],
         "whatWeOffer": [
           { "icon": "🎨", "title": "Custom Layouts", "desc": "Page designs tailored to your story." },
@@ -497,9 +497,9 @@
           { "icon": "🖼️", "title": "Classic Framing", "sub": "Timeless, formal compositions" }
         ],
         "gallery": [
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png", "caption": "Ceremony Rituals", "video": false },
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-2.png", "caption": "Family Blessings", "video": false },
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-3.png", "caption": "Traditional Portraits", "video": false }
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png", "caption": "Ceremony Rituals", "video": false },
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-2.png", "caption": "Family Blessings", "video": false },
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-3.png", "caption": "Traditional Portraits", "video": false }
         ],
         "whatWeOffer": [
           { "icon": "🪔", "title": "Ritual Photography", "desc": "Every ceremony moment captured respectfully." },
@@ -557,9 +557,9 @@
           { "icon": "🏆", "title": "Award-Style Editing", "sub": "Festival-quality highlight films" }
         ],
         "gallery": [
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png", "caption": "Cinematic Highlight Film", "video": true },
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-2.png", "caption": "Love Story Teaser", "video": true },
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-3.png", "caption": "Feature Film Edit", "video": true }
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png", "caption": "Cinematic Highlight Film", "video": true },
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-2.png", "caption": "Love Story Teaser", "video": true },
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-3.png", "caption": "Feature Film Edit", "video": true }
         ],
         "whatWeOffer": [
           { "icon": "🎬", "title": "Cinematic Highlight Films", "desc": "Emotion-driven, film-style edits." },
@@ -617,9 +617,9 @@
           { "icon": "🛠️", "title": "On-Site Setup Team", "sub": "Full installation & operation" }
         ],
         "gallery": [
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png", "caption": "Stage LED Backdrop", "video": false },
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-2.png", "caption": "Live Event Screen", "video": false },
-          { "img": "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-3.png", "caption": "Wedding Stage Display", "video": false }
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png", "caption": "Stage LED Backdrop", "video": false },
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-2.png", "caption": "Live Event Screen", "video": false },
+          { "img": "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-3.png", "caption": "Wedding Stage Display", "video": false }
         ],
         "whatWeOffer": [
           { "icon": "💡", "title": "LED Wall Rental", "desc": "Large-format LED walls for any stage." },
@@ -684,18 +684,18 @@
     "featured_photography_services": {
       "_note": "[name, price, priceTagLabel, imageUrl, rating] tuples shown in the homepage 'Photography Services' product rail",
       "items": [
-        ["Wedding Photography", "₹24,999", "Starting from", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/wedding_photography.jpg", 4.8],
-        ["Pre Wedding Shoot", "₹19,999", "Starting from", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/prewedding_shoot.jpg", 4.7],
-        ["Baby Photoshoot", "₹7,000", "Starting from", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/baby_photoshoot.jpg", 4.6],
-        ["Birthday Photoshoot", "₹8,000", "Starting from", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/birthday_photoshoot.jpg", 4.5],
-        ["Maternity Photoshoot", "₹8,999", "Starting from", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/maternity_photoshoot.jpg", 4.7],
-        ["Event Photography", "₹14,000", "Starting from", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/event_photography.jpg", 4.6]
+        ["Wedding Photography", "₹24,999", "Starting from", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/wedding_photography.jpg", 4.8],
+        ["Pre Wedding Shoot", "₹19,999", "Starting from", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/prewedding_shoot.jpg", 4.7],
+        ["Baby Photoshoot", "₹7,000", "Starting from", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/baby_photoshoot.jpg", 4.6],
+        ["Birthday Photoshoot", "₹8,000", "Starting from", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/birthday_photoshoot.jpg", 4.5],
+        ["Maternity Photoshoot", "₹8,999", "Starting from", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/maternity_photoshoot.jpg", 4.7],
+        ["Event Photography", "₹14,000", "Starting from", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/event_photography.jpg", 4.6]
       ]
     },
     "featured_studio_services": {
       "_note": "[name, price, oldPrice, imageUrl, rating] tuples — keys correspond to studio.js category ids (studio.html?category=...)",
       "items": [
-        ["Photo Printing", "₹25", "₹40", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p1-m1.png", 4.5],
+        ["Photo Printing", "₹25", "₹40", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/studio_assets/photo_printing/photo-printing-p1-m1.png", 4.5],
         ["Photo Lamination", "₹30", "₹50", "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=400&h=500&fit=crop&q=80", 4.3],
         ["Photo Restoration", "₹199", "₹299", "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=400&h=500&fit=crop&q=80", 4.6],
         ["Photo Editing", "₹99", "₹149", "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=400&h=500&fit=crop&q=80", 4.4],
@@ -706,23 +706,23 @@
     "featured_gifts": {
       "_note": "[name, price, oldPrice, imageUrl, rating] tuples — cart-enabled products",
       "items": [
-        ["Magic Photo Mug", "₹399", "₹599", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/magic_photo_mug.jpg", 4.6],
-        ["LED Photo Frame", "₹999", "₹1499", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/led_photo_frame.jpg", 4.8],
-        ["Crystal Cube", "₹999", "₹1499", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/crystal_cube.jpg", 4.7],
-        ["Personalized Keychain", "₹199", "₹299", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/personalized_keychain.jpg", 4.4],
-        ["Photo Water Bottle", "₹399", "₹599", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/photo_water_bottle.jpg", 4.5],
-        ["Photo Cushion", "₹499", "₹749", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/photo_cushion.jpg", 4.6]
+        ["Magic Photo Mug", "₹399", "₹599", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/magic_photo_mug.jpg", 4.6],
+        ["LED Photo Frame", "₹999", "₹1499", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/led_photo_frame.jpg", 4.8],
+        ["Crystal Cube", "₹999", "₹1499", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/crystal_cube.jpg", 4.7],
+        ["Personalized Keychain", "₹199", "₹299", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/personalized_keychain.jpg", 4.4],
+        ["Photo Water Bottle", "₹399", "₹599", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/photo_water_bottle.jpg", 4.5],
+        ["Photo Cushion", "₹499", "₹749", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/photo_cushion.jpg", 4.6]
       ]
     },
     "featured_corporate_gifts": {
       "_note": "[name, price, oldPrice, imageUrl, rating] tuples — cart-enabled products",
       "items": [
-        ["Employee Welcome Kit", "₹1,299", "₹1,999", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/welcome_kit.jpg", 4.5],
-        ["Corporate Gift Hamper", "₹2,499", "₹3,999", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/corporate_hamper.jpg", 4.7],
-        ["Award Trophy", "₹1,199", "₹1,799", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/award_trophy.jpg", 4.8],
-        ["Memento Shield", "₹999", "₹1,499", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/memento_shield.jpg", 4.6],
-        ["Executive Diary Set", "₹899", "₹1,199", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/executive_diary_set.jpg", 4.4],
-        ["Pen Gift Set", "₹599", "₹799", "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/assets/pen_gift_set.jpg", 4.3]
+        ["Employee Welcome Kit", "₹1,299", "₹1,999", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/welcome_kit.jpg", 4.5],
+        ["Corporate Gift Hamper", "₹2,499", "₹3,999", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/corporate_hamper.jpg", 4.7],
+        ["Award Trophy", "₹1,199", "₹1,799", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/award_trophy.jpg", 4.8],
+        ["Memento Shield", "₹999", "₹1,499", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/memento_shield.jpg", 4.6],
+        ["Executive Diary Set", "₹899", "₹1,199", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/executive_diary_set.jpg", 4.4],
+        ["Pen Gift Set", "₹599", "₹799", "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/pen_gift_set.jpg", 4.3]
       ]
     },
     "service_area_cities": ["Hyderabad", "Secunderabad", "Gachibowli", "Madhapur", "Kukatpally", "Hitech City", "Ameerpet", "Dilsukhnagar", "LB Nagar", "Uppal"],

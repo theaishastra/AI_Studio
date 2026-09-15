@@ -1,6 +1,6 @@
 from datetime import datetime, date
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .models import CANCELLATION_REASONS
 
@@ -169,6 +169,10 @@ class MediaIn(BaseModel):
 class MediaOut(MediaIn):
     model_config = ConfigDict(from_attributes=True)
     id: str
+    # upload_media() (admin.py) sets kind="library" directly on the ORM object,
+    # bypassing MediaIn's write-side pattern - so the read side must accept it
+    # too, or every response containing a library upload 500s on serialization.
+    kind: str
 
 
 # ---------------------------------------------------------------- categories
@@ -196,6 +200,34 @@ class CategoryOut(CategoryIn):
 
 # ---------------------------------------------------------------- products
 
+class ProductInputFieldIn(BaseModel):
+    """One admin-configured extra customer input on a product's order/booking
+    form - built by the "Customer Input Fields" form builder in the admin
+    catalog UI. `id` is stable across edits so submitted values (keyed by
+    field id in an order item's customization.fields) keep meaning even if
+    the label/options are edited later."""
+    id: str = Field(min_length=1, max_length=40)
+    type: str = Field(pattern="^(upload|dropdown|text)$")
+    label: str = Field(min_length=1, max_length=160)
+    required: bool = False
+    help_text: str = Field(default="", max_length=300)
+    sort: int = 0
+    # upload only
+    multiple: bool = False
+    max_files: int = Field(default=1, ge=1, le=10)
+    # dropdown only
+    options: list[str] = Field(default_factory=list, max_length=50)
+    multi_select: bool = False
+
+    @model_validator(mode="after")
+    def _check_type_fields(self):
+        if self.type == "dropdown" and not self.options:
+            raise ValueError(f'Dropdown field "{self.label}" needs at least one option')
+        if self.type == "upload" and self.multiple and self.max_files < 2:
+            raise ValueError(f'Upload field "{self.label}" allows multiple files but has max_files < 2')
+        return self
+
+
 class ProductIn(BaseModel):
     category_id: str
     tier: str | None = None
@@ -213,6 +245,7 @@ class ProductIn(BaseModel):
     is_featured: bool = False
     sort: int = 0
     extra: dict = {}
+    input_fields: list[ProductInputFieldIn] = []
     media: list[MediaIn] = []
 
 
@@ -233,6 +266,7 @@ class ProductPatch(BaseModel):
     is_featured: bool | None = None
     sort: int | None = None
     extra: dict | None = None
+    input_fields: list[ProductInputFieldIn] | None = None
 
 
 class ProductOut(BaseModel):
@@ -254,6 +288,7 @@ class ProductOut(BaseModel):
     is_featured: bool
     sort: int
     extra: dict
+    input_fields: list[ProductInputFieldIn] = []
     media: list[MediaOut] = []
 
 
@@ -339,6 +374,8 @@ class OrderItemOut(BaseModel):
     unit_price: float
     qty: int
     notes: str
+    # active | cancel_requested | cancelled - see OrderItem.status.
+    status: str = "active"
     # Set only by the admin order LIST endpoint, which strips uploaded artwork
     # (customer photos/logos can be several MB each as base64) out of
     # product_snapshot to keep the list response small; the count lets the
@@ -399,6 +436,8 @@ class TrackingUpdateIn(BaseModel):
 class CancellationRequestIn(BaseModel):
     reason: str = Field(pattern=_CANCELLATION_REASON_PATTERN)
     note: str = Field(default="", max_length=500)
+    # When set, cancels just this one line item instead of the whole order.
+    order_item_id: str | None = None
 
 
 class CancellationDecisionIn(BaseModel):
@@ -410,6 +449,10 @@ class CancellationRequestOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
     order_id: str
+    order_item_id: str | None = None
+    # Populated by the router from the order's items - None for a whole-order
+    # request, the item's product title for an item-level one.
+    item_title: str | None = None
     reason: str
     note: str
     status: str

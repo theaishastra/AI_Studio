@@ -14,29 +14,39 @@ const CAT_LABELS={
   ledscreens:"LED Screens"
 };
 const CATEGORY_IMAGES={
-  wedding:"https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/wedding.png",
-  prewedding:"https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/pre-wedding.png",
-  maternity:"https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/maternity.jpg",
-  baby:"https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/baby-shower.jpg",
-  birthday:"https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/birthday-event.jpg",
-  outdoor:"https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/outdoor.jpg",
-  drone:"https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/drone.jpg",
-  video:"https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/video.jpg",
-  album:"https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/album%20designing.jpg",
-  event:"https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/wedding.png",
-  housewarming:"https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/wedding.png",
-  sareefunction:"https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/hero/saree%20ceremony.png",
-  traditionalphoto:"https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png",
-  traditionalvideo:"https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg",
-  cinematicvideo:"https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png",
-  candidphoto:"https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-1.png",
-  ledscreens:"https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png"
+  wedding:"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/wedding.png",
+  prewedding:"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/pre-wedding.png",
+  maternity:"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/maternity.jpg",
+  baby:"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/baby-shower.jpg",
+  birthday:"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/birthday-event.jpg",
+  outdoor:"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/outdoor.jpg",
+  drone:"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/drone.jpg",
+  video:"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/video.jpg",
+  album:"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/album%20designing.jpg",
+  event:"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/wedding.png",
+  housewarming:"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/wedding.png",
+  sareefunction:"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/hero/saree%20ceremony.png",
+  traditionalphoto:"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png",
+  traditionalvideo:"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg",
+  cinematicvideo:"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png",
+  candidphoto:"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-1.png",
+  ledscreens:"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png"
 };
 /* Cloudinary auto-format/auto-quality transform: purely size-reducing (no resize/crop),
    safe to wrap any URL — no-ops for non-Cloudinary URLs or already-transformed ones. */
 function cldOpt(url) {
   // Cloudinary account has Strict Transformations enabled — any on-the-fly
   // transform (even a plain resize) 400s. No-op until that's turned off.
+  // Locally-uploaded (admin Media Library) images are relative /media/<file>
+  // paths served by FastAPI itself - route them through the same backend
+  // origin every fetch() on this page already uses, or they resolve against
+  // whatever's hosting this static page instead and 404.
+  if (url && url.startsWith('/media/')) return `${window.SAI_API_BASE || "http://localhost:8000"}${url}`;
+  // images.weserv.nl is a free public resizing/compression proxy - shrinks the
+  // 500KB-1MB+ originals actually being served down to what a card/thumbnail
+  // needs. It can't reach a localhost-only dev URL, so local media stays as-is.
+  if (!url || url.startsWith('data:') || url.startsWith('blob:') || /^https?:\/\/(localhost|127\.0\.0\.1)/.test(url)) return url;
+  return `https://images.weserv.nl/?url=${url.replace(/^https?:\/\//, '')}&w=640&q=75&output=webp&we`;
   return url;
 }
 
@@ -109,10 +119,10 @@ const EQUIPMENT_GALLERIES={
 function resolvePackageImages(cat,tier){
   const tierKey=(tier||"").toLowerCase().replace(/\s+/g,"-");
   const files=PACKAGE_IMAGES[cat+"|"+tierKey];
-  if(files) return files.map(f=>cldOpt(`https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/packages/${f}`));
+  if(files) return files.map(f=>cldOpt(`https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/packages/${f}`));
   // equipment/coverage service — show its own three portfolio photos
   const equip=EQUIPMENT_GALLERIES[cat];
-  if(equip) return equip.map(f=>cldOpt(`https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/${f}`));
+  if(equip) return equip.map(f=>cldOpt(`https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/${f}`));
   // no dedicated package photos for this category/tier — reuse its hero image
   // (always exists) so the gallery never shows a broken thumbnail
   return [resolveCategoryImage(cat),resolveCategoryImage(cat),resolveCategoryImage(cat)];
@@ -577,11 +587,11 @@ const EQUIPMENT_DATA = {
       "All Raw Unedited Images on USB Flash Drive"
     ],
     priceAdd: "₹8,000",
-    bgImage: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-1.png",
+    bgImage: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-1.png",
     gallery: [
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-1.png",
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-2.png",
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-3.png"
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-1.png",
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-2.png",
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/wedding-3.png"
     ]
   },
   drone: {
@@ -603,11 +613,11 @@ const EQUIPMENT_DATA = {
       "Stunning 20MP Aerial Panoramic Photographs"
     ],
     priceAdd: "₹6,000",
-    bgImage: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/drone_1.jpg",
+    bgImage: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/drone_1.jpg",
     gallery: [
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/drone_1.jpg",
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/drone_2.jpg",
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/drone_3.jpg"
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/drone_1.jpg",
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/drone_2.jpg",
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/drone_3.jpg"
     ]
   },
   cinematicvideo: {
@@ -629,11 +639,11 @@ const EQUIPMENT_DATA = {
       "Custom Composed Background Score & Dialogue Mix"
     ],
     priceAdd: "₹12,000",
-    bgImage: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png",
+    bgImage: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png",
     gallery: [
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png",
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-2.png",
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-3.png"
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-1.png",
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-2.png",
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/cinematic-videography-3.png"
     ]
   },
   album: {
@@ -655,11 +665,11 @@ const EQUIPMENT_DATA = {
       "1 Mini Replica Album for Parents / Gifting"
     ],
     priceAdd: "₹7,500",
-    bgImage: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/album_1.jpg",
+    bgImage: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/album_1.jpg",
     gallery: [
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/album_1.jpg",
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/album_2.jpg",
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/album_3.jpg"
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/album_1.jpg",
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/album_2.jpg",
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/album_3.jpg"
     ]
   },
   traditionalphoto: {
@@ -681,11 +691,11 @@ const EQUIPMENT_DATA = {
       "High-Resolution Print-Ready JPEG Files"
     ],
     priceAdd: "₹5,000",
-    bgImage: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png",
+    bgImage: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png",
     gallery: [
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png",
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-2.png",
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-3.png"
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-1.png",
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-2.png",
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/traditional-photography-3.png"
     ]
   },
   traditionalvideo: {
@@ -707,11 +717,11 @@ const EQUIPMENT_DATA = {
       "Direct Mobile-Streamable Digital Download Link"
     ],
     priceAdd: "₹6,500",
-    bgImage: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg",
+    bgImage: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg",
     gallery: [
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg",
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/video_2.jpg",
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/video_3.jpg"
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/video_1.jpg",
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/video_2.jpg",
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/video_3.jpg"
     ]
   },
   ledscreens: {
@@ -733,11 +743,11 @@ const EQUIPMENT_DATA = {
       "Complete On-Site Technical Management"
     ],
     priceAdd: "₹10,000",
-    bgImage: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png",
+    bgImage: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png",
     gallery: [
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png",
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-2.png",
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-3.png"
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-1.png",
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-2.png",
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/led-screens-3.png"
     ]
   },
   outdoor: {
@@ -759,11 +769,11 @@ const EQUIPMENT_DATA = {
       "Full Resolution Digital Download Gallery"
     ],
     priceAdd: "₹7,000",
-    bgImage: "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_1.jpg",
+    bgImage: "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_1.jpg",
     gallery: [
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_1.jpg",
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_2.jpg",
-      "https://res.cloudinary.com/ismg8jfl/image/upload/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_3.jpg"
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_1.jpg",
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_2.jpg",
+      "https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/outdoor_3.jpg"
     ]
   }
 };
