@@ -3184,3 +3184,82 @@ footer .container {
      corporate.html. Its own general responsive rules (@media max-width:640px
      above) already give it a mobile-appropriate 2-column grid. */
 }
+
+/* ================= MOBILE PROMO SLIDER (home-page style hero carousel) ================= */
+.promo-hero-slider {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .promo-hero-slider {
+    display: block;
+    width: 100%;
+    margin: 0 0 16px;
+  }
+
+  .promo-hero-window {
+    position: relative;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 10px 26px rgba(92, 9, 48, .12);
+  }
+
+  .promo-hero-track {
+    display: flex;
+    width: 600%;
+    transition: transform .7s cubic-bezier(.65, 0, .35, 1);
+  }
+
+  .promo-hero-slide {
+    position: relative;
+    width: 16.6667%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    height: 150px;
+  }
+
+  .promo-hero-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  .promo-hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .promo-hero-dots {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    z-index: 4;
+  }
+
+  .promo-hero-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .6);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: all .25s ease;
+  }
+
+  .promo-hero-dot.active {
+    width: 16px;
+    border-radius: 4px;
+    background: #fff;
+  }
+}
