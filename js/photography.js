@@ -963,4 +963,63 @@
       }
     }
     boot();
+
+    (function initMobilePromoSlider() {
+      function init() {
+        const track = document.getElementById('photographyPromoTrack');
+        const dots = document.querySelectorAll('#photographyPromoDots .promo-hero-dot');
+        if (!track || !dots.length) return;
+
+        const slideCount = 4;
+        const totalSlots = slideCount + 2;
+        const slotWidth = 100 / totalSlots;
+        let pos = 1;
+        let timer;
+
+        function goTo(p, animate) {
+          track.style.transition = animate === false ? 'none' : 'transform .7s cubic-bezier(.65,0,.35,1)';
+          track.style.transform = 'translateX(-' + (p * slotWidth) + '%)';
+          const realIndex = ((p - 1) % slideCount + slideCount) % slideCount;
+          dots.forEach((d, di) => d.classList.toggle('active', di === realIndex));
+        }
+
+        function next() {
+          pos++;
+          goTo(pos);
+        }
+
+        track.addEventListener('transitionend', (e) => {
+          if (e.target !== track || e.propertyName !== 'transform') return;
+          if (pos >= totalSlots - 1) {
+            pos = 1;
+            goTo(pos, false);
+          } else if (pos <= 0) {
+            pos = slideCount;
+            goTo(pos, false);
+          }
+        });
+
+        function startAutoplay() {
+          clearInterval(timer);
+          timer = setInterval(next, 3000);
+        }
+
+        dots.forEach((dot) => {
+          dot.addEventListener('click', () => {
+            pos = parseInt(dot.dataset.i, 10) + 1;
+            goTo(pos);
+            startAutoplay();
+          });
+        });
+
+        goTo(pos, false);
+        startAutoplay();
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
   

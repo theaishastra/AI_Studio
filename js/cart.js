@@ -683,18 +683,22 @@
     async function createBackendOrder() {
       const msgEl = document.getElementById('cartPaymentMsg');
       const placeBtn = document.getElementById('placeCartOrderBtn');
+      const loadingEl = document.getElementById('cartPaymentLoading');
       msgEl.style.display = 'none';
       placeBtn.disabled = true;
       setPaymentOptionsLoading(true);
+      if (loadingEl) loadingEl.style.display = 'flex';
 
       try {
         const d = getDeliveryDetails();
         // Best-effort: link the phone entered in delivery details to the account
         // (email is the login identity; a clash with another account, e.g. the
         // same number used to sign up separately, shouldn't block checkout).
-        try { await CustomerAuth.updateMe({ name: d.name, phone: d.phone }); } catch (_) {}
-
+        // Independent of the address lookup below, so run both concurrently
+        // instead of paying for two sequential round trips.
+        const updateMePromise = CustomerAuth.updateMe({ name: d.name, phone: d.phone }).catch(() => {});
         const addressId = await resolveOrderAddressId(d);
+        await updateMePromise;
 
         const { items } = cartTotals();
         const result = await CustomerAuth.checkout({
@@ -718,6 +722,7 @@
         msgEl.style.display = 'block';
       } finally {
         setPaymentOptionsLoading(false);
+        if (loadingEl) loadingEl.style.display = 'none';
       }
     }
 

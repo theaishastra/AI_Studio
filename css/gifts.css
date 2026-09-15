@@ -4326,7 +4326,7 @@ footer .pay-icons .pi {
 
 .cart-drawer {
   position: fixed;
-  z-index: 201;
+  z-index: 10001;
   top: 0;
   right: 0;
   bottom: 0;
@@ -7814,13 +7814,35 @@ body.gifts-module-route .details-page {
 
 /* Match corporate.html's product-detail overlay: a light-gray page backdrop
    behind a narrower, centered card instead of the details page stretching
-   edge to edge at the same 1440px width as the category grid. */
-body:has(> .details-page) {
+   edge to edge at the same 1440px width as the category grid.
+   body.gifts-view-product (set in js/gifts.js mountRoute()) is a fallback for
+   browsers without :has() support - without it this background silently
+   stayed whatever color came before (the page's own pink/maroon tones)
+   instead of switching to this gray backdrop. */
+body:has(> .details-page),
+body.gifts-view-product {
   background: #F5F6F7 !important;
 }
 
 body.gifts-module-route .details-page.container {
   width: min(1240px, calc(100% - 40px));
+}
+
+/* Mobile: this "narrower centered card on a gray backdrop" treatment is a
+   desktop modal pattern borrowed from corporate.html - every other mobile
+   page on the site (packages-grid, promo-hero-slider, etc.) goes edge to
+   edge with small uniform padding instead. Left as the unconditional 40px
+   inset above, the product page reads as a cramped column with unused
+   space beside it rather than using the full phone screen. */
+@media (max-width: 767px) {
+  body.gifts-module-route .details-page.container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-inline: 0 !important;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+    box-sizing: border-box !important;
+  }
 }
 
 /* Gallery gets the same light-gray frame + inset white image card as
@@ -7920,6 +7942,20 @@ body.gifts-module-route #detailBuyNow:active {
   body.gifts-module-route #detailBuyNow {
     padding: 8px 4px;
     font-size: 12px;
+  }
+
+  /* "PERSONALISE THIS GIFT" + the "Free Customisation" pill no longer fit
+     side by side at this width - space-between was forcing the pill's own
+     text to wrap mid-word instead. Stack them so each keeps a single line. */
+  body.gifts-module-route .personalise-box-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  body.gifts-module-route .personalise-box-title,
+  body.gifts-module-route .personalise-free-tag {
+    white-space: nowrap;
   }
 }
 
@@ -14637,7 +14673,14 @@ html body.gifts-view-category .pkg-meta-row {
     max-height: calc(100vh - 114px) !important;
     overflow-y: auto !important;
     scrollbar-width: none !important;
-    padding: 0 !important;
+    /* Bottom padding equal to the fixed .mobile-bottom-nav's own footprint
+       (see css/shared/mobile-nav-extra.css - "body { padding-bottom: 64px }"
+       is the same site-wide clearance). Without it, this box's max-height
+       runs all the way to the viewport edge while stuck, so its bottom ~60px
+       sits directly behind the fixed nav bar - the last category ("Gift
+       Combos & Hampers") lands there and can never be scrolled clear of it,
+       same bug as corporate.html's mobile category rail. */
+    padding: 0 0 64px !important;
   }
 
   html body.gifts-view-category .sidebar-sticky-inner::-webkit-scrollbar {

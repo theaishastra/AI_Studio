@@ -39,8 +39,11 @@ async function loadMediaGrid() {
   grid.innerHTML = items.map(m => `
     <figure class="media-tile" data-id="${m.id}">
       <img src="${esc(mediaUrl(m.url))}" title="Click to copy URL" onclick="copyMediaUrl('${esc(m.url)}')">
+      ${m.usage_count ? `<span class="media-tile-usage" title="Used by ${m.usage_count} product/category photo(s)">${m.usage_count}×</span>` : ""}
       <figcaption>${esc(m.alt || m.url)}</figcaption>
-      <button class="media-tile-delete" title="Delete" onclick="deleteMediaLibraryItem('${m.id}')">×</button>
+      ${m.deletable
+        ? `<button class="media-tile-delete" title="Delete" onclick="deleteMediaLibraryItem('${m.id}')">×</button>`
+        : `<button class="media-tile-delete" title="Attached to a product/category — remove it there instead" disabled>×</button>`}
     </figure>
   `).join("");
 }

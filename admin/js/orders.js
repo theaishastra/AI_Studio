@@ -14,6 +14,37 @@ const CANCELLATION_REASON_LABELS = {
 
 let _ordersTab = "orders";
 
+// Fixed order-level milestone stages for the horizontal tracker in the order
+// modal - mirrors js/my-orders.js's customer-facing copy (small intentional
+// duplication, same pattern as CUSTOM_HIDDEN_FIELDS above).
+const STAGE_DEFS = [
+  { key: "placed", label: "Order Placed", statuses: ["created", "payment_pending"] },
+  { key: "confirmed", label: "Order Confirmed", statuses: ["cod_confirmed", "paid"] },
+  { key: "designing", label: "Designing", statuses: ["in_production"] },
+  { key: "shipped", label: "Shipped", statuses: ["shipped"] },
+  { key: "delivered", label: "Delivered", statuses: ["delivered"] },
+];
+
+function orderStageIndex(status) {
+  return STAGE_DEFS.findIndex(s => s.statuses.includes(status));
+}
+
+const REFUND_STATUS_LABELS = { pending: "Refund pending", refunded: "Refunded" };
+const REFUND_BADGE_CLASS = { pending: "refund-pending", refunded: "refund-refunded" };
+
+function refundBadgeHTML(refundStatus) {
+  const label = REFUND_STATUS_LABELS[refundStatus];
+  if (!label) return "";
+  return `<span class="badge ${REFUND_BADGE_CLASS[refundStatus]}">${label}</span>`;
+}
+
+// Whether there's a captured payment still owed a refund - matches the
+// backend's own eligibility check (routers/payments.py refund_order): any
+// captured payment, regardless of Order.status.
+function orderRefundable(order) {
+  return (order.payments || []).some(p => p.status === "captured");
+}
+
 /* The order LIST response has its uploaded artwork stripped out server-side
    (see backend's _strip_uploads) to keep it small - it only carries an
    upload_count per item. Viewing one order, or downloading its artwork,
@@ -110,7 +141,7 @@ async function loadOrders(statusFilter) {
                          onclick="downloadAllOrderArtwork('${o.id}')">&#11015; ${uploadCount} file${uploadCount === 1 ? "" : "s"}</button>`
               : "—"}</td>
             <td>${fmtINR(o.total)}</td>
-            <td><span class="badge ${o.payments.some(p => p.status === "captured") ? "on" : "off"}">${o.status === "cod_confirmed" ? "cod" : (o.payments[0]?.status || "—")}</span></td>
+            <td><span class="badge ${o.payments.some(p => p.status === "captured") ? "on" : "off"}">${o.status === "cod_confirmed" ? "cod" : (o.payments[0]?.status || "—")}</span> ${refundBadgeHTML(o.refund_status)}</td>
             <td><select class="order-status-select order-status-${esc(o.status)}" onchange="updateOrderStatus('${o.id}', this.value, this)">
               ${ORDER_STATUSES.map(s => `<option value="${s}" ${s === o.status ? "selected" : ""}>${s.replace("_", " ")}</option>`).join("")}
             </select></td>
@@ -118,7 +149,7 @@ async function loadOrders(statusFilter) {
             <td>${fmtIST(o.created_at)}</td>
             <td class="actions">
               <button class="btn secondary" onclick="viewOrder('${o.id}')">View</button>
-              ${o.status === "paid" ? `<button class="btn danger owner-only" onclick="refundOrder('${o.id}')">Refund</button>` : ""}
+              ${orderRefundable(o) ? `<button class="btn danger owner-only" onclick="refundOrder('${o.id}')">Refund</button>` : ""}
             </td>
           </tr>`;
         }).join("")}
@@ -464,6 +495,56 @@ async function downloadAllOrderArtwork(orderId) {
   });
 }
 
+/* Horizontal Placed→Confirmed→Designing→Shipped→Delivered milestone tracker,
+   with a status <select> alongside it so staff can move the order forward
+   from right where they're already reviewing it, instead of only from the
+   dropdown back in the orders table row. Cancelled/refunded orders don't fit
+   on this line (there's no "how far did it get" that matters once called
+   off) so they get a banner instead. */
+function orderStageTrackerHTML(order) {
+  const isTerminalStop = order.status === "cancelled" || order.status === "refunded";
+  const trackerBody = isTerminalStop
+    ? `<div class="order-stage-banner">
+        <span>${order.status === "refunded" ? "This order was refunded." : "This order was cancelled."}</span>
+        ${refundBadgeHTML(order.refund_status)}
+      </div>`
+    : (() => {
+        const currentIndex = orderStageIndex(order.status);
+        return `<div class="order-stage-track">
+          ${STAGE_DEFS.map((stage, i) => {
+            const state = currentIndex < 0 ? "upcoming" : i < currentIndex ? "done" : i === currentIndex ? "current" : "upcoming";
+            return `
+              <div class="order-stage-node order-stage-${state}">
+                ${i > 0 ? `<span class="order-stage-connector"></span>` : ""}
+                <span class="order-stage-dot"></span>
+                <span class="order-stage-label">${esc(stage.label)}</span>
+              </div>`;
+          }).join("")}
+        </div>`;
+      })();
+
+  return `
+    <div class="stage-tracker-wrap">
+      ${trackerBody}
+      <select class="order-status-select order-status-${esc(order.status)}" onchange="updateOrderStatusFromModal('${order.id}', this.value)">
+        ${ORDER_STATUSES.map(s => `<option value="${s}" ${s === order.status ? "selected" : ""}>${s.replace("_", " ")}</option>`).join("")}
+      </select>
+    </div>`;
+}
+
+// Same PATCH as the table row's dropdown, but re-opens the modal afterward
+// so the tracker/status badge/refund row all reflect the new status
+// immediately instead of staff having to close and reopen it.
+async function updateOrderStatusFromModal(id, newStatus) {
+  try {
+    await Api.updateOrderStatus(id, newStatus);
+    _ORDER_DETAIL_CACHE.delete(id);
+    viewOrder(id);
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
 function trackingTimelineHTML(order) {
   const events = order.tracking_events || [];
   if (!events.length) return `<p class="odg-empty">No tracking updates yet.</p>`;
@@ -669,11 +750,20 @@ function renderOrderModal(o) {
           <span>Payment status</span>
           <b>${esc(payment.status)}${payment.razorpay_payment_id ? ` &middot; ${esc(payment.razorpay_payment_id)}` : ""}</b>
         </div>` : ""}
+        ${o.refund_status !== "not_applicable" || orderRefundable(o) ? `
+        <div class="order-summary-payment">
+          <span>Refund</span>
+          <span>
+            ${refundBadgeHTML(o.refund_status) || `<span class="badge off">Not refunded</span>`}
+            ${orderRefundable(o) ? `<button type="button" class="btn danger owner-only" style="margin-left:8px;" onclick="refundOrder('${o.id}')">Refund</button>` : ""}
+          </span>
+        </div>` : ""}
       </div>
     </div>
 
     <div class="order-section">
       <h3 class="order-section-title">Shipment &amp; Tracking</h3>
+      ${orderStageTrackerHTML(o)}
       ${(o.carrier || o.tracking_number || o.expected_delivery) ? `
       <div class="tracking-current">
         ${o.carrier ? `<span>Carrier: <b>${esc(o.carrier)}</b></span>` : ""}
@@ -755,7 +845,15 @@ async function openArtworkZoom(orderId, itemIndex, field) {
 
 async function refundOrder(id) {
   if (!confirm("Refund this order via Razorpay? This will restock physical items.")) return;
-  try { await Api.refundOrder(id); loadOrders(); }
+  try {
+    await Api.refundOrder(id);
+    _ORDER_DETAIL_CACHE.delete(id);
+    // Reflect the new refund/payment status wherever the admin is looking -
+    // back in the order modal if that's where the button was clicked from,
+    // otherwise the orders table.
+    if (document.querySelector(".order-modal-head")) await viewOrder(id);
+    else loadOrders();
+  }
   catch (err) { alert(err.message); }
 }
 
@@ -769,16 +867,17 @@ async function renderCancellationRequests(body) {
   }
   body.innerHTML = `
     <table>
-      <thead><tr><th>Order #</th><th>Customer</th><th>Scope</th><th>Reason</th><th>Note</th><th>Status</th><th>Raised</th><th></th></tr></thead>
+      <thead><tr><th>Order #</th><th>Customer</th><th>Scope</th><th>Reason</th><th>Note</th><th>Status</th><th>Refund</th><th>Raised</th><th></th></tr></thead>
       <tbody>
         ${reqs.map(r => `
           <tr>
             <td><b>${esc(r.order_number || "—")}</b></td>
             <td>${esc(r.customer_name || r.customer_email || "—")}</td>
-            <td>${r.order_item_id ? `Item: ${esc(r.item_title || "—")}` : "Whole order"}</td>
+            <td>${r.order_item_id ? `<span class="badge">Item</span> ${esc(r.item_title || "—")}` : `<span class="badge">Whole order</span>`}</td>
             <td>${esc(CANCELLATION_REASON_LABELS[r.reason] || r.reason)}</td>
             <td>${esc(r.note || "—")}</td>
             <td><span class="badge ${r.status === "pending" ? "req-pending" : r.status === "approved" ? "on" : "off"}">${esc(r.status)}</span></td>
+            <td>${refundBadgeHTML(r.refund_status) || "—"}</td>
             <td>${fmtIST(r.created_at)}</td>
             <td class="actions">
               ${r.status === "pending" ? `

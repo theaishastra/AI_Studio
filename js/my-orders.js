@@ -11,6 +11,28 @@
       refunded: 'Refunded',
     };
 
+    // Fixed, order-level milestone stages shown as a horizontal tracker -
+    // distinct from the per-admin-checkpoint vertical event log below it.
+    // cancelled/refunded orders don't map onto this line at all (see
+    // orderStageTimelineHTML) since "how far did it get" isn't the point once
+    // an order is called off.
+    const STAGE_DEFS = [
+      { key: 'placed', label: 'Order Placed', statuses: ['created', 'payment_pending'] },
+      { key: 'confirmed', label: 'Order Confirmed', statuses: ['cod_confirmed', 'paid'] },
+      { key: 'designing', label: 'Designing', statuses: ['in_production'] },
+      { key: 'shipped', label: 'Shipped', statuses: ['shipped'] },
+      { key: 'delivered', label: 'Delivered', statuses: ['delivered'] },
+    ];
+
+    function orderStageIndex(status) {
+      return STAGE_DEFS.findIndex(s => s.statuses.includes(status));
+    }
+
+    const REFUND_STATUS_LABELS = {
+      pending: 'Refund pending',
+      refunded: 'Refunded',
+    };
+
     const CANCELLATION_REASONS = [
       { value: 'changed_mind', label: 'Changed my mind' },
       { value: 'found_better_price', label: 'Found a better price elsewhere' },
@@ -301,8 +323,19 @@
       const lineTotal = Math.round(item.unit_price * item.qty);
       const itemStatus = item.status || 'active';
       const activeCount = (order.items || []).filter(i => (i.status || 'active') === 'active').length;
-      const hasPendingItemRequest = (order.cancellation_requests || []).some(r => r.order_item_id === item.id && r.status === 'pending');
-      const canCancelThisItem = order.can_cancel && itemStatus === 'active' && activeCount > 1 && !hasPendingItemRequest;
+      // Reasons mirror the order-level Cancel Order button below - an item can
+      // only be cancelled on its own while it's still active AND the order as
+      // a whole is still cancellable AND it isn't the last item left (the
+      // backend requires cancelling the whole order at that point instead).
+      let itemCancelDisabledReason = '';
+      if (!order.can_cancel) {
+        itemCancelDisabledReason = ['delivered', 'cancelled', 'refunded'].includes(order.status)
+          ? 'This order can no longer be cancelled'
+          : 'A cancellation request is already pending for this order';
+      } else if (activeCount <= 1) {
+        itemCancelDisabledReason = 'This is the last item — cancel the whole order instead';
+      }
+      const canCancelThisItem = itemStatus === 'active' && !itemCancelDisabledReason;
 
       const personalisation = (uploaded || customText || specs.length) ? `
         <div class="order-item-custom">
@@ -339,7 +372,10 @@
             </div>
             ${item.notes ? `<p class="order-item-note">${escapeOrdHTML(item.notes)}</p>` : ''}
             ${personalisation}
-            ${canCancelThisItem ? `<button type="button" class="order-item-cancel-btn" onclick="openCancelItemModal('${order.id}', '${item.id}', '${escapeOrdAttr(title).replace(/'/g, "&#39;")}')">Cancel this item</button>` : ''}
+            ${itemStatus === 'active' ? (canCancelThisItem
+              ? `<button type="button" class="order-item-cancel-btn" onclick="openCancelItemModal('${order.id}', '${item.id}', '${escapeOrdAttr(title).replace(/'/g, "&#39;")}')">Cancel this item</button>`
+              : `<button type="button" class="order-item-cancel-btn" disabled title="${escapeOrdAttr(itemCancelDisabledReason)}">Cancel this item</button>
+                 <div class="order-action-reason">${escapeOrdHTML(itemCancelDisabledReason)}</div>`) : ''}
           </div>
           <div class="order-item-amount">&#8377;${lineTotal}</div>
         </div>`;
@@ -399,6 +435,8 @@
         state = 'Last payment attempt failed';
       }
 
+      const refundLabel = REFUND_STATUS_LABELS[order.refund_status];
+
       return `
         <div class="order-panel">
           <h5 class="order-panel-title">Payment</h5>
@@ -407,6 +445,8 @@
           ${settled && settled.razorpay_payment_id
             ? `<div class="order-panel-row"><span>Reference</span><span>${escapeOrdHTML(settled.razorpay_payment_id)}</span></div>` : ''}
           <div class="order-panel-row"><span>Amount</span><span>&#8377;${Math.round(order.total)}</span></div>
+          ${refundLabel ? `
+          <div class="order-panel-row"><span>Refund</span><span class="order-refund-badge order-refund-${order.refund_status}">${refundLabel}</span></div>` : ''}
         </div>`;
     }
 
@@ -439,11 +479,30 @@
       return notes.map(([kind, text]) => `<div class="order-request-note order-request-${kind}">${text}</div>`).join('');
     }
 
+    // Why each action button is disabled right now - reasons mirror the
+    // backend's actual eligibility rules (services/policy.py) so the
+    // explanation is always true, not just a generic "unavailable".
+    function orderCancelDisabledReason(order) {
+      if (order.can_cancel) return '';
+      if (['delivered', 'cancelled', 'refunded'].includes(order.status)) return 'This order can no longer be cancelled';
+      return 'Cancellation request pending review';
+    }
+
+    function orderAddressDisabledReason(order) {
+      if (order.can_request_address_change) return '';
+      if ((order.address_change_requests || []).length > 0) return 'Address change already requested for this order';
+      if (order.address_change_deadline) return 'Address change window has closed';
+      return 'Address changes aren’t available for this order';
+    }
+
     function orderCardHTML(order) {
       const date = fmtOrdDate(order.created_at);
       const statusLabel = ORDER_STATUS_LABELS[order.status] || order.status;
       const itemCount = order.items.reduce((sum, item) => sum + item.qty, 0);
       const expanded = _expandedOrderId === order.id;
+      const hasTracking = (order.tracking_events || []).length > 0;
+      const cancelReason = orderCancelDisabledReason(order);
+      const addressReason = orderAddressDisabledReason(order);
 
       return `
         <div class="order-card">
@@ -467,20 +526,56 @@
             ${orderPaymentHTML(order)}
           </div>
 
-          ${orderShipmentSummaryHTML(order)}
+          ${orderStageTimelineHTML(order)}
           ${orderRequestsHTML(order)}
 
           <div class="order-card-actions">
-            ${(order.tracking_events || []).length ? `
-              <button type="button" class="btn-secondary-cart" onclick="toggleOrderTimeline('${order.id}')">${expanded ? 'Hide Tracking' : 'Track Order'}</button>` : ''}
-            ${order.can_cancel ? `<button type="button" class="btn-secondary-cart order-cancel-btn" onclick="openCancelOrderModal('${order.id}')">Cancel Order</button>` : ''}
-            ${order.can_request_address_change ? `<button type="button" class="btn-secondary-cart" onclick="openAddressChangeModal('${order.id}')">Change Address</button>` : ''}
+            <div class="order-action">
+              <button type="button" class="btn-secondary-cart" ${hasTracking ? '' : 'disabled'} onclick="toggleOrderTimeline('${order.id}')">${expanded ? 'Hide Detailed Updates' : 'View Detailed Updates'}</button>
+              ${hasTracking ? '' : `<div class="order-action-reason">Updates will appear once your order is confirmed.</div>`}
+            </div>
+            <div class="order-action">
+              <button type="button" class="btn-secondary-cart order-cancel-btn" ${cancelReason ? 'disabled' : ''} onclick="openCancelOrderModal('${order.id}')">Cancel Order</button>
+              ${cancelReason ? `<div class="order-action-reason">${escapeOrdHTML(cancelReason)}</div>` : ''}
+            </div>
+            <div class="order-action">
+              <button type="button" class="btn-secondary-cart" ${addressReason ? 'disabled' : ''} onclick="openAddressChangeModal('${order.id}')">Change Address</button>
+              ${addressReason ? `<div class="order-action-reason">${escapeOrdHTML(addressReason)}</div>`
+                : (order.address_change_deadline ? `<div class="order-action-reason">Accepted until ${fmtOrdDateTime(order.address_change_deadline)}.</div>` : '')}
+            </div>
           </div>
-          ${order.can_request_address_change && order.address_change_deadline ? `
-            <div class="order-deadline-note">Address changes accepted until ${fmtOrdDateTime(order.address_change_deadline)}.</div>` : ''}
 
           ${expanded ? orderTimelineHTML(order) : ''}
         </div>`;
+    }
+
+    /* ---------- horizontal order-stage tracker ---------- */
+
+    function orderStageTimelineHTML(order) {
+      if (order.status === 'cancelled' || order.status === 'refunded') {
+        const refundLabel = REFUND_STATUS_LABELS[order.refund_status];
+        return `
+          <div class="order-stage-banner order-stage-banner-${order.status}">
+            <span>${order.status === 'refunded' ? 'This order was refunded.' : 'This order was cancelled.'}</span>
+            ${refundLabel ? `<span class="order-refund-badge order-refund-${order.refund_status}">${refundLabel}</span>` : ''}
+          </div>
+          ${orderShipmentSummaryHTML(order)}`;
+      }
+
+      const currentIndex = orderStageIndex(order.status);
+      return `
+        <div class="order-stage-track">
+          ${STAGE_DEFS.map((stage, i) => {
+            const state = currentIndex < 0 ? 'upcoming' : i < currentIndex ? 'done' : i === currentIndex ? 'current' : 'upcoming';
+            return `
+              <div class="order-stage-node order-stage-${state}">
+                ${i > 0 ? `<span class="order-stage-connector"></span>` : ''}
+                <span class="order-stage-dot"></span>
+                <span class="order-stage-label">${escapeOrdHTML(stage.label)}</span>
+              </div>`;
+          }).join('')}
+        </div>
+        ${orderShipmentSummaryHTML(order)}`;
     }
 
     function orderShipmentSummaryHTML(order) {

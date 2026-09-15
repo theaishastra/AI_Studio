@@ -4240,11 +4240,42 @@
         border-bottom: none;
         padding: 0;
         margin-top: 16px;
+        position: relative;
       }
 
       .mobile-dashboard .menu-container {
-        padding: 0;
+        padding: 0 40px 0 0;
         justify-content: flex-start;
+      }
+
+      .mobile-dashboard .menu-scroll-fade {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 52px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        pointer-events: none;
+        background: linear-gradient(to right, rgba(253, 242, 248, 0) 0%, rgba(253, 242, 248, .9) 45%, #FDF2F8 75%);
+      }
+
+      .mobile-dashboard .menu-scroll-hint {
+        pointer-events: auto;
+        width: 26px;
+        height: 26px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: #fff;
+        color: #5C0930;
+        border: 1px solid #F3D8E2;
+        box-shadow: 0 2px 6px rgba(92, 9, 48, .18);
+        padding: 0;
+        cursor: pointer;
       }
 
       .mobile-dashboard .menu-link {

@@ -114,7 +114,7 @@ python -m app.seed
 
 ### View Database (using Supabase Dashboard)
 
-Go to: https://app.supabase.com/project/tfcziwzmibqonfvlhiql/editor
+Go to: https://app.supabase.com/project/xdjrtgfynnkmslpanmpb/editor
 
 - Database: `postgres`
 - Tables: `site_pages`, `categories`, `products`, `media`, `users`

@@ -2319,7 +2319,11 @@ body {
   height: 100vh;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(3px);
-  z-index: 999;
+  /* Must clear .mobile-sticky-header's z-index:9000 (!important, "above ALL
+     page content and modals") or the drawer's own title/top item render
+     underneath that fixed header on mobile and look blank - see the
+     wishlist/cart drawer "hides the products" bug. */
+  z-index: 9500;
   display: none;
 }
 
@@ -2331,7 +2335,7 @@ body {
   max-width: 85vw;
   height: 100vh;
   background: #fff;
-  z-index: 1000;
+  z-index: 9501;
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
@@ -12057,7 +12061,13 @@ html body .sidebar-wrap .sidebar-title,
     border: none !important;
     border-right: 1px solid #f1f1f1 !important;
     border-radius: 0 !important;
-    padding: 0 !important;
+    /* Bottom padding equal to the fixed .mobile-bottom-nav's own footprint (see
+       css/shared/mobile-nav-extra.css - "body { padding-bottom: 64px }" is the
+       same site-wide clearance) - without it, this rail's scrollHeight ends
+       exactly at the viewport edge, so even scrolled all the way its last
+       category ("Wallets") sits directly behind the fixed nav bar and can
+       never be scrolled clear of it. */
+    padding: 0 0 64px !important;
     box-shadow: none !important;
     margin: 0 !important;
     z-index: auto !important;
@@ -12072,6 +12082,9 @@ html body .sidebar-wrap .sidebar-title,
     padding: 0 !important;
   }
 
+  /* Same fixed-bottom-nav clearance as the sidebar rail above - without it the
+     last row of package cards ends flush with the viewport edge and is left
+     sitting behind the fixed nav bar even when scrolled to the bottom. */
   html body.theme-corporate .corp-dashboard > main.main,
   html body .corp-dashboard > main.main,
   .corp-dashboard > main.main {
@@ -12083,6 +12096,8 @@ html body .sidebar-wrap .sidebar-title,
     min-height: 0 !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 80px !important;
+    box-sizing: border-box !important;
   }
 }
 
@@ -12103,6 +12118,18 @@ html body .sidebar-wrap .sidebar-title,
     border-radius: 18px;
     overflow: hidden;
     box-shadow: 0 10px 26px rgba(92, 9, 48, .12);
+  }
+
+  .promo-hero-window::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 42px;
+    background: linear-gradient(to top, rgba(0, 0, 0, .38), rgba(0, 0, 0, 0));
+    pointer-events: none;
+    z-index: 3;
   }
 
   .promo-hero-track {
@@ -12150,12 +12177,15 @@ html body .sidebar-wrap .sidebar-title,
   .promo-hero-dot {
     width: 6px;
     height: 6px;
+    min-width: 0;
+    min-height: 0;
     border-radius: 50%;
     background: rgba(255, 255, 255, .6);
     border: none;
     padding: 0;
     cursor: pointer;
     transition: all .25s ease;
+    box-shadow: 0 0 2px rgba(0, 0, 0, .5);
   }
 
   .promo-hero-dot.active {

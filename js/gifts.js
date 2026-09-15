@@ -42,6 +42,7 @@ const GiftsModule = (() => {
     document.body.classList.toggle('gifts-module-route', view !== 'home');
     document.body.classList.toggle('gifts-module-home', view === 'home');
     document.body.classList.toggle('gifts-view-category', view === 'category');
+    document.body.classList.toggle('gifts-view-product', view === 'product');
     if (view === 'home') return;
     document.querySelector('main')?.remove();
     document.querySelector('footer')?.remove();

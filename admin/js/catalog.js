@@ -33,8 +33,7 @@ async function renderCategories() {
   PAGES_CACHE = pages;
   if (!pages.length) {
     view.innerHTML = `<header class="page-head"><h1>Categories</h1></header>
-      <div class="empty-state">No site pages yet. <a href="#" id="firstPageLink">Create one</a> to start adding categories.</div>`;
-    document.getElementById("firstPageLink").addEventListener("click", (e) => { e.preventDefault(); openPageForm(); });
+      <div class="empty-state">No site pages available.</div>`;
     return;
   }
   if (!CURRENT_PAGE_SLUG || !pages.some(p => p.slug === CURRENT_PAGE_SLUG)) CURRENT_PAGE_SLUG = pages[0].slug;
@@ -46,13 +45,11 @@ async function renderCategories() {
     </header>
     <div class="toolbar">
       <select id="pageSelect">${pages.map(p => `<option value="${esc(p.slug)}" ${p.slug === CURRENT_PAGE_SLUG ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select>
-      <button class="btn secondary" id="addPageBtn">+ New Page</button>
     </div>
     <div id="catTableWrap"></div>
   `;
   document.getElementById("pageSelect").addEventListener("change", (e) => { CURRENT_PAGE_SLUG = e.target.value; loadCatTable(); });
   document.getElementById("addCatBtn").addEventListener("click", () => openCategoryForm());
-  document.getElementById("addPageBtn").addEventListener("click", () => openPageForm());
   await loadCatTable();
 }
 
@@ -673,35 +670,4 @@ async function removeMedia(id, btnEl) {
     await Api.deleteMedia(id);
     btnEl.closest(".media-item").remove();
   } catch (err) { alert(err.message); }
-}
-
-// ==================================================================== new page form (used from categories view)
-
-function openPageForm() {
-  openModal(`
-    <h2>New Site Page</h2>
-    <div id="formMsg"></div>
-    <form id="pageForm">
-      <label>Slug (e.g. "corporate", "gifts")</label><input id="p_slug" required>
-      <label>Display name</label><input id="p_name" required>
-      <div class="modal-actions">
-        <button type="button" class="btn secondary" onclick="closeModal()">Cancel</button>
-        <button type="submit" class="btn">Create</button>
-      </div>
-    </form>
-  `);
-  document.getElementById("pageForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    try {
-      await Api.createPage({
-        slug: document.getElementById("p_slug").value.trim(),
-        name: document.getElementById("p_name").value.trim(),
-      });
-      closeModal();
-      CURRENT_PAGE_SLUG = document.getElementById("p_slug")?.value?.trim();
-      renderCategories();
-    } catch (err) {
-      document.getElementById("formMsg").innerHTML = `<div class="msg error">${esc(err.message)}</div>`;
-    }
-  });
 }

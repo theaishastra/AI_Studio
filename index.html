@@ -44,7 +44,7 @@
 
     <!-- Mobile Category Menu (mirrors the desktop secondary nav) -->
     <div class="category-menu-bar">
-      <div class="menu-container">
+      <div class="menu-container" id="mobileCategoryScroll">
         <a href="index.html" class="menu-link active">Home</a>
         <a href="gifts.html" class="menu-link">Customised Gift Shop</a>
         <a href="corporate.html" class="menu-link">Corporate Gifts</a>
@@ -53,6 +53,15 @@
         <a href="bulk-orders.html" class="menu-link">Bulk Orders</a>
         <a href="about-us.html" class="menu-link">About Us</a>
         <a href="contact-us.html" class="menu-link">Contact Us</a>
+      </div>
+      <div class="menu-scroll-fade" aria-hidden="true">
+        <button type="button" class="menu-scroll-hint" aria-label="Show more categories"
+          onclick="document.getElementById('mobileCategoryScroll').scrollBy({left: 150, behavior: 'smooth'})">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 6 15 12 9 18"></polyline>
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -812,10 +821,10 @@
     </div>
     <div class="mobile-menu-links">
       <a href="index.html">Home</a>
-      <a href="photography.html">Photography</a>
       <a href="gifts.html">Customised Gift Shop</a>
-      <a href="studio.html">Studio Services</a>
       <a href="corporate.html">Corporate Gifts</a>
+      <a href="studio.html">Studio Services</a>
+      <a href="photography.html">Photography</a>
       <a href="bulk-orders.html">Bulk Orders</a>
       <a href="about-us.html">About Us</a>
       <a href="contact-us.html">Contact Us</a>

@@ -78,6 +78,10 @@
   body {
     padding-bottom: 64px;
   }
+
+  footer {
+    display: none !important;
+  }
 }
 
 /* Slide-out drawer (cart / wishlist / mobile menu) */
