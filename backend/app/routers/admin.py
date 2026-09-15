@@ -17,14 +17,14 @@ from ..models import (
 from ..schemas import (
     AddressChangeDecisionIn, AdminAddressChangeRequestOut, AdminCancellationRequestOut,
     ArrangeIn, BookingOut, BookingStatusUpdate, CancellationDecisionIn, CategoryIn, CategoryOut,
-    CouponIn, CouponOut, CustomerOut, HomepageLayoutIn, MediaIn, MediaOut, OrderOut,
+    CouponIn, CouponOut, CustomerOut, HomepageLayoutIn, MediaIn, MediaLibraryOut, MediaOut, OrderOut,
     OrderStatusUpdate, ProductIn, ProductOut, ProductPatch, SettingIn, SettingOut, SitePageIn,
     SitePageOut, StaffIn, TrackingUpdateIn, UserOut,
 )
 from ..security import hash_password
 from ..services.media import process_image
 from ..services.notifications import notify, order_event
-from ..services.policy import annotate_order, annotate_orders
+from ..services.policy import annotate_order, annotate_orders, refund_status as compute_refund_status
 from ..services.pricing import money
 from ..services.storage import CUSTOM_UPLOAD_FIELDS, upload_media_library_asset
 from .catalog import invalidate_catalog_cache
@@ -590,6 +590,7 @@ def _cancellation_out(req: OrderCancellationRequest) -> dict:
         "order_number": req.order.number if req.order else None,
         "customer_name": req.user.name if req.user else None,
         "customer_email": req.user.email if req.user else None,
+        "refund_status": compute_refund_status(req.order) if req.order else "not_applicable",
     }
 
 
@@ -598,6 +599,7 @@ def list_cancellation_requests(status_filter: str | None = None,
                                admin: User = Depends(require_staff), db: Session = Depends(get_db)):
     query = db.query(OrderCancellationRequest).options(
         selectinload(OrderCancellationRequest.order).selectinload(Order.items),
+        selectinload(OrderCancellationRequest.order).selectinload(Order.payments),
         selectinload(OrderCancellationRequest.user),
     )
     if status_filter:
@@ -611,6 +613,7 @@ def decide_cancellation_request(request_id: str, body: CancellationDecisionIn, r
                                 admin: User = Depends(require_staff), db: Session = Depends(get_db)):
     req = db.query(OrderCancellationRequest).options(
         selectinload(OrderCancellationRequest.order).selectinload(Order.items),
+        selectinload(OrderCancellationRequest.order).selectinload(Order.payments),
         selectinload(OrderCancellationRequest.user),
     ).filter(OrderCancellationRequest.id == request_id).first()
     if not req:
@@ -917,18 +920,40 @@ def upload_media(file: UploadFile, request: Request,
     return {"id": media.id, "url": media.url, "alt": media.alt, "mime": mime, "size": len(image_bytes)}
 
 
-@router.get("/media", response_model=list[MediaOut])
+@router.get("/media", response_model=list[MediaLibraryOut])
 def list_media(admin: User = Depends(require_staff), db: Session = Depends(get_db)):
     # Every image in the app lives in this one table - uploads made directly on this
     # page (kind="library") plus every category portfolio photo and product package
     # photo (kind="portfolio"/"package") - shown together so this page is a full
-    # inventory of every image in use, not just ad hoc uploads.
-    return (
-        db.query(Media)
-        .order_by(Media.created_at.desc())
-        .limit(1000)
-        .all()
-    )
+    # inventory of every image in use, not just ad hoc uploads. The table has one row
+    # per *usage* though, so the same picture attached to three products is three rows -
+    # group them by URL here so the grid shows each picture once, with a usage count.
+    rows = db.query(Media).order_by(Media.created_at.desc()).limit(2000).all()
+
+    groups: dict[str, dict] = {}
+    order: list[str] = []
+    for m in rows:
+        g = groups.get(m.url)
+        if g is None:
+            g = {"row_id": m.id, "library_id": None, "alt": m.alt, "usage_count": 0}
+            groups[m.url] = g
+            order.append(m.url)
+        if m.category_id or m.product_id:
+            g["usage_count"] += 1
+        elif g["library_id"] is None:
+            g["library_id"] = m.id
+            g["alt"] = m.alt
+
+    return [
+        MediaLibraryOut(
+            id=groups[url]["library_id"] or groups[url]["row_id"],
+            url=url,
+            alt=groups[url]["alt"],
+            usage_count=groups[url]["usage_count"],
+            deletable=groups[url]["library_id"] is not None,
+        )
+        for url in order[:1000]
+    ]
 
 
 # ---------------------------------------------------------------- settings (all keys)

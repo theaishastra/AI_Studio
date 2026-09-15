@@ -79,20 +79,36 @@ def address_change_deadline(
     return order.created_at + timedelta(hours=hours)
 
 
+def refund_status(order: Order) -> str:
+    """Whether money paid on this order still needs to come back to the
+    customer. Purely computed from existing Payment/Order state - there's no
+    separate refund workflow, just Payment.status flipping to "refunded" when
+    staff use the manual Refund action (see routers/payments.py)."""
+    payments = order.payments or []
+    if order.status == "refunded" or any(p.status == "refunded" for p in payments):
+        return "refunded"
+    if order.status == "cancelled" and any(p.status == "captured" for p in payments):
+        return "pending"
+    return "not_applicable"
+
+
 def _annotate(
     order: Order, deadline: datetime | None,
 ) -> OrderOut:
     out = OrderOut.model_validate(order)
     now = datetime.now(timezone.utc)
     out.address_change_deadline = deadline
+    # Address changes are capped at one request per order for its whole
+    # lifetime, regardless of outcome - not just "no request pending right
+    # now" - so a customer can't keep re-requesting after each decision.
     out.can_request_address_change = bool(
-        deadline and now <= deadline
-        and not any(r.status == "pending" for r in order.address_change_requests)
+        deadline and now <= deadline and not order.address_change_requests
     )
     out.can_cancel = (
         order.status in (IMMEDIATE_CANCEL_STATUSES + REQUESTABLE_CANCEL_STATUSES)
         and not any(r.status == "pending" for r in order.cancellation_requests)
     )
+    out.refund_status = refund_status(order)
     return out
 
 

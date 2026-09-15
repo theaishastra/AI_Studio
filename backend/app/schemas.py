@@ -175,6 +175,18 @@ class MediaOut(MediaIn):
     kind: str
 
 
+class MediaLibraryOut(BaseModel):
+    """One row per distinct image URL for the admin Media Library page - the
+    underlying `media` table has one row per *usage* (a product/category photo
+    plus any ad hoc upload), so without this grouping the same picture shows
+    up once per product/category it's attached to."""
+    id: str
+    url: str
+    alt: str
+    usage_count: int  # how many products/categories currently use this image
+    deletable: bool  # true only if there's a standalone library upload of it
+
+
 # ---------------------------------------------------------------- categories
 
 class CategoryIn(BaseModel):
@@ -459,6 +471,9 @@ class CancellationRequestOut(BaseModel):
     admin_note: str
     created_at: datetime
     resolved_at: datetime | None
+    # Whether the order's payment still needs refunding - see
+    # services/policy.refund_status(). Populated by the router.
+    refund_status: str = "not_applicable"
 
 
 # Flat, cross-order admin listing (Admin > Orders > Cancellation Requests) needs
@@ -534,6 +549,8 @@ class OrderOut(BaseModel):
     can_cancel: bool = False
     can_request_address_change: bool = False
     address_change_deadline: datetime | None = None
+    # "not_applicable" | "pending" | "refunded" - see services/policy.refund_status().
+    refund_status: str = "not_applicable"
 
 
 class OrderStatusUpdate(BaseModel):

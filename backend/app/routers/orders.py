@@ -1,4 +1,5 @@
 import secrets
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -9,7 +10,7 @@ from ..database import get_db
 from ..deps import get_current_user
 from ..models import (
     Address, Order, OrderAddressChangeRequest, OrderCancellationRequest,
-    OrderItem, OrderTrackingEvent, Payment, Product, User,
+    OrderItem, OrderTrackingEvent, Payment, Product, User, uid,
 )
 from ..schemas import AddressChangeRequestIn, CancellationRequestIn, CheckoutIn, OrderOut, PaymentInitOut
 from ..services.notifications import order_event
@@ -127,33 +128,50 @@ def checkout(body: CheckoutIn, user: User = Depends(get_current_user), db: Sessi
     if not priced["lines"]:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cart is empty")
 
-    order = Order(
-        number=order_number(),
-        user_id=user.id,
-        status="payment_pending",
-        subtotal=priced["subtotal"],
-        discount=priced["discount"],
-        total=priced["total"],
-        coupon_code=priced["coupon"].code if priced["coupon"] else None,
-        address_id=address.id,
-        delivery_slot=body.delivery_slot,
-    )
-    db.add(order)
-    db.flush()
+    number = order_number()
 
-    for line in priced["lines"]:
-        db.add(OrderItem(
-            order_id=order.id,
-            product_id=line.get("product_id"),
-            product_snapshot={
-                "title": line["title"], "image": line.get("image"),
-                "customization": _externalize_customization(line.get("customization"), order.number),
-            },
-            unit_price=line["unit_price"],
-            qty=line["qty"],
-        ))
+    # The Razorpay order-creation call and any per-item photo/logo uploads to R2
+    # are both blocking network I/O and don't depend on each other or on the DB -
+    # running them on a thread pool instead of one after another means checkout
+    # latency is bounded by the slowest of them, not their sum.
+    with ThreadPoolExecutor(max_workers=max(1, len(priced["lines"])) + 1) as executor:
+        rzp_future = executor.submit(create_rzp_order, int(round(float(priced["total"]) * 100)), receipt=number)
+        externalize_futures = [
+            executor.submit(_externalize_customization, line.get("customization"), number)
+            for line in priced["lines"]
+        ]
 
-    rzp_order = create_rzp_order(int(round(float(order.total) * 100)), receipt=order.number)
+        # id is assigned client-side (models.uid) rather than left to the column
+        # default, so OrderItem rows below can reference order.id immediately -
+        # no need to flush the Order insert to the DB just to learn its own id.
+        order = Order(
+            id=uid(),
+            number=number,
+            user_id=user.id,
+            status="payment_pending",
+            subtotal=priced["subtotal"],
+            discount=priced["discount"],
+            total=priced["total"],
+            coupon_code=priced["coupon"].code if priced["coupon"] else None,
+            address_id=address.id,
+            delivery_slot=body.delivery_slot,
+        )
+        db.add(order)
+
+        for line, customization_future in zip(priced["lines"], externalize_futures):
+            db.add(OrderItem(
+                order_id=order.id,
+                product_id=line.get("product_id"),
+                product_snapshot={
+                    "title": line["title"], "image": line.get("image"),
+                    "customization": customization_future.result(),
+                },
+                unit_price=line["unit_price"],
+                qty=line["qty"],
+            ))
+
+        rzp_order = rzp_future.result()
+
     payment = Payment(
         order_id=order.id,
         razorpay_order_id=rzp_order["id"],
