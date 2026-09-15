@@ -3297,23 +3297,19 @@
         letter-spacing: 0.2px;
       }
 
-      .card-photography .mobile-card-icon,
-      .card-photography .mobile-card-promo {
+      .card-photography .mobile-card-icon {
         color: #C2185B;
       }
 
-      .card-gifts .mobile-card-icon,
-      .card-gifts .mobile-card-promo {
+      .card-gifts .mobile-card-icon {
         color: #DB2777;
       }
 
-      .card-studio .mobile-card-icon,
-      .card-studio .mobile-card-promo {
+      .card-studio .mobile-card-icon {
         color: #7A0C3E;
       }
 
-      .card-corporate .mobile-card-icon,
-      .card-corporate .mobile-card-promo {
+      .card-corporate .mobile-card-icon {
         color: #EAAE00;
       }
 
