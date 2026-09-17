@@ -4,5 +4,5 @@
 // content). NOTE: this is a free "quick tunnel" - the URL changes if the
 // cloudflared service on the VM restarts, so it may need updating.
 (function () {
-  window.SAI_API_BASE = "https://protective-booth-merchandise-vincent.trycloudflare.com";
+  window.SAI_API_BASE = "https://remember-gras-atomic-traveling.trycloudflare.com";
 })();
