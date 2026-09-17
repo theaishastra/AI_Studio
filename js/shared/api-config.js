@@ -1,7 +1,8 @@
 // Sets the API base every other script reads via window.SAI_API_BASE.
-// Backend runs on a standalone AWS VM; the frontend is served separately
-// (local dev server, GitHub Pages, etc.), so every environment needs an
-// absolute URL pointing at the VM.
+// Backend runs on a standalone AWS VM behind a Cloudflare Tunnel (HTTPS is
+// required so HTTPS frontends like GitHub Pages aren't blocked as mixed
+// content). NOTE: this is a free "quick tunnel" - the URL changes if the
+// cloudflared service on the VM restarts, so it may need updating.
 (function () {
-  window.SAI_API_BASE = "http://54.160.240.144";
+  window.SAI_API_BASE = "https://protective-booth-merchandise-vincent.trycloudflare.com";
 })();
