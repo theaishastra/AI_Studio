@@ -6,20 +6,24 @@ from sqlalchemy.engine import Engine
 logger = logging.getLogger("migrations")
 
 # Base.metadata.create_all() (see main.py) only creates TABLES that don't exist
-# yet - it never ALTERs a table that's already there. So any column added to an
-# existing model needs an explicit, idempotent backfill here. Every column below
-# is nullable with no backfill requirement, so re-running this is always a no-op
-# once applied and never touches existing row data or other services' tables.
+# yet - it never ALTERs a table that's already there. So any column added to or
+# removed from an existing model needs an explicit, idempotent statement here.
+# Re-running this is always a no-op once applied; the one exception is a DROP
+# COLUMN, which is only ever added here after the column's data is confirmed
+# unneeded (is_featured: removed because no page rendered it correctly, see
+# admin.py's homepage builder / catalog.py's page bundles for what replaced it).
 _COLUMN_MIGRATIONS: dict[str, list[str]] = {
     "products": [
         "ADD COLUMN IF NOT EXISTS address_change_window_hours INTEGER",
         "ADD COLUMN IF NOT EXISTS input_fields JSON DEFAULT '[]'::json",
+        "DROP COLUMN IF EXISTS is_featured",
     ],
     "orders": [
         "ADD COLUMN IF NOT EXISTS carrier VARCHAR(80)",
         "ADD COLUMN IF NOT EXISTS tracking_number VARCHAR(120)",
         "ADD COLUMN IF NOT EXISTS tracking_url TEXT",
         "ADD COLUMN IF NOT EXISTS expected_delivery DATE",
+        "ADD COLUMN IF NOT EXISTS address_snapshot JSON DEFAULT '{}'::json",
     ],
     "order_items": [
         "ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'",
@@ -69,3 +73,28 @@ def run_index_migrations(engine: Engine) -> None:
             for clause in clauses:
                 conn.execute(text(clause))
     logger.info("Index migrations applied.")
+
+
+def backfill_address_snapshots(engine: Engine) -> None:
+    """One-time (idempotent) backfill for orders placed before address_snapshot
+    existed: copies each order's still-live Address into address_snapshot, so
+    it survives that address later being edited or deleted (address_id is
+    ON DELETE SET NULL - without this, every pre-existing order with a saved
+    address is one "delete address" click away from losing its ship-to details).
+    Only touches rows with an empty snapshot, so it's safe to run on every startup."""
+    inspector = inspect(engine)
+    if "orders" not in inspector.get_table_names() or "addresses" not in inspector.get_table_names():
+        return
+    with engine.begin() as conn:
+        conn.execute(text("""
+            UPDATE orders o
+            SET address_snapshot = jsonb_build_object(
+                'full_name', a.full_name, 'phone', a.phone,
+                'line1', a.line1, 'line2', a.line2,
+                'city', a.city, 'state', a.state, 'pincode', a.pincode
+            )::json
+            FROM addresses a
+            WHERE o.address_id = a.id
+              AND (o.address_snapshot IS NULL OR o.address_snapshot::text = '{}')
+        """))
+    logger.info("Address snapshot backfill applied.")

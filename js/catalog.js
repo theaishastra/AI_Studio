@@ -7,11 +7,13 @@
       // origin every fetch() on this page already uses, or they resolve against
       // whatever's hosting this static page instead and 404.
       if (url && url.startsWith('/media/')) return `${window.SAI_API_BASE || "http://localhost:8000"}${url}`;
-      // images.weserv.nl is a free public resizing/compression proxy - shrinks the
-      // 500KB-1MB+ originals actually being served down to what a card/thumbnail
-      // needs. It can't reach a localhost-only dev URL, so local media stays as-is.
+      // js/shared/thumb-map.js is a static url -> thumbnail-url lookup generated
+      // ahead of time by scripts/generate_thumbnails.py (Pillow, no runtime proxy or
+      // redirect). Falls back to the full-size original for anything not in it
+      // (a data:/blob: URI, a localhost dev URL, or a newer image the script hasn't
+      // been re-run for yet).
       if (!url || url.startsWith('data:') || url.startsWith('blob:') || /^https?:\/\/(localhost|127\.0\.0\.1)/.test(url)) return url;
-      return `https://images.weserv.nl/?url=${url.replace(/^https?:\/\//, '')}&w=640&q=75&output=webp&we`;
+      return (window.THUMB_MAP && window.THUMB_MAP[url]) || url;
     }
 
     // ─── Master Catalog Data (All Categories) ───
@@ -788,8 +790,8 @@
       minRating = 0;
       maxPrice = 60000;
 
-      document.getElementById('catalogGlobalSearch').value = '';
-      document.getElementById('searchClearBtn').style.display = 'none';
+      if (searchInput) searchInput.value = '';
+      if (searchClear) searchClear.style.display = 'none';
       document.getElementById('priceRangeSlider').value = 60000;
       document.getElementById('maxPriceInput').value = 60000;
       document.getElementById('sortSelect').value = 'featured';
@@ -810,18 +812,32 @@
     const searchInput = document.getElementById('catalogGlobalSearch');
     const searchClear = document.getElementById('searchClearBtn');
 
-    searchInput.addEventListener('input', (e) => {
-      searchQuery = e.target.value;
-      searchClear.style.display = searchQuery.length > 0 ? 'block' : 'none';
-      renderCatalog();
-    });
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value;
+        if (searchClear) searchClear.style.display = searchQuery.length > 0 ? 'block' : 'none';
+        renderCatalog();
+      });
+    }
 
     function clearCatalogSearch() {
       searchQuery = '';
-      searchInput.value = '';
-      searchClear.style.display = 'none';
+      if (searchInput) searchInput.value = '';
+      if (searchClear) searchClear.style.display = 'none';
       renderCatalog();
     }
+
+    // Maps this page's own hardcoded photography product ids to the category
+    // keys js/booking.js understands (see its CAT_LABELS), so "Book Shoot"
+    // opens the booking flow pre-filled for the exact package that was clicked
+    // instead of always falling back to booking.js's hardcoded default.
+    const BOOKING_CATEGORY_BY_PRODUCT_ID = {
+      'photo-wedding-package': 'wedding',
+      'photo-prewedding-shoot': 'prewedding',
+      'photo-maternity-shoot': 'maternity',
+      'photo-baby-photoshoot': 'baby',
+      'photo-birthday-coverage': 'birthday',
+    };
 
     // ─── Card Actions & Cart Sync ───
     function handleCardAction(productId) {
@@ -829,8 +845,15 @@
       if (!product) return;
 
       if (product.category === 'photography') {
-        // Direct to booking flow or open quote modal
-        window.location.href = `booking.html?service=${encodeURIComponent(product.title)}`;
+        // Direct to booking flow, pre-filled with this product's own details.
+        const bookingParams = new URLSearchParams({
+          category: BOOKING_CATEGORY_BY_PRODUCT_ID[product.id] || 'wedding',
+          package: product.title,
+          tier: 'standard',
+          price: `₹${product.price}`,
+          feats: (product.features || []).join('|'),
+        });
+        window.location.href = `booking.html?${bookingParams.toString()}`;
       } else {
         // Add to cart directly
         addItemToCart(product.title, `₹${product.price}`, product.img, 1);

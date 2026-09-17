@@ -11,6 +11,7 @@ from ..database import SessionLocal, get_db
 from ..deps import get_current_user
 from ..models import Category, Coupon, Media, Product, Review, Setting, SitePage, User
 from ..schemas import ReviewIn, ReviewOut
+from ..services.storage import get_or_create_thumbnail, warm_thumbnails
 
 logger = logging.getLogger("catalog")
 
@@ -48,18 +49,19 @@ _WESERV_SKIP = re.compile(r"^https?://(localhost|127\.0\.0\.1)")
 
 
 def cld_optimize(url: str | None) -> str | None:
-    """Routes every image URL through images.weserv.nl, a free public resizing/
-    compression proxy, instead of shipping the ~500KB-1MB R2 originals as-is for
-    what's usually rendered as a small card thumbnail (mirrors the identical
-    rewrite in every storefront page's client-side cldOpt(), e.g. js/photography.js).
-    R2 itself is a plain object store with no on-the-fly transform API (unlike
-    Cloudinary's old f_auto,q_auto), so this proxy is what actually does the
-    resizing. It can't reach a localhost-only dev URL, so local dev media passes
-    through unchanged."""
+    """Shrinks an R2 image URL down to a small WebP thumbnail before it's embedded in
+    page_bundle() JSON, instead of shipping the ~500KB-1MB originals as-is for what's
+    usually rendered as a card thumbnail. Runs Pillow in-process via
+    storage.get_or_create_thumbnail() (cached permanently in R2 - see that function),
+    which is the Python-library replacement for the images.weserv.nl proxy this used
+    to call (each storefront page's hardcoded catalog data uses a precomputed
+    js/shared/thumb-map.js instead - a browser can't run Pillow, and this app has
+    no runtime resize endpoint at all - see scripts/generate_thumbnails.py).
+    Anything that isn't one of this app's own R2 URLs (localhost dev media, legacy
+    /media/ paths) passes through unchanged rather than failing the request."""
     if not url or _WESERV_SKIP.match(url):
         return url
-    stripped = re.sub(r"^https?://", "", url)
-    return f"https://images.weserv.nl/?url={stripped}&w=640&q=75&output=webp&we"
+    return get_or_create_thumbnail(url) or url
 
 
 def format_price(product: Product) -> str:
@@ -193,7 +195,6 @@ def _build_page_bundle(page_slug: str, db: Session) -> dict:
                 "description": p.description or "",
                 "price": format_price(p),
                 "mrp": format_inr(p.mrp) if p.mrp else None,
-                "featured": p.is_featured,
                 "feat": p.features or [],
                 "images": [cld_optimize(m.url) for m in p.media],
                 "rating": ratings.get(p.id),
@@ -255,7 +256,6 @@ def get_product(product_id: str, db: Session = Depends(get_db)):
         "description": product.description or "",
         "price": format_price(product),
         "mrp": format_inr(product.mrp) if product.mrp else None,
-        "featured": product.is_featured,
         "feat": product.features or [],
         "images": [cld_optimize(m.url) for m in package_media],
         "rating": round(float(avg_rating), 1) if avg_rating else None,
@@ -291,6 +291,29 @@ def warm_catalog_cache() -> None:
     otherwise only pay on demand. Best-effort: a failure here (e.g. DB not
     reachable yet) just means the first real request warms the cache the
     normal way instead - it must never block or crash startup."""
+    # Every image page_bundle()/public_homepage() touch below goes through
+    # cld_optimize() -> storage.get_or_create_thumbnail(), a real R2 round trip
+    # (~300ms even on a cache hit, much more on a first-ever cold generate).
+    # Warming all of them concurrently first means the sequential page_bundle()
+    # calls that follow just hit get_or_create_thumbnail's in-process memo - the
+    # difference between a few seconds and several minutes of startup at this
+    # image count (see warm_thumbnails()). The url list is gathered through its
+    # own short-lived session, closed *before* that network-bound call - holding
+    # a session open across a 100s+ call would leave a long "idle in transaction"
+    # connection, which is exactly what can block a concurrent migration's
+    # ALTER TABLE from acquiring its lock.
+    try:
+        warm_db = SessionLocal()
+        try:
+            urls = [r[0] for r in warm_db.query(Media.url).all()]
+            for thumb, hero in warm_db.query(Category.thumb_image_url, Category.hero_image_url).all():
+                urls += [u for u in (thumb, hero) if u]
+        finally:
+            warm_db.close()
+        warm_thumbnails(urls)
+    except Exception:
+        logger.warning("Thumbnail warm-up failed", exc_info=True)
+
     db = SessionLocal()
     try:
         slugs = [p.slug for p in db.query(SitePage).filter(SitePage.is_active == True).all()]
@@ -340,9 +363,11 @@ def public_homepage(db: Session = Depends(get_db)):
         prod_by_id = {p.id: p for p in prods}
         ordered_prods = [prod_by_id[i] for i in product_ids if i in prod_by_id]
     else:
+        # Nothing curated yet - fall back to the first few active products so
+        # the homepage is never blank before an admin sets up the layout.
         ordered_prods = (
             db.query(Product).options(selectinload(Product.media))
-            .filter(Product.is_active == True, Product.is_featured == True)
+            .filter(Product.is_active == True)
             .order_by(Product.sort).limit(8).all()
         )
 
@@ -355,7 +380,7 @@ def public_homepage(db: Session = Depends(get_db)):
             {
                 "id": p.id, "title": p.title,
                 "image": cld_optimize(p.media[0].url) if p.media else None,
-                "price": float(p.price), "bestseller": p.is_featured,
+                "price": float(p.price),
             }
             for p in ordered_prods
         ],
@@ -387,7 +412,6 @@ def public_products(category_id: str | None = None, page: int = 1, page_size: in
                 "images": [cld_optimize(m.url) for m in p.media],
                 "category_id": p.category_id,
                 "category_slug": p.category.slug if p.category else None,
-                "is_featured": p.is_featured,
             }
             for p in rows
         ]

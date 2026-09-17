@@ -22,11 +22,13 @@
       // origin every fetch() on this page already uses, or they resolve against
       // whatever's hosting this static page instead and 404.
       if (url && url.startsWith('/media/')) return `${window.SAI_API_BASE || "http://localhost:8000"}${url}`;
-      // images.weserv.nl is a free public resizing/compression proxy - shrinks the
-      // 500KB-1MB+ originals actually being served down to what a card/thumbnail
-      // needs. It can't reach a localhost-only dev URL, so local media stays as-is.
+      // js/shared/thumb-map.js is a static url -> thumbnail-url lookup generated
+      // ahead of time by scripts/generate_thumbnails.py (Pillow, no runtime proxy or
+      // redirect). Falls back to the full-size original for anything not in it
+      // (a data:/blob: URI, a localhost dev URL, or a newer image the script hasn't
+      // been re-run for yet).
       if (!url || url.startsWith('data:') || url.startsWith('blob:') || /^https?:\/\/(localhost|127\.0\.0\.1)/.test(url)) return url;
-      return `https://images.weserv.nl/?url=${url.replace(/^https?:\/\//, '')}&w=640&q=75&output=webp&we`;
+      return (window.THUMB_MAP && window.THUMB_MAP[url]) || url;
     }
 
     function resolveCategoryImage(cat) {
@@ -42,10 +44,17 @@
     /* Grouping for the sidebar list & the "All Services" grid only — CATEGORIES itself
        (and its order) stays untouched since it also drives packages/folio/deep-links.
        This is a subject-based split (Photography vs Videography) used only to decide
-       which section a category's card appears under. */
-    const SIDEBAR_FUNCTION_IDS = ["wedding", "prewedding", "maternity", "baby", "birthday", "housewarming", "sareefunction", "event"];
-    const SIDEBAR_PHOTOGRAPHY_IDS = ["wedding", "prewedding", "maternity", "baby", "birthday", "housewarming", "sareefunction", "event", "outdoor", "album", "traditionalphoto", "candidphoto"];
-    const SIDEBAR_VIDEOGRAPHY_IDS = ["drone", "video", "traditionalvideo", "cinematicvideo", "ledscreens"];
+       which section a category's card appears under. Computed live from each
+       category's group_label (set in the admin Categories form, "Equipment" ->
+       Videography, anything else -> Photography) instead of a fixed id list - a
+       previous fixed-list version meant every newly added category silently never
+       appeared in the sidebar/grid until someone edited this file by hand. */
+    function sidebarPhotographyIds() {
+      return CATEGORIES.filter(c => c.id !== "all" && c.group_label !== "Equipment").map(c => c.id);
+    }
+    function sidebarVideographyIds() {
+      return CATEGORIES.filter(c => c.id !== "all" && c.group_label === "Equipment").map(c => c.id);
+    }
 
     function renderSidebar() {
       const el = document.getElementById("desktopSidebar");
@@ -58,9 +67,9 @@
       el.innerHTML =
         sideItemHtml(byId("all")) +
         `<div class="side-section-label">Photography</div>` +
-        SIDEBAR_PHOTOGRAPHY_IDS.map(id => sideItemHtml(byId(id))).join("") +
+        sidebarPhotographyIds().map(id => sideItemHtml(byId(id))).join("") +
         `<div class="side-section-label">Videography</div>` +
-        SIDEBAR_VIDEOGRAPHY_IDS.map(id => sideItemHtml(byId(id))).join("");
+        sidebarVideographyIds().map(id => sideItemHtml(byId(id))).join("");
     }
 
     function loadPortfolioImageFallback(img) {
@@ -137,9 +146,9 @@
       const items = FOLIO[currentGalleryCat] || FOLIO.wedding;
       const titles = FOLIO_TITLES[currentGalleryCat] || catObj.name + " Portfolio";
       const pkgs = PACKAGES[currentGalleryCat] || PACKAGES.wedding;
-      /* the headline package — the featured one if this service has one, else the first.
-         It is the package BOOK NOW books, so it is also the one detailed in the panel. */
-      const heroPkgIdx = Math.max(0, pkgs.findIndex(pk => pk.featured));
+      /* the headline package — the first one. It is the package BOOK NOW books,
+         so it is also the one detailed in the panel. */
+      const heroPkgIdx = 0;
       const heroPkg = pkgs[heroPkgIdx];
 
       const modalBody = document.getElementById("galleryModalBody");
@@ -195,9 +204,9 @@
               <p class="gallery-pkg-hint">${pkgs.length} ${catObj.name} packages are available. Full photos, inclusions &amp; pricing for each one are on the main page.</p>
               <div class="gallery-pkg-list">
                 ${pkgs.map(pk => `
-                  <div class="gallery-pkg-row ${pk.featured ? 'featured' : ''}">
+                  <div class="gallery-pkg-row">
                     <div class="g-pkg-meta">
-                      <span class="g-pkg-tier">${pk.tier}${pk.featured ? ' · Most Booked' : ''}</span>
+                      <span class="g-pkg-tier">${pk.tier}</span>
                       <span class="g-pkg-title">${pk.title}</span>
                     </div>
                     <span class="g-pkg-price">${pk.price}</span>
@@ -244,14 +253,12 @@
       viewPackages(cat);
     }
 
-    /* "Book Now" (gallery modal): books this service's headline package — the featured
-       one if it has one, otherwise the first — through goBooking(), so the booking.html
-       link format (and any queued equipment add-on) stays exactly as everywhere else */
+    /* "Book Now" (gallery modal): books this service's headline (first) package
+       through goBooking(), so the booking.html link format (and any queued
+       equipment add-on) stays exactly as everywhere else */
     function bookFromGalleryModal(cat) {
-      const pkgs = PACKAGES[cat] || PACKAGES.wedding;
-      const idx = Math.max(0, pkgs.findIndex(pk => pk.featured));
       closeGalleryModal();
-      goBooking(cat, idx);
+      goBooking(cat, 0);
     }
 
     function setGalleryModalImg(idx) {
@@ -385,7 +392,7 @@
         ` : '';
 
         return `
-    <div class="pkg ${p.featured ? 'featured' : ''}">
+    <div class="pkg">
       <div class="pkg-carousel">
         <div class="pkg-carousel-track" id="pkgTrack-${i}" onscroll="onPkgCarouselScroll('${i}')">
           ${slidesHTML}
@@ -502,9 +509,9 @@
 
       grid.innerHTML = `
     <div class="all-services-group-label">Photography</div>
-    <div class="all-services-grid">${sectionCardsHtml(SIDEBAR_PHOTOGRAPHY_IDS)}</div>
+    <div class="all-services-grid">${sectionCardsHtml(sidebarPhotographyIds())}</div>
     <div class="all-services-group-label">Videography</div>
-    <div class="all-services-grid">${sectionCardsHtml(SIDEBAR_VIDEOGRAPHY_IDS)}</div>`;
+    <div class="all-services-grid">${sectionCardsHtml(sidebarVideographyIds())}</div>`;
     }
 
     /* toggles the "All Services" grid vs. the single-service portfolio/packages

@@ -418,7 +418,6 @@ def seed_photography(db):
             product.type = "service"
             product.price = pkg["price"]
             product.features = pkg["feat"]
-            product.is_featured = bool(pkg.get("featured"))
             product.is_active = True
             product.sort = sort
             db.flush()
@@ -447,7 +446,6 @@ def seed_photography(db):
             product.description = equip["tagline"]
             product.price = 0
             product.features = equip["deliverables"]
-            product.is_featured = False
             product.is_active = True
             product.sort = 0
             product.extra = {
@@ -535,7 +533,6 @@ def seed_corporate(db):
             product.price = _to_price(prod.get("price")) or 0
             product.mrp = _to_price(prod.get("oldPrice"))
             product.features = [prod["subtitle"]] if prod.get("subtitle") else []
-            product.is_featured = pi == 0
             product.is_active = True
             product.sort = pi
             db.flush()
@@ -584,7 +581,6 @@ def seed_gifts(db):
             product.type = "product"
             product.price = _to_price(prod.get("price")) or 0
             product.mrp = _to_price(prod.get("old"))
-            product.is_featured = pi == 0
             product.is_active = True
             product.sort = pi
             db.flush()
@@ -642,7 +638,6 @@ def seed_studio(db):
                 features.append(f"{pkg.get('purposeLabel', 'Sizes')}: " + ", ".join(pkg["purposeOptions"]))
             product.features = features
 
-            product.is_featured = pkg.get("badge") == "Popular"
             product.is_active = True
             product.sort = pi
             db.flush()

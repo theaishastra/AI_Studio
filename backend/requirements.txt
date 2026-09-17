@@ -11,6 +11,7 @@ python-multipart==0.0.19
 boto3==1.35.74
 razorpay==1.4.2
 Pillow==11.0.0
+pillow-avif-plugin==1.6.0
 pytest==8.3.4
 httpx==0.28.1
 cloudinary==1.41.0

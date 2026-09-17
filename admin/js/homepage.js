@@ -10,16 +10,16 @@ async function renderHomepage() {
         <button class="btn" id="saveHomepageBtn">Save & Freeze Layout</button>
       </div>
     </header>
-    <p style="color:var(--text-dim);font-size:13px;">Drag to reorder, use the checkbox to hide an item. Unsaved (automatic) items default to whatever is marked "Featured" in Products.</p>
+    <p style="color:var(--text-dim);font-size:13px;">Drag to reorder, use the checkbox to hide an item. Nothing is picked automatically — check the items you want shown.</p>
     <h3>Featured Categories</h3>
     <div id="homeCategories"></div>
-    <h3 style="margin-top:24px;">Featured / Bestseller Products</h3>
+    <h3 style="margin-top:24px;">Featured Products</h3>
     <div id="homeProducts"></div>
   `;
   const data = await Api.homepage();
 
   const categoryItems = workingList(data.all.categories, data.layout.category_ids, () => false);
-  const productItems = workingList(data.all.products, data.layout.product_ids, (p) => p.bestseller);
+  const productItems = workingList(data.all.products, data.layout.product_ids, () => false);
 
   renderDraggableList(document.getElementById("homeCategories"), categoryItems, { showToggle: true });
   renderDraggableList(document.getElementById("homeProducts"), productItems, { showToggle: true });

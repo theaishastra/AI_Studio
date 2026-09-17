@@ -11,8 +11,8 @@ from starlette.types import Scope
 
 from .config import get_settings
 from .database import Base, engine
-from .migrations import run_column_migrations, run_index_migrations
-from .routers import addresses, admin, auth, bookings, cart, catalog, orders, payments, wishlist
+from .migrations import backfill_address_snapshots, run_column_migrations, run_index_migrations
+from .routers import addresses, admin, auth, bookings, cart, catalog, contact, orders, payments, wishlist
 from .services.storage import ensure_storage_ready
 
 settings = get_settings()
@@ -27,6 +27,7 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     run_column_migrations(engine)
     run_index_migrations(engine)
+    backfill_address_snapshots(engine)
     ensure_storage_ready()
     catalog.warm_catalog_cache()
     yield
@@ -68,6 +69,7 @@ app.include_router(auth.router)
 app.include_router(catalog.router)
 app.include_router(catalog.reviews_router)
 app.include_router(bookings.router)
+app.include_router(contact.router)
 app.include_router(addresses.router)
 app.include_router(cart.router)
 app.include_router(wishlist.router)

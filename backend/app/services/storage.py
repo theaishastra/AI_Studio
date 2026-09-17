@@ -12,14 +12,19 @@ R2 is a flat key -> object store (no folders, no auto-generated unique filenames
 Cloudinary gave us) - object keys below mirror the same "sai_kumar_studio/..." layout the
 Cloudinary account used, with a uuid4 appended so concurrent uploads never collide.
 """
+import hashlib
 import io
 import logging
+import re
+import threading
 import uuid
 
 import boto3
+import httpx
 from botocore.config import Config as BotoConfig
 
 from ..config import get_settings
+from .media import make_thumbnail
 
 logger = logging.getLogger("storage")
 settings = get_settings()
@@ -107,10 +112,115 @@ def upload_data_uri(data_uri: str, subfolder: str) -> str | None:
     return _put_object(data, key, content_type)
 
 
-def upload_media_library_asset(data: bytes) -> str | None:
+def _object_exists(key: str) -> bool:
+    try:
+        _client_once().head_object(Bucket=settings.r2_bucket, Key=key)
+        return True
+    except Exception:
+        return False
+
+
+# Every call still checks R2 (a real network round trip, ~300ms even on a cache hit)
+# unless memoized here - without this, catalog.py's page_bundle() re-doing that
+# head_object for the same handful of hundred Category/Product images on every
+# cache-refresh (let alone the full sweep warm_catalog_cache() does at startup)
+# adds minutes of pure network wait for no reason, since within one process
+# lifetime the answer for a given (url, width, quality) never changes.
+_thumb_url_cache: dict[str, str | None] = {}
+_thumb_cache_lock = threading.Lock()
+
+
+def _fetch_and_upload_thumbnail(url: str, key: str, width: int, quality: int) -> str | None:
+    try:
+        resp = httpx.get(url, timeout=10, follow_redirects=True)
+        resp.raise_for_status()
+    except Exception as e:
+        logger.warning("Thumbnail source fetch failed for %s: %s", url, e)
+        return None
+
+    try:
+        thumb_bytes = make_thumbnail(resp.content, width=width, quality=quality)
+    except Exception as e:
+        logger.warning("Thumbnail generation failed for %s: %s", url, e)
+        return None
+
+    return _put_object(thumb_bytes, key, "image/webp")
+
+
+def get_or_create_thumbnail(url: str, width: int = 640, quality: int = 75) -> str | None:
+    """Resizes an already-hosted (R2) image to a small WebP thumbnail with Pillow and
+    caches it permanently in R2 under a key derived from (url, width, quality) - the
+    self-hosted replacement for routing every card/thumbnail through images.weserv.nl.
+
+    A given thumbnail is only ever generated once: every call after the first just
+    confirms the cached object exists (one cheap head_object) and returns its URL
+    unchanged, so repeat page loads pay for a plain R2 fetch - no per-request network
+    hop to a third party, no per-request Pillow work. Returns None (caller falls back
+    to the original url) if R2 isn't configured, the source can't be fetched, or
+    Pillow can't decode it - this must never be the reason an image fails to load."""
+    if not storage_configured():
+        return None
+
+    cache_key = f"{url}|{width}|{quality}"
+    with _thumb_cache_lock:
+        if cache_key in _thumb_url_cache:
+            return _thumb_url_cache[cache_key]
+
+    digest = hashlib.sha1(cache_key.encode()).hexdigest()
+    key = f"{settings.cloudinary_folder}/thumb_cache/{digest}.webp"
+
+    if _object_exists(key):
+        result = f"{settings.r2_public_base_url}/{key}"
+    else:
+        result = _fetch_and_upload_thumbnail(url, key, width, quality)
+
+    with _thumb_cache_lock:
+        _thumb_url_cache[cache_key] = result
+    return result
+
+
+def warm_thumbnails(urls: list[str], width: int = 640, quality: int = 75, max_workers: int = 24) -> None:
+    """Pre-populates both the R2 thumbnail cache and the in-process memo above for many
+    URLs at once, using a thread pool since each is a blocking network call (head_object,
+    and on a miss, an httpx fetch + upload) - the same work get_or_create_thumbnail() would
+    do one at a time, just concurrently instead of paying N sequential round trips.
+    Best-effort: a failure for one URL just means that image falls back to its original,
+    non-optimized url the first time it's actually requested."""
+    if not storage_configured() or not urls:
+        return
+    from concurrent.futures import ThreadPoolExecutor
+
+    unique = [u for u in dict.fromkeys(urls) if u]
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        list(pool.map(lambda u: get_or_create_thumbnail(u, width=width, quality=quality), unique))
+
+
+_SLUG_SAFE = re.compile(r"[^a-z0-9_-]+")
+
+
+def _safe_slug(value: str | None) -> str | None:
+    """Defensively strips anything outside a-z0-9_- from a page/category slug before
+    it's spliced into an R2 key - slugs are already DB-controlled, but a key is
+    forever (R2 has no rename), so this never trusts caller input for that."""
+    if not value:
+        return None
+    cleaned = _SLUG_SAFE.sub("", value.lower())
+    return cleaned or None
+
+
+def upload_media_library_asset(data: bytes, page_slug: str | None = None, category_slug: str | None = None) -> str | None:
     """Uploads an admin Media Library image (already validated/re-encoded by
     services/media.py's process_image) to R2, returning its public URL - or None if R2
     isn't configured or the upload fails.
+
+    page_slug/category_slug (when the upload happens from a specific product/category's
+    media picker) file the object under media_library/<page>/<category>/... instead of
+    one flat folder - purely for human browsability in the R2 bucket console, since R2
+    keys are flat strings with no real directory semantics (see module docstring). This
+    does NOT drive the app's own image queries - those always go through the Media
+    table's category_id/product_id columns - so it has no effect on catalog load time.
+    Falls back to the flat media_library/ folder when no page/category context is given
+    (e.g. an upload from the standalone Media Library page, not tied to one product).
 
     Unlike upload_data_uri(), there's no local-disk fallback here: this app's
     database is a shared, hosted Postgres instance, so a file saved to one
@@ -120,5 +230,8 @@ def upload_media_library_asset(data: bytes) -> str | None:
     keep serving a URL nothing backs."""
     if not storage_configured():
         return None
-    key = f"{settings.cloudinary_folder}/media_library/{uuid.uuid4().hex}.webp"
+    page_slug = _safe_slug(page_slug)
+    category_slug = _safe_slug(category_slug)
+    subfolder = f"{page_slug}/{category_slug}/" if page_slug and category_slug else ""
+    key = f"{settings.cloudinary_folder}/media_library/{subfolder}{uuid.uuid4().hex}.webp"
     return _put_object(data, key, "image/webp")

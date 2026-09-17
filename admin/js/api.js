@@ -111,7 +111,13 @@ const Api = {
   reviews: () => api("/api/admin/reviews"),
   toggleReview: (id) => api(`/api/admin/reviews/${id}/toggle`, { method: "PATCH" }),
 
-  mediaLibrary: () => api("/api/admin/media"),
+  mediaLibrary: ({ categoryId, pageId } = {}) => {
+    const params = new URLSearchParams();
+    if (categoryId) params.set("category_id", categoryId);
+    else if (pageId) params.set("page_id", pageId);
+    const qs = params.toString();
+    return api(`/api/admin/media${qs ? `?${qs}` : ""}`);
+  },
   uploadMedia: (formData) => {
     const token = getToken();
     return fetch(`${API_BASE}/api/admin/media/upload`, {

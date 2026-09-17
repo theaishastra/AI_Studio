@@ -12,11 +12,13 @@ function cldOpt(url) {
   // origin every fetch() on this page already uses, or they resolve against
   // whatever's hosting this static page instead and 404.
   if (url && url.startsWith('/media/')) return `${window.SAI_API_BASE || "http://localhost:8000"}${url}`;
-  // images.weserv.nl is a free public resizing/compression proxy - shrinks the
-  // 500KB-1MB+ originals actually being served down to what a card/thumbnail
-  // needs. It can't reach a localhost-only dev URL, so local media stays as-is.
+  // js/shared/thumb-map.js is a static url -> thumbnail-url lookup generated
+  // ahead of time by scripts/generate_thumbnails.py (Pillow, no runtime proxy or
+  // redirect). Falls back to the full-size original for anything not in it
+  // (a data:/blob: URI, a localhost dev URL, or a newer image the script hasn't
+  // been re-run for yet).
   if (!url || url.startsWith('data:') || url.startsWith('blob:') || /^https?:\/\/(localhost|127\.0\.0\.1)/.test(url)) return url;
-  return `https://images.weserv.nl/?url=${url.replace(/^https?:\/\//, '')}&w=640&q=75&output=webp&we`;
+  return (window.THUMB_MAP && window.THUMB_MAP[url]) || url;
 }
 
 const ITEMS = {
@@ -331,7 +333,6 @@ if (!item) {
   document.getElementById("galleryGrid").innerHTML = item.gallery.map(g => g.img ? `
     <div class="gal-card">
       <img src="${cldOpt(g.img)}" alt="${g.caption}" loading="lazy">
-      ${g.video ? `<div class="gal-play">▶</div>` : ""}
       <div class="gal-cap">${g.caption}</div>
     </div>` : `
     <div class="gal-card gal-card--empty">
@@ -396,10 +397,19 @@ function submitEnquiry() {
 
   let ok = true;
   markInvalid(nameEl, !name); if (!name) ok = false;
-  const phoneOk = phone.length >= 10; markInvalid(phoneEl, !phoneOk); if (!phoneOk) ok = false;
+  // Same 10-digit Indian mobile pattern contact-us.js uses, so a booking
+  // enquiry can't be filed with an obviously-fake number that a bare
+  // length check would let through.
+  const phoneOk = /^[6-9]\d{9}$/.test(phone.slice(-10)) && phone.length >= 10;
+  markInvalid(phoneEl, !phoneOk); if (!phoneOk) ok = false;
   const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email); markInvalid(emailEl, !emailOk); if (!emailOk) ok = false;
   markInvalid(typeEl, !eventType); if (!eventType) ok = false;
-  markInvalid(dateEl, !date); if (!date) ok = false;
+  // dateEl.min blocks past dates in the picker UI, but that's just an HTML
+  // attribute a visitor can edit in devtools - re-check it here so a
+  // backdated enquiry can't slip through.
+  const todayISO = new Date().toISOString().split("T")[0];
+  const dateOk = !!date && date >= todayISO;
+  markInvalid(dateEl, !dateOk); if (!dateOk) ok = false;
 
   if (!ok) {
     const invalidEl = document.querySelector(".bf-field.invalid input,.bf-field.invalid select");

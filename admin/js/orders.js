@@ -458,10 +458,15 @@ function saveBlob(blob, filename) {
 
 /* Uploads live either as a base64 data: URI (the fallback path, if storing to
    Supabase Storage failed at checkout) or a plain URL (the normal path) - the
-   former decodes locally, the latter needs an actual fetch to get bytes. */
+   former decodes locally, the latter needs an actual fetch to get bytes.
+   The URL case is routed through this app's own API (same origin as the
+   admin panel) instead of fetching the R2 bucket URL directly - a
+   cross-origin fetch() to R2 needs CORS enabled on that bucket, which isn't
+   guaranteed, so this sidesteps it entirely. */
 async function uploadToBlob(upload) {
   if (upload.isDataUri) return dataUriToBlob(upload.data);
-  const res = await fetch(upload.data);
+  const proxyUrl = `${API_BASE}/api/admin/media/download?url=${encodeURIComponent(upload.data)}&filename=${encodeURIComponent(upload.filename)}`;
+  const res = await fetch(proxyUrl, { headers: { Authorization: `Bearer ${getToken()}` } });
   if (!res.ok) throw new Error(`Couldn't fetch the file (${res.status})`);
   return res.blob();
 }

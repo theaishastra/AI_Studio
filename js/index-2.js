@@ -18,11 +18,13 @@
       // origin every fetch() on this page already uses, or they resolve against
       // whatever's hosting this static page instead and 404.
       if (url && url.startsWith('/media/')) return `${window.SAI_API_BASE || "http://localhost:8000"}${url}`;
-      // images.weserv.nl is a free public resizing/compression proxy - shrinks the
-      // 500KB-1MB+ originals actually being served down to what a card/thumbnail
-      // needs. It can't reach a localhost-only dev URL, so local media stays as-is.
+      // js/shared/thumb-map.js is a static url -> thumbnail-url lookup generated
+      // ahead of time by scripts/generate_thumbnails.py (Pillow, no runtime proxy or
+      // redirect). Falls back to the full-size original for anything not in it
+      // (a data:/blob: URI, a localhost dev URL, or a newer image the script hasn't
+      // been re-run for yet).
       if (!url || url.startsWith('data:') || url.startsWith('blob:') || /^https?:\/\/(localhost|127\.0\.0\.1)/.test(url)) return url;
-      return `https://images.weserv.nl/?url=${url.replace(/^https?:\/\//, '')}&w=640&q=75&output=webp&we`;
+      return (window.THUMB_MAP && window.THUMB_MAP[url]) || url;
     }
 
     // ---------- categories ----------
@@ -63,7 +65,7 @@
     // on that exact service's packages/portfolio - not just the generic page.
     // Populated by loadHomepageFeatured() below from the same GET /api/catalog/{page}
     // endpoints photography.html/studio.html/gifts.html/corporate.html themselves use -
-    // one featured product per category, from the database, instead of a hand-copied
+    // the first product per category, from the database, instead of a hand-copied
     // snapshot of those pages' content that only stays correct until someone edits them.
     let services = [];
     function pctOff(price, old) {
@@ -143,15 +145,14 @@
 
     const HOMEPAGE_API_BASE = window.SAI_API_BASE || "http://localhost:8000";
 
-    // One featured product per category (falling back to that category's first
-    // product if none is marked featured), from the same page_bundle endpoint each
+    // The first product per category, from the same page_bundle endpoint each
     // storefront page itself uses - so "editing a product in admin" and "editing
     // the homepage's picks for that page" are the same action for the owner.
-    function pickFeaturedPerCategory(data, limit) {
+    function pickFirstPerCategory(data, limit) {
       const picks = [];
       data.categories.forEach(c => {
         const pkgs = data.packages[c.id] || [];
-        const chosen = pkgs.find(p => p.featured) || pkgs[0];
+        const chosen = pkgs[0];
         if (chosen) picks.push({ ...chosen, _categoryId: c.id });
       });
       return picks.slice(0, limit);
@@ -165,13 +166,13 @@
         fetchPage('photography'), fetchPage('studio'), fetchPage('gifts'), fetchPage('corporate'),
       ]);
 
-      services = pickFeaturedPerCategory(photoData, 6).map(p =>
+      services = pickFirstPerCategory(photoData, 6).map(p =>
         [p.title, p.price, 'Starting from', (p.images && p.images[0]) || '', p.rating || '', p._categoryId, p.id, p.tier, p.feat]);
-      studio = pickFeaturedPerCategory(studioData, 6).map(p =>
+      studio = pickFirstPerCategory(studioData, 6).map(p =>
         [p.title, p.price, p.mrp || null, (p.images && p.images[0]) || '', p.rating || '', p._categoryId, p.id]);
-      gifts = pickFeaturedPerCategory(giftsData, 6).map(p =>
+      gifts = pickFirstPerCategory(giftsData, 6).map(p =>
         [p.title, p.price, p.mrp || null, (p.images && p.images[0]) || '', p.rating || '']);
-      corp = pickFeaturedPerCategory(corpData, 6).map(p =>
+      corp = pickFirstPerCategory(corpData, 6).map(p =>
         [p.title, p.price, p.mrp || null, (p.images && p.images[0]) || '', p.rating || '', p.id]);
     }
 

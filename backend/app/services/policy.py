@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 
 from ..models import Order, Product, Setting
-from ..schemas import OrderOut
+from ..schemas import OrderAddressOut, OrderOut
 
 DEFAULT_ADDRESS_CHANGE_WINDOW_HOURS = 24
 
@@ -96,6 +96,14 @@ def _annotate(
     order: Order, deadline: datetime | None,
 ) -> OrderOut:
     out = OrderOut.model_validate(order)
+    # Prefer the immutable checkout-time snapshot over the live Address join -
+    # the customer can edit or delete that Address row later (My Account), and
+    # address_id is ON DELETE SET NULL, so the live join alone would let a
+    # completed order's delivery address silently change or disappear.
+    # Falls back to the live join for orders placed before this snapshot
+    # existed and never backfilled (see migrations.backfill_address_snapshots).
+    if order.address_snapshot:
+        out.address = OrderAddressOut(**order.address_snapshot)
     now = datetime.now(timezone.utc)
     out.address_change_deadline = deadline
     # Address changes are capped at one request per order for its whole

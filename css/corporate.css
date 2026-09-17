@@ -1144,7 +1144,7 @@ body {
   padding: 0;
   box-shadow: 0 10px 32px rgba(16, 28, 53, 0.06);
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-color: rgba(180, 160, 140, 0.55) transparent;
   box-sizing: border-box;
 }
 
@@ -4994,7 +4994,7 @@ body {
   padding: 0 !important;
   box-shadow: 0 10px 32px rgba(16, 28, 53, 0.06) !important;
   scrollbar-width: thin !important;
-  scrollbar-color: #CBD5E1 transparent !important;
+  scrollbar-color: rgba(180, 160, 140, 0.55) transparent !important;
   box-sizing: border-box !important;
   z-index: 15 !important;
 }
@@ -5007,11 +5007,11 @@ body {
   background: transparent !important;
 }
 .sidebar::-webkit-scrollbar-thumb {
-  background: #CBD5E1 !important;
+  background: rgba(180, 160, 140, 0.55) !important;
   border-radius: 10px !important;
 }
 .sidebar::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8 !important;
+  background: rgba(180, 160, 140, 0.85) !important;
 }
 
 .main-wrapper {
@@ -6226,7 +6226,7 @@ body.theme-corporate {
   padding: 0 !important;
   box-shadow: 0 10px 32px rgba(16, 28, 53, 0.06) !important;
   scrollbar-width: thin !important;
-  scrollbar-color: #CBD5E1 transparent !important;
+  scrollbar-color: rgba(180, 160, 140, 0.55) transparent !important;
   box-sizing: border-box !important;
   z-index: 15 !important;
 }
@@ -7062,7 +7062,21 @@ footer,
   }
 
   .sidebar::-webkit-scrollbar {
-    display: none !important;
+    width: 6px !important;
+    display: block !important;
+  }
+
+  .sidebar::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+
+  .sidebar::-webkit-scrollbar-thumb {
+    background: rgba(180, 160, 140, 0.55) !important;
+    border-radius: 10px !important;
+  }
+
+  .sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(180, 160, 140, 0.85) !important;
   }
 
   .products-panel {
@@ -10209,18 +10223,35 @@ html body .sidebar,
 .sidebar {
   height: 100% !important;
   min-height: 100% !important;
+  max-height: calc(100vh - var(--navbar-height, 160px) - 36px) !important;
   align-self: stretch !important;
   margin-bottom: 0 !important;
   border-radius: 18px 18px 0 0 !important;
   display: flex !important;
   flex-direction: column !important;
-  overflow: visible !important;
-  overflow-y: visible !important;
-  scrollbar-width: none !important;
+  overflow: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(180, 160, 140, 0.55) transparent !important;
 }
 
 html body.theme-corporate .sidebar::-webkit-scrollbar {
-  display: none !important;
+  width: 6px !important;
+  display: block !important;
+}
+
+html body.theme-corporate .sidebar::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+html body.theme-corporate .sidebar::-webkit-scrollbar-thumb {
+  background: rgba(180, 160, 140, 0.55) !important;
+  border-radius: 10px !important;
+}
+
+html body.theme-corporate .sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(180, 160, 140, 0.85) !important;
 }
 
 html body.theme-corporate .sidebar-list,
@@ -11984,6 +12015,21 @@ html body .sidebar-wrap .sidebar-title,
     width: auto !important;
     max-width: 100% !important;
     background: #5C0930 !important;
+    /* Studio's equivalent scroll column is a dedicated .main-content class
+       with its own padding (css/studio.css ~line 1147: 32px 40px 60px),
+       so it always keeps a right-side gutter no matter what else in the
+       file targets it. Corporate's column instead relies on the shared,
+       sitewide .main-wrapper class for its horizontal padding - that class
+       is redeclared with different values (and sometimes none at all) by
+       a dozen other unrelated rules/breakpoints across this file, so it's
+       not a reliable source of gutter here. Declaring padding directly on
+       this selector (already the highest-specificity, last-in-file rule
+       for this element) makes the gutter as robust as studio's, instead of
+       depending on .main-wrapper winning by chance - this is what was
+       letting a full row's last product card sit flush against the
+       viewport edge. */
+    padding: 32px 40px 60px !important;
+    box-sizing: border-box !important;
   }
 }
 
@@ -12096,7 +12142,11 @@ html body .sidebar-wrap .sidebar-title,
     min-height: 0 !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
-    padding-bottom: 80px !important;
+    /* Same reasoning as the desktop/tablet block above - matches studio's
+       mobile .main-content padding (css/studio.css ~line 3144: 14px 10px
+       80px) so the right edge of a full product row never touches the
+       viewport edge here either. */
+    padding: 14px 10px 80px !important;
     box-sizing: border-box !important;
   }
 }

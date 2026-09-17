@@ -4,6 +4,8 @@
 
     window.addEventListener('DOMContentLoaded', () => {
 
+      const CONTACT_API_BASE = window.SAI_API_BASE || "http://localhost:8000";
+
       /* ---------- Live open / closed status (9:00 AM – 9:00 PM, all week) ---------- */
       const OPEN_MINS = 9 * 60;
       const CLOSE_MINS = 21 * 60;
@@ -140,26 +142,50 @@
           }
 
           const topic = document.querySelector('input[name="topic"]:checked');
-          const name = document.getElementById('contactName').value.trim().split(' ')[0];
+          const fullName = document.getElementById('contactName').value.trim();
+          const name = fullName.split(' ')[0];
 
           submitBtn.classList.add('loading');
           submitBtn.disabled = true;
           submitBtn.querySelector('.btn-label').textContent = 'Sending...';
 
-          setTimeout(() => {
-            submitBtn.classList.remove('loading');
-            submitBtn.disabled = false;
-            submitBtn.querySelector('.btn-label').textContent = 'Send Message';
+          fetch(`${CONTACT_API_BASE}/api/contact`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: fullName,
+              phone: document.getElementById('contactPhone').value.trim(),
+              email: document.getElementById('contactEmail').value.trim(),
+              topic: topic ? topic.value : null,
+              subject: document.getElementById('contactSubject').value.trim(),
+              message: document.getElementById('contactMessage').value.trim(),
+            }),
+          })
+            .then(res => {
+              if (!res.ok) throw new Error(`Request failed (${res.status})`);
+              return res.json();
+            })
+            .then(() => {
+              document.getElementById('modalMessage').textContent =
+                'Thanks ' + name + '! Your ' + (topic ? topic.value.toLowerCase() : '') +
+                ' enquiry has reached our studio team. We\'ll get back to you within 24 hours.';
+              document.getElementById('successModal').classList.add('show');
 
-            document.getElementById('modalMessage').textContent =
-              'Thanks ' + name + '! Your ' + (topic ? topic.value.toLowerCase() : '') +
-              ' enquiry has reached our studio team. We\'ll get back to you within 24 hours.';
-            document.getElementById('successModal').classList.add('show');
-
-            contactForm.reset();
-            if (charCount) charCount.textContent = '0';
-            contactForm.querySelectorAll('.fld.invalid').forEach(f => f.classList.remove('invalid'));
-          }, 1100);
+              contactForm.reset();
+              if (charCount) charCount.textContent = '0';
+              contactForm.querySelectorAll('.fld.invalid').forEach(f => f.classList.remove('invalid'));
+            })
+            .catch(err => {
+              console.error('Failed to send contact enquiry:', err);
+              document.getElementById('modalMessage').textContent =
+                'Sorry, something went wrong sending your message. Please try again, or reach us directly on WhatsApp/phone.';
+              document.getElementById('successModal').classList.add('show');
+            })
+            .finally(() => {
+              submitBtn.classList.remove('loading');
+              submitBtn.disabled = false;
+              submitBtn.querySelector('.btn-label').textContent = 'Send Message';
+            });
         });
       }
 

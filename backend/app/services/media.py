@@ -1,5 +1,6 @@
 import io
 
+import pillow_avif  # noqa: F401 - registers Pillow's AVIF decoder/encoder on import
 from PIL import Image
 
 MAX_SIZE = 10 * 1024 * 1024
@@ -40,3 +41,19 @@ def process_image(data: bytes, to_webp: bool = True) -> tuple[bytes, str, str]:
         ext, mime = ".jpg", "image/jpeg"
 
     return buffer.getvalue(), ext, mime
+
+
+def make_thumbnail(data: bytes, width: int = 640, quality: int = 75) -> bytes:
+    """Downscales an already-processed image to a small WebP for card/thumbnail
+    display - the Pillow equivalent of what images.weserv.nl was doing over the
+    network. Only shrinks (never upscales) images narrower than `width`."""
+    img = Image.open(io.BytesIO(data))
+    img.load()
+    if img.width > width:
+        height = round(img.height * width / img.width)
+        img = img.resize((width, height), Image.LANCZOS)
+    img = img.convert("RGBA") if img.mode in ("RGBA", "LA", "P") else img.convert("RGB")
+
+    buffer = io.BytesIO()
+    img.save(buffer, format="WEBP", quality=quality)
+    return buffer.getvalue()

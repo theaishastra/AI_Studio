@@ -185,6 +185,11 @@ class MediaLibraryOut(BaseModel):
     alt: str
     usage_count: int  # how many products/categories currently use this image
     deletable: bool  # true only if there's a standalone library upload of it
+    # Small WebP for the picker grid - `url` stays the real full-resolution image
+    # (it's what gets attached to a product/category on select), so this must never
+    # replace it. None when not computed (the unscoped "all" library view skips this -
+    # see list_media()) - the frontend falls back to `url` in that case.
+    thumb_url: str | None = None
 
 
 # ---------------------------------------------------------------- categories
@@ -254,7 +259,6 @@ class ProductIn(BaseModel):
     address_change_window_hours: int | None = Field(default=None, ge=0, le=720)
     features: list[str] = []
     is_active: bool = True
-    is_featured: bool = False
     sort: int = 0
     extra: dict = {}
     input_fields: list[ProductInputFieldIn] = []
@@ -275,7 +279,6 @@ class ProductPatch(BaseModel):
     address_change_window_hours: int | None = Field(default=None, ge=0, le=720)
     features: list[str] | None = None
     is_active: bool | None = None
-    is_featured: bool | None = None
     sort: int | None = None
     extra: dict | None = None
     input_fields: list[ProductInputFieldIn] | None = None
@@ -297,7 +300,6 @@ class ProductOut(BaseModel):
     address_change_window_hours: int | None
     features: list[str]
     is_active: bool
-    is_featured: bool
     sort: int
     extra: dict
     input_fields: list[ProductInputFieldIn] = []
@@ -326,6 +328,28 @@ class CouponOut(CouponIn):
 
 
 # ---------------------------------------------------------------- bookings
+
+class ContactIn(BaseModel):
+    name: str
+    phone: str
+    email: str
+    topic: str | None = None
+    subject: str
+    message: str
+
+
+class ContactOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    name: str
+    phone: str
+    email: str
+    topic: str | None
+    subject: str
+    message: str
+    is_read: bool
+    created_at: datetime
+
 
 class BookingIn(BaseModel):
     product_id: str | None = None

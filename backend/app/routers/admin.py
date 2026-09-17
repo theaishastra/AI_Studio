@@ -1,12 +1,16 @@
 import csv
 import io
+import re
+import time
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
+import httpx
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from ..config import get_settings
 from ..database import get_db
 from ..deps import audit, require_owner, require_staff
 from ..models import (
@@ -26,10 +30,11 @@ from ..services.media import process_image
 from ..services.notifications import notify, order_event
 from ..services.policy import annotate_order, annotate_orders, refund_status as compute_refund_status
 from ..services.pricing import money
-from ..services.storage import CUSTOM_UPLOAD_FIELDS, upload_media_library_asset
+from ..services.storage import CUSTOM_UPLOAD_FIELDS, get_or_create_thumbnail, upload_media_library_asset
 from .catalog import invalidate_catalog_cache
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
+settings = get_settings()
 
 ORDER_STATUS_TRACKING_TITLES = {
     "created": "Order placed",
@@ -55,6 +60,19 @@ ORDER_ADMIN_LOAD = (
 )
 
 HOMEPAGE_KEY = "homepage_layout"
+
+# Same cache-with-invalidation pattern as catalog.py's page_bundle(): the media
+# picker (product/category "Choose from Media Library") re-fetches on every
+# open, and the underlying Media table only changes on an admin write, so a
+# short TTL removes the DB round-trip for repeat opens within that window
+# without ever risking stale data past it - every write below that touches
+# Media also calls _invalidate_media_library_cache() right after commit.
+_MEDIA_LIBRARY_CACHE_TTL_SECONDS = 60
+_media_library_cache: dict[tuple[str | None, str | None], tuple[float, list]] = {}
+
+
+def _invalidate_media_library_cache() -> None:
+    _media_library_cache.clear()
 
 # Checkout now uploads these fields to Supabase Storage and stores a URL
 # instead of base64 (see services/storage.py) - this stripping is a safety
@@ -243,6 +261,7 @@ def add_category_media(cat_id: str, body: MediaIn, request: Request,
     db.commit()
     db.refresh(media)
     invalidate_catalog_cache()
+    _invalidate_media_library_cache()
     return media
 
 
@@ -256,6 +275,7 @@ def delete_media(media_id: str, request: Request,
     db.delete(media)
     db.commit()
     invalidate_catalog_cache()
+    _invalidate_media_library_cache()
 
 
 # ---------------------------------------------------------------- products
@@ -345,6 +365,7 @@ def add_product_media(product_id: str, body: MediaIn, request: Request,
     db.commit()
     db.refresh(media)
     invalidate_catalog_cache()
+    _invalidate_media_library_cache()
     return media
 
 
@@ -737,6 +758,11 @@ def decide_address_change_request(request_id: str, body: AddressChangeDecisionIn
         db.add(new_address)
         db.flush()
         req.order.address_id = new_address.id
+        req.order.address_snapshot = {
+            "full_name": new_address.full_name, "phone": new_address.phone,
+            "line1": new_address.line1, "line2": new_address.line2,
+            "city": new_address.city, "state": new_address.state, "pincode": new_address.pincode,
+        }
         db.add(OrderTrackingEvent(
             order_id=req.order.id, status=req.order.status, title="Delivery address updated",
             description="The delivery address was changed at the customer's request.",
@@ -891,8 +917,42 @@ def list_reviews(admin: User = Depends(require_staff), db: Session = Depends(get
 
 # ---------------------------------------------------------------- media library
 
+_SAFE_FILENAME = re.compile(r"[^A-Za-z0-9_.-]+")
+
+
+@router.get("/media/download")
+def download_media(url: str, filename: str = "artwork",
+                   admin: User = Depends(require_staff)):
+    """Streams a customer-uploaded artwork file (or any R2-hosted asset) back
+    through this API instead of letting the admin panel's JS fetch() it
+    straight from the R2 bucket - a browser fetch() to a different origin
+    (pub-xxxx.r2.dev) needs CORS enabled on that bucket, which isn't
+    guaranteed to be configured, and the R2 API token this app holds only has
+    object-level permissions, not the bucket-admin scope needed to set CORS
+    rules itself. Proxying through here sidesteps that entirely, since the
+    admin panel calls this same-origin (it's served by this same FastAPI app).
+    Restricted to this app's own R2 bucket to avoid this becoming an
+    open proxy/SSRF vector."""
+    if not settings.r2_public_base_url or not url.startswith(settings.r2_public_base_url):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid file URL")
+    try:
+        resp = httpx.get(url, timeout=30, follow_redirects=True)
+        resp.raise_for_status()
+    except Exception:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Could not fetch the file")
+
+    safe_name = _SAFE_FILENAME.sub("_", filename) or "artwork"
+    return StreamingResponse(
+        iter([resp.content]),
+        media_type=resp.headers.get("content-type", "application/octet-stream"),
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}"'},
+    )
+
+
 @router.post("/media/upload")
 def upload_media(file: UploadFile, request: Request,
+                 page_slug: str | None = Form(default=None),
+                 category_slug: str | None = Form(default=None),
                  admin: User = Depends(require_staff), db: Session = Depends(get_db)):
     # Plain `def`, not `async def` - process_image()/Cloudinary upload below are
     # blocking. FastAPI runs sync routes in a worker thread automatically; an
@@ -907,8 +967,10 @@ def upload_media(file: UploadFile, request: Request,
     # Uploaded to Cloudinary rather than this server's local disk - this app's
     # DB is a shared, hosted Postgres instance, so a file saved locally is
     # invisible to every other environment (another deploy, another machine)
-    # reading the same Media row.
-    url = upload_media_library_asset(image_bytes)
+    # reading the same Media row. page_slug/category_slug (sent when this upload
+    # comes from a specific product/category's media picker) just organize the R2
+    # key for human browsability - see upload_media_library_asset()'s docstring.
+    url = upload_media_library_asset(image_bytes, page_slug=page_slug, category_slug=category_slug)
     if not url:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Image upload failed — try again")
 
@@ -917,18 +979,45 @@ def upload_media(file: UploadFile, request: Request,
     audit(db, admin, "upload", "media", media.id, {"url": media.url}, request)
     db.commit()
     db.refresh(media)
+    _invalidate_media_library_cache()
     return {"id": media.id, "url": media.url, "alt": media.alt, "mime": mime, "size": len(image_bytes)}
 
 
 @router.get("/media", response_model=list[MediaLibraryOut])
-def list_media(admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+def list_media(
+    category_id: str | None = None,
+    page_id: str | None = None,
+    admin: User = Depends(require_staff), db: Session = Depends(get_db),
+):
+    cache_key = (category_id, page_id)
+    cached = _media_library_cache.get(cache_key)
+    if cached and time.monotonic() - cached[0] < _MEDIA_LIBRARY_CACHE_TTL_SECONDS:
+        return cached[1]
+
     # Every image in the app lives in this one table - uploads made directly on this
     # page (kind="library") plus every category portfolio photo and product package
     # photo (kind="portfolio"/"package") - shown together so this page is a full
     # inventory of every image in use, not just ad hoc uploads. The table has one row
     # per *usage* though, so the same picture attached to three products is three rows -
     # group them by URL here so the grid shows each picture once, with a usage count.
-    rows = db.query(Media).order_by(Media.created_at.desc()).limit(2000).all()
+    query = db.query(Media)
+    # category_id/page_id scope this down to "images already used near where I'm
+    # attaching one" (the product/category media picker's default view) instead of
+    # every image across the whole site - the picker used to fetch all ~2000 rows
+    # on every open regardless of which product it was opened from. Unattached
+    # library uploads (kind="library", no category_id/product_id) always pass the
+    # filter since they're the freely-reusable pool, not scoped to anything yet.
+    # Neither param scopes anything - this is the standalone Media Library page's
+    # "show everything" view.
+    unattached = and_(Media.category_id.is_(None), Media.product_id.is_(None))
+    if category_id:
+        product_ids = db.query(Product.id).filter(Product.category_id == category_id)
+        query = query.filter(or_(Media.category_id == category_id, Media.product_id.in_(product_ids), unattached))
+    elif page_id:
+        category_ids = db.query(Category.id).filter(Category.page_id == page_id)
+        product_ids = db.query(Product.id).filter(Product.category_id.in_(category_ids))
+        query = query.filter(or_(Media.category_id.in_(category_ids), Media.product_id.in_(product_ids), unattached))
+    rows = query.order_by(Media.created_at.desc()).limit(2000).all()
 
     groups: dict[str, dict] = {}
     order: list[str] = []
@@ -944,7 +1033,7 @@ def list_media(admin: User = Depends(require_staff), db: Session = Depends(get_d
             g["library_id"] = m.id
             g["alt"] = m.alt
 
-    return [
+    result = [
         MediaLibraryOut(
             id=groups[url]["library_id"] or groups[url]["row_id"],
             url=url,
@@ -954,6 +1043,21 @@ def list_media(admin: User = Depends(require_staff), db: Session = Depends(get_d
         )
         for url in order[:1000]
     ]
+    # Only for a scoped request (the product/category media picker), not the
+    # standalone Media Library page's unscoped "everything" view - that one can be
+    # up to 1000 images, and thumbnailing all of them here (rather than the handful
+    # a scoped picker returns) would risk turning one page load into a cold-cache
+    # stampede of R2 round trips. Concurrent, same pattern as warm_thumbnails() -
+    # a plain per-item cld_optimize() loop would pay each thumbnail's R2 round trip
+    # sequentially instead of overlapping them.
+    if category_id or page_id:
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=16) as pool:
+            thumbs = list(pool.map(lambda r: get_or_create_thumbnail(r.url), result))
+        for item, thumb in zip(result, thumbs):
+            item.thumb_url = thumb  # None (thumbnailing failed/unconfigured) -> frontend falls back to item.url
+    _media_library_cache[cache_key] = (time.monotonic(), result)
+    return result
 
 
 # ---------------------------------------------------------------- settings (all keys)
@@ -998,7 +1102,7 @@ def get_homepage(admin: User = Depends(require_staff), db: Session = Depends(get
         "all": {
             "categories": [{"id": c.id, "name": c.name, "image": cat_image(c)} for c in categories],
             "products": [
-                {"id": p.id, "title": p.title, "image": prod_image(p), "price": float(p.price), "bestseller": p.is_featured}
+                {"id": p.id, "title": p.title, "image": prod_image(p), "price": float(p.price)}
                 for p in products
             ],
         },

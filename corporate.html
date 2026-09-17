@@ -634,6 +634,20 @@
       <!-- Products Grid Panel -->
       <div class="products-panel">
 
+        <!-- ============ FILTER BAR ============ -->
+        <div class="filter-bar">
+          <div class="sort-by-field">
+            <label for="filterSort">Sort by :</label>
+            <select id="filterSort" onchange="setSortFilter(this.value)">
+              <option value="popular" selected>Popular</option>
+              <option value="lowToHigh">Price: Low to High</option>
+              <option value="highToLow">Price: High to Low</option>
+            </select>
+            <svg class="filter-chevron-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+        </div>
 
         <!-- Category Banner / Info -->
         <div class="category-header" id="categoryHeader">
@@ -2192,6 +2206,7 @@
   </div>
 
   <script src="js/shared/product-fields.js"></script>
+  <script src="js/shared/thumb-map.js"></script>
   <script src="js/corporate.js?v=1788361500000"></script>
   <script src="js/shared/home-nav.js" defer></script>
   <script src="js/shared/customer-api.js"></script>

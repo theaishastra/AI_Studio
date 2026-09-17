@@ -154,6 +154,11 @@ def checkout(body: CheckoutIn, user: User = Depends(get_current_user), db: Sessi
             total=priced["total"],
             coupon_code=priced["coupon"].code if priced["coupon"] else None,
             address_id=address.id,
+            address_snapshot={
+                "full_name": address.full_name, "phone": address.phone,
+                "line1": address.line1, "line2": address.line2,
+                "city": address.city, "state": address.state, "pincode": address.pincode,
+            },
             delivery_slot=body.delivery_slot,
         )
         db.add(order)

@@ -290,7 +290,6 @@ td select { width: auto; min-width: 130px; }
 .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
 .badge.on { background: var(--success-bg); color: var(--success); }
 .badge.off { background: var(--danger-bg); color: var(--danger); }
-.badge.featured { background: color-mix(in srgb, var(--cta) 35%, white); color: #916800; }
 
 /* ---------- cards ---------- */
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 26px; }
@@ -762,3 +761,37 @@ select.order-status-select:focus { box-shadow: 0 0 0 3px rgba(92, 9, 48, .12); }
 
 .add-field-btn { margin-top: 2px; }
 .field-builder-empty { font-size: 12.5px; color: var(--text-dim); padding: 8px 0 12px; }
+
+/* ---------------------------------------------------------------- product form section headers */
+
+.form-section-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--text-dim); margin: 22px 0 10px; padding-top: 16px; border-top: 1px solid var(--border);
+}
+.form-section-title:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+.form-hint { font-size: 12px; font-weight: 400; color: var(--text-dim); }
+
+/* ---------------------------------------------------------------- studio "order options" builder */
+
+.qty-opt-row, .studio-opt-row {
+  display: grid; grid-template-columns: 1fr 120px auto; gap: 8px; align-items: center; margin-bottom: 8px;
+}
+.qty-opt-row input { margin-bottom: 0; }
+.studio-opt-remove {
+  width: 26px; height: 26px; border-radius: 50%; border: none; background: var(--danger);
+  color: #fff; font-size: 14px; line-height: 1; cursor: pointer; flex-shrink: 0;
+}
+.studio-checkrow { display: flex; flex-wrap: wrap; gap: 18px; margin: 4px 0 14px; }
+.studio-checkrow label { display: flex; align-items: center; gap: 6px; font-weight: 400; font-size: 13px; }
+
+/* ---------------------------------------------------------------- advanced (raw JSON) fallback */
+
+.advanced-details { margin: 6px 0 14px; }
+.advanced-details summary {
+  cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--text-dim); padding: 6px 0;
+  list-style: none;
+}
+.advanced-details summary::-webkit-details-marker { display: none; }
+.advanced-details summary::before { content: "▶ "; font-size: 10px; }
+.advanced-details[open] summary::before { content: "▼ "; }
+.advanced-details textarea { margin-top: 8px; }

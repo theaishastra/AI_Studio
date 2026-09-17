@@ -1845,11 +1845,6 @@
       border-color: var(--gold)
     }
 
-    .pkg.featured {
-      border-color: var(--gold);
-      box-shadow: 0 0 0 2px rgba(224, 168, 46, .35), var(--shadow-lg)
-    }
-
     .tier {
       display: inline-block;
       background: var(--maroon);
@@ -1862,11 +1857,6 @@
       text-transform: uppercase;
       margin-bottom: 12px;
       width: fit-content;
-    }
-
-    .pkg.featured .tier {
-      background: var(--gold);
-      color: var(--maroon)
     }
 
     .pkg h3 {
@@ -3259,10 +3249,6 @@
       border-left: 4px solid var(--gold-deep);
       border-radius: 10px;
       padding: 10px 14px;
-    }
-    .gallery-pkg-row.featured {
-      border-left-color: var(--maroon);
-      background: #fffdf6;
     }
     .g-pkg-meta {
       display: flex;

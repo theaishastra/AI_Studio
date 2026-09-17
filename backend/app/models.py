@@ -139,7 +139,6 @@ class Product(Base, TimestampMixin):
     address_change_window_hours: Mapped[int | None] = mapped_column(Integer, nullable=True)
     features: Mapped[list] = mapped_column(JSON, default=list)  # ["150+ High-Res Photos", ...]
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    is_featured: Mapped[bool] = mapped_column(Boolean, default=False)  # "Most Booked" badge
     sort: Mapped[int] = mapped_column(Integer, default=0)
     # Free-form JSON for fields with no dedicated column yet (studio's configurator:
     # quantityOptions/purposeOptions/requiresPhotoUpload) - admin edits this as raw JSON
@@ -268,6 +267,12 @@ class Order(Base, TimestampMixin):
     total: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
     coupon_code: Mapped[str | None] = mapped_column(String(40), nullable=True)
     address_id: Mapped[str | None] = mapped_column(ForeignKey("addresses.id", ondelete="SET NULL"), nullable=True)
+    # Snapshot of the address at checkout time (full_name/phone/line1/line2/city/state/pincode) -
+    # address_id alone isn't enough to keep this order's delivery details intact, since the
+    # customer can edit or delete that Address row later (My Account) and address_id is
+    # ON DELETE SET NULL, which would otherwise blank out this order's shipping address
+    # retroactively. See services/policy._annotate(), which prefers this over the live join.
+    address_snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
     delivery_slot: Mapped[str | None] = mapped_column(String(60), nullable=True)
     carrier: Mapped[str | None] = mapped_column(String(80), nullable=True)
     tracking_number: Mapped[str | None] = mapped_column(String(120), nullable=True)
@@ -442,6 +447,21 @@ class Notification(Base):
     body: Mapped[str] = mapped_column(Text, default="")
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# ---------------------------------------------------------------- contact
+
+class ContactMessage(Base, TimestampMixin):
+    __tablename__ = "contact_messages"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=uid)
+    name: Mapped[str] = mapped_column(String(120))
+    phone: Mapped[str] = mapped_column(String(20))
+    email: Mapped[str] = mapped_column(String(200))
+    topic: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    subject: Mapped[str] = mapped_column(String(200))
+    message: Mapped[str] = mapped_column(Text)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 # ---------------------------------------------------------------- bookings
