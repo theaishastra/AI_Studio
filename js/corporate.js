@@ -1248,7 +1248,7 @@
 
           // Try sending to backend
           try {
-            await fetch('http://localhost:8000/api/orders', {
+            await fetch(`${CORPORATE_API_BASE}/api/orders`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
