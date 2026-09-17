@@ -77,6 +77,40 @@
     { name: "Water Bottles", category: "Corporate Gifts", url: "corporate.html?category=bottles" }
   ];
 
+  // Curated CATALOG above only covers the site's core service menu, not the live
+  // product catalog - a product an admin adds later has no entry here and would
+  // never surface in this dropdown on ANY page (this file is shared by every
+  // page's header). Fetching the live list once and appending it fixes that
+  // without touching the curated entries above (categories/services that aren't
+  // literal database products, e.g. "Photo Editing").
+  var SEARCH_API_BASE = window.SAI_API_BASE || "http://localhost:8000";
+  var PAGE_LABELS = { gifts: "Customised Gift Shop", photography: "Photography", studio: "Studio Services", corporate: "Corporate Gifts" };
+  var liveProductsLoaded = false;
+
+  function loadLiveProducts() {
+    if (liveProductsLoaded) return;
+    liveProductsLoaded = true;
+    fetch(SEARCH_API_BASE + "/api/products?page_size=1000")
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        (data.items || []).forEach(function (p) {
+          CATALOG.push({
+            name: p.title,
+            category: PAGE_LABELS[p.page_slug] || p.category_name || "Catalog",
+            // catalog.html merges every live product into its own list on load
+            // (see js/catalog.js) and supports this exact deep-link param.
+            url: "catalog.html?openProduct=" + encodeURIComponent(p.id)
+          });
+        });
+      })
+      .catch(function (err) {
+        console.error("Could not load live products for search:", err);
+      });
+  }
+
   var css =
     ".sk-search-suggest{position:absolute;top:calc(100% + 8px);left:0;right:0;background:#fff;border-radius:14px;"
     + "box-shadow:0 16px 40px rgba(0,0,0,.14);border:1px solid #f1f1f1;overflow:hidden;z-index:200;display:none;max-height:360px;overflow-y:auto;}"
@@ -195,6 +229,25 @@
     });
 
     input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        // With suggestions showing, Enter goes to the highlighted one (or the top
+        // one if the shopper never arrowed down) - previously this did nothing at
+        // all unless an item was explicitly highlighted first.
+        if (panel.classList.contains("open") && currentItems.length > 0) {
+          e.preventDefault();
+          go(currentItems[activeIndex >= 0 ? activeIndex : 0]);
+          return;
+        }
+        // No suggestions to jump to (empty query matched nothing, or dropdown
+        // isn't open) - fall back to the full catalog search instead of silently
+        // swallowing the keypress.
+        if (input.value.trim()) {
+          e.preventDefault();
+          close();
+          window.goToCatalogSearch(input.value);
+        }
+        return;
+      }
       if (!panel.classList.contains("open") || currentItems.length === 0) return;
       if (e.key === "ArrowDown") {
         e.preventDefault();
@@ -204,11 +257,6 @@
         e.preventDefault();
         activeIndex = Math.max(activeIndex - 1, 0);
         updateActive();
-      } else if (e.key === "Enter") {
-        if (activeIndex >= 0) {
-          e.preventDefault();
-          go(currentItems[activeIndex]);
-        }
       } else if (e.key === "Escape") {
         close();
         input.blur();
@@ -226,9 +274,20 @@
 
   function init() {
     injectStyles();
+    loadLiveProducts();
     var inputs = document.querySelectorAll(".nav-search-bar input, .mobile-search-bar input");
     Array.prototype.forEach.call(inputs, setup);
   }
+
+  // Shared fallback for any page's search box that has nowhere of its own to filter
+  // into (gifts.html/photography.html/studio.html's mobile search bar - see those
+  // pages' markup) - sends the shopper to catalog.html's full, live-data-backed
+  // search/filter grid instead of doing nothing when Enter is pressed.
+  window.goToCatalogSearch = function (query) {
+    query = (query || "").trim();
+    if (!query) return;
+    window.location.href = "catalog.html?search=" + encodeURIComponent(query);
+  };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);

@@ -388,6 +388,13 @@
         <!-- ─── Catalog Products Area ─── -->
         <main class="catalog-main-content">
 
+          <!-- In-Page Product Search -->
+          <div class="catalog-search-box">
+            <span class="material-symbols-outlined search-prefix-icon">search</span>
+            <input type="text" id="catalogGlobalSearch" placeholder="Search the catalogue e.g. &quot;passport photo&quot;, &quot;magic mug&quot;...">
+            <span class="material-symbols-outlined search-clear-btn" id="searchClearBtn" onclick="clearCatalogSearch()" style="display:none;">close</span>
+          </div>
+
           <!-- Active Filter Badges Bar -->
           <div class="active-filters-bar" id="activeFiltersBar">
             <span class="results-count-text" id="resultsCountText">Showing 32 items</span>

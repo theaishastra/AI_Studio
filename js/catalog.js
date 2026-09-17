@@ -464,6 +464,71 @@
       }
     ];
 
+    // ─── Live Catalog Data (keeps search/filters in sync with admin-added products) ───
+    // CATALOG_PRODUCTS above is the curated starter set; this fetches every active
+    // product from the real database and merges in anything not already listed, so a
+    // product an admin adds later is searchable/filterable here without a code change.
+    const CATALOG_API_BASE = window.SAI_API_BASE || "http://localhost:8000";
+    const CATALOG_FALLBACK_IMG = 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/customized_gifts_card.jpg';
+
+    function mapApiProductToCatalogItem(p) {
+      const price = Math.round(p.price);
+      const origPrice = p.mrp ? Math.round(p.mrp) : undefined;
+      const discount = origPrice && origPrice > price ? `${Math.round((1 - price / origPrice) * 100)}% OFF` : undefined;
+      const category = ['gifts', 'photography', 'studio', 'corporate'].includes(p.page_slug) ? p.page_slug : 'gifts';
+      return {
+        id: p.id,
+        title: p.title,
+        category,
+        type: p.category_slug || 'other',
+        price,
+        origPrice: origPrice || price,
+        discount,
+        img: (p.images && p.images[0]) || CATALOG_FALLBACK_IMG,
+        badge: 'New Arrival',
+        badgeType: 'card-badge-top',
+        speed: 'standard',
+        speedLabel: '📦 2-3 Days Standard',
+        occasion: [],
+        rating: 0,
+        reviews: 0,
+        desc: p.description || (p.category_name ? `${p.category_name} from Sai Kumar Digital Lab & Studio.` : ''),
+        features: []
+      };
+    }
+
+    // Pill counts in the HTML are static placeholders - recompute them from whatever
+    // CATALOG_PRODUCTS actually holds so they stay accurate after the live merge below.
+    function updateCategoryPillCounts() {
+      const counts = { gifts: 0, photography: 0, studio: 0, corporate: 0 };
+      CATALOG_PRODUCTS.forEach(p => { if (counts[p.category] !== undefined) counts[p.category]++; });
+      const setCount = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      setCount('countAll', CATALOG_PRODUCTS.length);
+      setCount('countGifts', counts.gifts);
+      setCount('countPhoto', counts.photography);
+      setCount('countStudio', counts.studio);
+      setCount('countCorp', counts.corporate);
+    }
+
+    function mergeLiveCatalogProducts() {
+      return fetch(`${CATALOG_API_BASE}/api/products?page_size=1000`)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          const existingIds = new Set(CATALOG_PRODUCTS.map(p => p.id));
+          (data.items || []).forEach(p => {
+            if (existingIds.has(p.id)) return;
+            CATALOG_PRODUCTS.push(mapApiProductToCatalogItem(p));
+            existingIds.add(p.id);
+          });
+          updateCategoryPillCounts();
+          renderCatalog();
+        })
+        .catch(err => console.error('Could not load live catalog products:', err));
+    }
+
     // ─── State Management ───
     let currentCategory = 'all';
     let currentSort = 'featured';
@@ -1064,11 +1129,13 @@
       const paramCat = urlParams.get('category');
       const paramSearch = urlParams.get('search');
 
+      updateCategoryPillCounts();
       if (paramCat && ['gifts', 'photography', 'studio', 'corporate'].includes(paramCat)) {
         selectMainCategory(paramCat, 'auto');
       } else {
         renderCatalog();
       }
+      const liveCatalogReady = mergeLiveCatalogProducts();
 
       if (paramSearch) {
         searchQuery = paramSearch;
@@ -1080,11 +1147,13 @@
 
       // Deep-link support: ?openProduct=<id> auto-opens that exact product's
       // quick view modal - used by the wishlist drawer (see js/shared/wishlist-menu.js)
-      // so clicking a saved item there lands on the exact product, not just the
-      // catalog's top-level grid.
+      // and the nav search dropdown (js/shared/search.js) so clicking a saved/searched
+      // item lands on the exact product, not just the catalog's top-level grid. Waits
+      // on the live merge first since a search-driven id only exists in the database,
+      // not in the curated CATALOG_PRODUCTS starter set.
       const openProductParam = urlParams.get('openProduct');
       if (openProductParam) {
-        setTimeout(() => openQuickViewModal(openProductParam), 150);
+        liveCatalogReady.then(() => setTimeout(() => openQuickViewModal(openProductParam), 50));
       }
 
       updateCartBadge();

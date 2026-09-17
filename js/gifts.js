@@ -40,7 +40,7 @@ const GiftsModule = (() => {
   const view = ['category', 'product', 'customise', 'home'].includes(requested) ? requested : 'category';
   const category = params.get('category') || 'all';  const fragments = {
     category: "<div class=\"gifts-dashboard studio-dashboard\"><aside class=\"filters sidebar\"><div class=\"sidebar-sticky-inner\"></div></aside><div class=\"gifts-main-col main-content\"><main class=\"container\">\n    <div class=\"promo-hero-slider\"><div class=\"promo-hero-window\"><div class=\"promo-hero-track\" id=\"giftsPromoTrack\"><div class=\"promo-hero-slide\" aria-hidden=\"true\"><a href=\"corporate.html\" class=\"promo-hero-link\" tabindex=\"-1\"><img class=\"promo-hero-img\" src=\"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/corporate_gifting_banner_1300x430.png\" alt=\"\" loading=\"lazy\"></a></div><div class=\"promo-hero-slide\"><a href=\"photography.html\" class=\"promo-hero-link\" aria-label=\"Explore Photography\"><img class=\"promo-hero-img\" src=\"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/photography_banner_1300x430.png\" alt=\"Photography\"></a></div><div class=\"promo-hero-slide\"><a href=\"gifts.html\" class=\"promo-hero-link\" aria-label=\"Explore Customised Gift Shop\"><img class=\"promo-hero-img\" src=\"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/personalized_gifts_shop_now_FINAL_1300x430.png\" alt=\"Customised Gift Shop\" loading=\"lazy\"></a></div><div class=\"promo-hero-slide\"><a href=\"studio.html\" class=\"promo-hero-link\" aria-label=\"Explore Studio Services\"><img class=\"promo-hero-img\" src=\"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/prints_lamination_shop_now_1300x430.png\" alt=\"Studio Services\" loading=\"lazy\"></a></div><div class=\"promo-hero-slide\"><a href=\"corporate.html\" class=\"promo-hero-link\" aria-label=\"Explore Corporate Gifts\"><img class=\"promo-hero-img\" src=\"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/corporate_gifting_banner_1300x430.png\" alt=\"Corporate Gifts\" loading=\"lazy\"></a></div><div class=\"promo-hero-slide\" aria-hidden=\"true\"><a href=\"photography.html\" class=\"promo-hero-link\" tabindex=\"-1\"><img class=\"promo-hero-img\" src=\"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/photography_banner_1300x430.png\" alt=\"\" loading=\"lazy\"></a></div></div><div class=\"promo-hero-dots\" id=\"giftsPromoDots\"><button class=\"promo-hero-dot active\" data-i=\"0\" aria-label=\"Photography slide\"></button><button class=\"promo-hero-dot\" data-i=\"1\" aria-label=\"Customised Gift Shop slide\"></button><button class=\"promo-hero-dot\" data-i=\"2\" aria-label=\"Studio Services slide\"></button><button class=\"promo-hero-dot\" data-i=\"3\" aria-label=\"Corporate Gifts slide\"></button></div></div></div>\n    <div class=\"breadcrumb\"><a href=\"index.html\">Home</a> / <a href=\"gifts.html\">Customised Gifts</a> / <span id=\"breadcrumbTitle\"></span></div>\n    <div class=\"category-header\"><h1 id=\"categoryTitle\"></h1><p id=\"categorySubtitle\"></p></div>\n    <section class=\"category-hero\">\n      <img id=\"categoryHeroBanner\" class=\"category-hero-banner-img\" src=\"\" alt=\"\">\n    </section>\n    <nav class=\"category-tabs\" id=\"categoryTabs\" aria-label=\"Gift categories\"></nav>\n    <section class=\"catalog-main\"><div class=\"catalog-toolbar\"><div class=\"catalog-toolbar-header\"><h2 id=\"resultsTitle\"></h2><small id=\"resultCount\"></small></div><div class=\"catalog-toolbar-fields\"><input id=\"productSearch\" type=\"search\" placeholder=\"Search products\" aria-label=\"Search products\"><select id=\"sortProducts\" aria-label=\"Sort products\"><option value=\"featured\">Featured</option><option value=\"price-low\">Price: Low to High</option><option value=\"price-high\">Price: High to Low</option><option value=\"rating\">Top Rated</option></select></div></div><div class=\"product-grid packages-grid\" id=\"productGrid\"></div></section>\n  </main></div></div>\n  <div class=\"modal-backdrop\" id=\"productModal\" aria-hidden=\"true\"><article class=\"product-modal\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"modalTitle\"><button class=\"close-button\" id=\"closeModal\" aria-label=\"Close product details\">×</button><div class=\"modal-image\"><img id=\"modalImage\" src=\"\" alt=\"\"></div><div class=\"modal-copy\"><span class=\"eyebrow\">Personalised gift</span><h2 id=\"modalTitle\"></h2><div class=\"rating\" id=\"modalRating\"></div><div class=\"prices\"><span class=\"price\" id=\"modalPrice\"></span><span class=\"old-price\" id=\"modalOldPrice\"></span></div><p>Made to preserve your special memories with careful finishing and premium-quality printing.</p><ul class=\"features\"><li>Personalised with your photo or text</li><li>Quality checked before dispatch</li><li>Responsive order support</li><li>Secure WhatsApp checkout</li></ul><div class=\"modal-actions\"><button class=\"btn btn-cart\" id=\"modalAdd\">Add to Cart</button><button class=\"btn btn-buy\" id=\"modalBuy\">Buy Now</button></div></div></article></div>\n  <div class=\"cart-backdrop\" id=\"cartDrawer\" aria-hidden=\"true\"><aside class=\"cart-panel\"><div class=\"cart-head\"><h2>My Cart</h2><button id=\"closeCart\" aria-label=\"Close cart\">×</button></div><div id=\"cartItems\"></div><div class=\"cart-footer\"><div class=\"cart-total\"><span>Subtotal</span><span id=\"cartTotal\">₹0</span></div><button class=\"btn btn-buy\" id=\"checkoutCart\">Checkout on WhatsApp</button></div></aside></div>\n  <div class=\"toast\" id=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n  <footer><div class=\"container\"><div class=\"footer-grid\"><div class=\"footer-col\"><div class=\"footer-brand\"><img src=\"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Sai_digital_lab_logo.png\" alt=\"Sai Kumar Digital Lab & Studio Logo\" style=\"height: 65px; object-fit: contain;\"></div><p class=\"desc\">Capturing your moments, beautifully and creating memories forever.</p><div class=\"socials\"><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M13 22v-9h3l1-4h-4V7c0-1 .3-2 2-2h2V1h-3c-3 0-5 2-5 5v3H6v4h3v9z\" /></svg></a><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"5\" /><circle cx=\"12\" cy=\"12\" r=\"4\" /><circle cx=\"17.5\" cy=\"6.5\" r=\"1\" /></svg></a><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"2\" y=\"5\" width=\"20\" height=\"14\" rx=\"3\" /><path d=\"M10 9l6 3-6 3z\" fill=\"currentColor\" stroke=\"none\" /></svg></a><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M17 2H7a5 5 0 0 0-5 5v10a5 5 0 0 0 5 5h10a5 5 0 0 0 5-5V7a5 5 0 0 0-5-5zM8.5 8.5C7 7 5 8 5 10c0 3 4 5 4 8\" /></svg></a></div></div><div class=\"footer-col\"><h4>Company</h4><ul><li><a href=\"about-us.html\">About Us</a></li><li><a href=\"photography.html\">Gallery</a></li><li><a href=\"#testimonials\">Testimonials</a></li><li><a href=\"#\">Careers</a></li><li><a href=\"#\">Blog</a></li></ul></div><div class=\"footer-col\"><h4>Services</h4><ul><li><a href=\"photography.html\">Photography</a></li><li><a href=\"gifts.html\">Customised Gift Shop</a></li><li><a href=\"studio.html\">Studio Services</a></li><li><a href=\"corporate.html\">Corporate Gifts</a></li><li><a href=\"bulk-orders.html\">Bulk Orders</a></li></ul></div><div class=\"footer-col\"><h4>Help &amp; Support</h4><ul><li><a href=\"#\">Track Order</a></li><li><a href=\"#\">Shipping Policy</a></li><li><a href=\"#\">Returns &amp; Refunds</a></li><li><a href=\"#\">Privacy Policy</a></li><li><a href=\"#\">Terms &amp; Conditions</a></li><li><a href=\"#\">FAQs</a></li></ul></div><div class=\"footer-col\"><h4>Contact Us</h4><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.5 2.1L8 9.7a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.7 2z\" /></svg><span>+91 98765 43210</span></div><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"2\" /><path d=\"M22 6l-10 7L2 6\" /></svg><span>saikumardigitallab@gmail.com</span></div><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z\" /><circle cx=\"12\" cy=\"10\" r=\"2.5\" /></svg><span>7-2-227 Srt 6, Bhagat Singh Nagar, Sanath Nagar, Hyderabad, Telangana 500018</span></div><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\" /><path d=\"M12 6v6l4 2\" /></svg><span>Mon - Sun: 9:00 AM - 9:00 PM</span></div></div></div><div class=\"footer-bottom\"><p>© 2025 Sai Kumar Digital Lab &amp; Studio. All Rights Reserved.</p><div class=\"pay-icons\"><span class=\"pi\">VISA</span><span class=\"pi\">Mastercard</span><span class=\"pi\">RuPay</span><span class=\"pi\">UPI</span></div></div></div></footer>",
-    product: "<main class=\"details-page container\"><div class=\"breadcrumb\"><button type=\"button\" class=\"breadcrumb-back-btn\" onclick=\"history.length>1?history.back():location.assign('gifts.html')\">‹ PRODUCT DETAILS</button><div class=\"breadcrumb-links\"><a href=\"index.html\">Home</a> / <a href=\"gifts.html\">Customised Gifts</a> / <a id=\"categoryBreadcrumb\" href=\"#\">Category</a> / <span id=\"breadcrumbProduct\">Product</span></div></div><section class=\"details-main\"><div class=\"details-gallery\"><div class=\"gallery-thumbs\" id=\"galleryThumbs\" aria-label=\"Product gallery\"></div><div class=\"gallery-main\" id=\"galleryMain\"><img id=\"galleryImage\" src=\"\" alt=\"\"><button type=\"button\" class=\"gallery-arrow-btn prev\" id=\"galleryPrev\" aria-label=\"Previous image\" onclick=\"event.stopPropagation()\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path fill-rule=\"evenodd\" d=\"M11.03 3.97a.75.75 0 010 1.06l-6.22 6.22H21a.75.75 0 010 1.5H4.81l6.22 6.22a.75.75 0 11-1.06 1.06l-7.5-7.5a.75.75 0 010-1.06l7.5-7.5a.75.75 0 011.06 0z\" clip-rule=\"evenodd\" /></svg></button><button type=\"button\" class=\"gallery-arrow-btn next\" id=\"galleryNext\" aria-label=\"Next image\" onclick=\"event.stopPropagation()\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path fill-rule=\"evenodd\" d=\"M12.97 3.97a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 11-1.06-1.06l6.22-6.22H3a.75.75 0 010-1.5h16.19l-6.22-6.22a.75.75 0 010-1.06z\" clip-rule=\"evenodd\" /></svg></button><button type=\"button\" class=\"gallery-wishlist-btn\" aria-label=\"Save\" onclick=\"event.stopPropagation();this.classList.toggle('active')\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"><path d=\"M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z\"></path></svg></button><button type=\"button\" class=\"gallery-share-btn\" aria-label=\"Share\" onclick=\"event.stopPropagation();shareGiftProduct()\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"22\" y1=\"2\" x2=\"11\" y2=\"13\"></line><polygon points=\"22 2 15 22 11 13 2 9 22 2\"></polygon></svg></button></div></div><section class=\"details-copy\"><span class=\"eyebrow\" id=\"productCategoryLabel\">Personalised gift</span><h1 id=\"productName\">Product Title</h1><div class=\"rating-bar\"><span class=\"stars\" id=\"productStars\">★★★★★</span><span class=\"review-count\" id=\"productRating\">4.8 (120 reviews)</span></div></section><aside class=\"details-buy-card\"><div class=\"details-price-row\"><span class=\"price\" id=\"productPrice\">₹0</span><span class=\"old-price\" id=\"productOldPrice\">₹0</span><span class=\"discount-badge\" id=\"productDiscount\">0% OFF</span></div><div class=\"stock-badge\">In Stock</div><div class=\"personalise-box\"><div class=\"personalise-box-header\"><span class=\"personalise-box-title\">PERSONALISE THIS GIFT</span><span class=\"personalise-free-tag\">Free Customisation</span></div><div class=\"personalise-field\"><label for=\"productCustomText\">Name or message to add</label><input type=\"text\" id=\"productCustomText\" placeholder=\"e.g. Happy Birthday, Priya\" maxlength=\"60\"></div><div class=\"personalise-field\"><label>Upload your photo</label><div class=\"photo-upload-dropzone\" id=\"productUploadBtn\"><input type=\"file\" id=\"productPhotoInput\" accept=\"image/*\" hidden><svg class=\"dropzone-upload-icon\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"></path><polyline points=\"17 8 12 3 7 8\"></polyline><line x1=\"12\" y1=\"3\" x2=\"12\" y2=\"15\"></line></svg><div class=\"dropzone-text-group\"><span class=\"dropzone-title\">Click to upload photo</span><span class=\"dropzone-sub\" id=\"productUploadStatus\">JPG or PNG, up to 10MB</span></div></div></div></div><div class=\"gift-action-bar\"><div class=\"quantity-picker\"><label for=\"productQuantity\">Quantity</label><div class=\"qty-controls\"><button type=\"button\" class=\"qty-btn\" id=\"qtyMinus\">-</button><input type=\"number\" id=\"productQuantity\" value=\"1\" min=\"1\" max=\"99\"><button type=\"button\" class=\"qty-btn\" id=\"qtyPlus\">+</button></div></div><div class=\"gift-action-buttons\"><button class=\"btn btn-cart\" id=\"detailAddToCart\">Add to Cart</button><button class=\"btn btn-buy\" id=\"detailBuyNow\">Buy Now</button></div></div><section class=\"gift-details-accordion\" aria-labelledby=\"giftDetailsTitle\"><h3 id=\"giftDetailsTitle\">About the Product</h3><div class=\"gift-accordion-item\"><button type=\"button\" class=\"gift-accordion-trigger\" aria-expanded=\"true\"><span><span class=\"gift-accordion-icon\">ⓘ</span>Description</span><span class=\"gift-accordion-chevron\">⌄</span></button><div class=\"gift-accordion-content\"><p class=\"details-description\" id=\"productDescription\"></p></div></div><div class=\"gift-accordion-item\"><button type=\"button\" class=\"gift-accordion-trigger\" aria-expanded=\"false\"><span><span class=\"gift-accordion-icon\">▣</span>Instructions</span><span class=\"gift-accordion-chevron\">⌄</span></button><div class=\"gift-accordion-content\"><p>Handle with care and keep away from direct sunlight or moisture to preserve the print and finish. Please double-check your uploaded name/photo before ordering, as personalised items go into production right away and cannot be changed afterwards.</p></div></div><div class=\"gift-accordion-item\"><button type=\"button\" class=\"gift-accordion-trigger\" aria-expanded=\"false\"><span><span class=\"gift-accordion-icon\">▣</span>Delivery Info</span><span class=\"gift-accordion-chevron\">⌄</span></button><div class=\"gift-accordion-content\"><p id=\"productDeliveryEst\">Standard delivery available.</p></div></div></section></aside></section><section class=\"related-section\" aria-labelledby=\"relatedTitle\"><div class=\"related-heading\"><div><span class=\"eyebrow\">More to explore</span><h2 id=\"relatedTitle\">You May Also Like</h2></div><p>Similar personalised gifts from this collection.</p></div><div class=\"related-grid\" id=\"relatedProducts\"></div></section></main><div class=\"cart-backdrop\" id=\"cartDrawer\" aria-hidden=\"true\"><aside class=\"cart-panel\"><div class=\"cart-head\"><h2>My Cart</h2><button id=\"closeCart\" aria-label=\"Close cart\">×</button></div><div id=\"cartItems\"></div><div class=\"cart-footer\"><div class=\"cart-total\"><span>Subtotal</span><span id=\"cartTotal\">₹0</span></div><button class=\"btn btn-buy\" id=\"checkoutCart\">Proceed to Checkout</button></div></aside></div><div class=\"toast\" id=\"toast\" role=\"status\" aria-live=\"polite\"></div><footer class=\"site-footer\"><div class=\"container footer-row\"><div><strong>Sai Kumar Digital Lab & Studio</strong><br><small>Personalised memories, made with care.</small></div><a href=\"contact-us.html\">Need help? Contact us →</a></div></footer>",
+    product: "<main class=\"details-page container\"><div class=\"breadcrumb\"><button type=\"button\" class=\"breadcrumb-back-btn\" onclick=\"history.length>1?history.back():location.assign('gifts.html')\">‹ PRODUCT DETAILS</button><div class=\"breadcrumb-links\"><a href=\"index.html\">Home</a> / <a href=\"gifts.html\">Customised Gifts</a> / <a id=\"categoryBreadcrumb\" href=\"#\">Category</a> / <span id=\"breadcrumbProduct\">Product</span></div></div><section class=\"details-main\"><div class=\"details-gallery\"><div class=\"gallery-thumbs\" id=\"galleryThumbs\" aria-label=\"Product gallery\"></div><div class=\"gallery-main\" id=\"galleryMain\"><img id=\"galleryImage\" src=\"\" alt=\"\"><button type=\"button\" class=\"gallery-arrow-btn prev\" id=\"galleryPrev\" aria-label=\"Previous image\" onclick=\"event.stopPropagation()\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path fill-rule=\"evenodd\" d=\"M11.03 3.97a.75.75 0 010 1.06l-6.22 6.22H21a.75.75 0 010 1.5H4.81l6.22 6.22a.75.75 0 11-1.06 1.06l-7.5-7.5a.75.75 0 010-1.06l7.5-7.5a.75.75 0 011.06 0z\" clip-rule=\"evenodd\" /></svg></button><button type=\"button\" class=\"gallery-arrow-btn next\" id=\"galleryNext\" aria-label=\"Next image\" onclick=\"event.stopPropagation()\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path fill-rule=\"evenodd\" d=\"M12.97 3.97a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 11-1.06-1.06l6.22-6.22H3a.75.75 0 010-1.5h16.19l-6.22-6.22a.75.75 0 010-1.06z\" clip-rule=\"evenodd\" /></svg></button><button type=\"button\" class=\"gallery-wishlist-btn\" aria-label=\"Save\" onclick=\"event.stopPropagation();this.classList.toggle('active')\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"><path d=\"M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z\"></path></svg></button><button type=\"button\" class=\"gallery-share-btn\" aria-label=\"Share\" onclick=\"event.stopPropagation();shareGiftProduct()\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"22\" y1=\"2\" x2=\"11\" y2=\"13\"></line><polygon points=\"22 2 15 22 11 13 2 9 22 2\"></polygon></svg></button></div></div><section class=\"details-copy\"><span class=\"eyebrow\" id=\"productCategoryLabel\">Personalised gift</span><h1 id=\"productName\">Product Title</h1><div class=\"rating-bar\"><span class=\"stars\" id=\"productStars\">★★★★★</span><span class=\"review-count\" id=\"productRating\">4.8 (120 reviews)</span></div></section><aside class=\"details-buy-card\"><div class=\"details-price-row\"><span class=\"price\" id=\"productPrice\">₹0</span><span class=\"old-price\" id=\"productOldPrice\">₹0</span><span class=\"discount-badge\" id=\"productDiscount\">0% OFF</span></div><div class=\"stock-badge\">In Stock</div><div class=\"personalise-box\"><div class=\"personalise-box-header\"><span class=\"personalise-box-title\">PERSONALISE THIS GIFT</span><span class=\"personalise-free-tag\">Free Customisation</span></div><div class=\"pf-fields\" id=\"productCustomFields\" style=\"display:none;\"></div></div><div class=\"gift-action-bar\"><div class=\"quantity-picker\"><label for=\"productQuantity\">Quantity</label><div class=\"qty-controls\"><button type=\"button\" class=\"qty-btn\" id=\"qtyMinus\">-</button><input type=\"number\" id=\"productQuantity\" value=\"1\" min=\"1\" max=\"99\"><button type=\"button\" class=\"qty-btn\" id=\"qtyPlus\">+</button></div></div><div class=\"gift-action-buttons\"><button class=\"btn btn-cart\" id=\"detailAddToCart\">Add to Cart</button><button class=\"btn btn-buy\" id=\"detailBuyNow\">Buy Now</button></div></div><section class=\"gift-details-accordion\" aria-labelledby=\"giftDetailsTitle\"><h3 id=\"giftDetailsTitle\">About the Product</h3><div class=\"gift-accordion-item\"><button type=\"button\" class=\"gift-accordion-trigger\" aria-expanded=\"true\"><span><span class=\"gift-accordion-icon\">ⓘ</span>Description</span><span class=\"gift-accordion-chevron\">⌄</span></button><div class=\"gift-accordion-content\"><p class=\"details-description\" id=\"productDescription\"></p></div></div><div class=\"gift-accordion-item\"><button type=\"button\" class=\"gift-accordion-trigger\" aria-expanded=\"false\"><span><span class=\"gift-accordion-icon\">▣</span>Instructions</span><span class=\"gift-accordion-chevron\">⌄</span></button><div class=\"gift-accordion-content\"><p>Handle with care and keep away from direct sunlight or moisture to preserve the print and finish. Please double-check your uploaded name/photo before ordering, as personalised items go into production right away and cannot be changed afterwards.</p></div></div><div class=\"gift-accordion-item\"><button type=\"button\" class=\"gift-accordion-trigger\" aria-expanded=\"false\"><span><span class=\"gift-accordion-icon\">▣</span>Delivery Info</span><span class=\"gift-accordion-chevron\">⌄</span></button><div class=\"gift-accordion-content\"><p id=\"productDeliveryEst\">Standard delivery available.</p></div></div></section></aside></section><section class=\"related-section\" aria-labelledby=\"relatedTitle\"><div class=\"related-heading\"><div><span class=\"eyebrow\">More to explore</span><h2 id=\"relatedTitle\">You May Also Like</h2></div><p>Similar personalised gifts from this collection.</p></div><div class=\"related-grid\" id=\"relatedProducts\"></div></section></main><div class=\"cart-backdrop\" id=\"cartDrawer\" aria-hidden=\"true\"><aside class=\"cart-panel\"><div class=\"cart-head\"><h2>My Cart</h2><button id=\"closeCart\" aria-label=\"Close cart\">×</button></div><div id=\"cartItems\"></div><div class=\"cart-footer\"><div class=\"cart-total\"><span>Subtotal</span><span id=\"cartTotal\">₹0</span></div><button class=\"btn btn-buy\" id=\"checkoutCart\">Proceed to Checkout</button></div></aside></div><div class=\"toast\" id=\"toast\" role=\"status\" aria-live=\"polite\"></div><footer class=\"site-footer\"><div class=\"container footer-row\"><div><strong>Sai Kumar Digital Lab & Studio</strong><br><small>Personalised memories, made with care.</small></div><a href=\"contact-us.html\">Need help? Contact us →</a></div></footer>",
   };
   fragments.customise = "<main class=\"customise-page container\">\n    <div class=\"breadcrumb\"><div class=\"breadcrumb-links\"><a href=\"index.html\">Home</a> / <a href=\"gifts.html\">Customised Gifts</a> / <a id=\"customiseCategoryBreadcrumb\" href=\"#\">Category</a> / <a id=\"customiseProductBreadcrumb\" href=\"#\">Product</a> / <span>Customise</span></div></div>\n    <h1 class=\"customise-title\" id=\"customiseTitle\">Customise Gift</h1>\n    <div class=\"customise-layout\">\n      <div class=\"customise-preview-col\">\n        <span class=\"preview-badge\">Interactive live preview</span>\n        <div class=\"preview-viewport\" id=\"previewViewport\" tabindex=\"0\" role=\"application\" aria-label=\"Interactive customised product preview\">\n          <canvas class=\"product-3d-canvas\" id=\"product3dCanvas\" aria-label=\"Real-time 3D customised product preview\"></canvas>\n          <div class=\"preview-object\" id=\"previewObject\"><img class=\"preview-product-image\" id=\"previewProductImage\" src=\"\" alt=\"\"><div class=\"custom-print-area\" id=\"customPrintArea\"><img id=\"customPhotoPreview\" src=\"\" alt=\"Uploaded photo preview\"><span class=\"custom-print-placeholder\">Your photo</span><span class=\"custom-live-text\" id=\"customLiveText\"></span></div></div>\n        </div>\n        <div class=\"preview-controls\"><button type=\"button\" id=\"previewZoomOut\" aria-label=\"Zoom product out\">−</button><button type=\"button\" id=\"previewReset\" aria-label=\"Reset product view\">↻</button><button type=\"button\" id=\"previewZoomIn\" aria-label=\"Zoom product in\">+</button></div>\n        <p class=\"preview-help\">Drag outside the print area to rotate · Drag the photo to reposition it</p>\n      </div>\n      <section class=\"customisation-panel\" aria-labelledby=\"customizationTitle\">\n        <h3 id=\"customizationTitle\">Personalisation options</h3>\n        <p>Upload a photograph and add optional text. Your changes appear instantly.</p>\n        <label class=\"upload-zone\" id=\"uploadZone\" for=\"customPhotoInput\"><strong>Upload your photo</strong><small>JPG, JPEG, PNG, WebP or JFIF · maximum 10 MB</small><input id=\"customPhotoInput\" type=\"file\" accept=\"image/*,.jpg,.jpeg,.png,.webp,.jfif,.avif\" hidden></label>\n        <div class=\"customization-fields\"><input id=\"customText\" type=\"text\" maxlength=\"40\" placeholder=\"Add a name or message\" aria-label=\"Custom text\"><select id=\"customFinish\" aria-label=\"Product finish\"><option>Standard</option><option>Glossy</option><option>Matte</option></select></div>\n        <div class=\"personalisation-options\">\n          <fieldset class=\"option-group\"><legend>Text style</legend><div class=\"choice-row\" id=\"textStyleChoices\"><button class=\"option-button active\" type=\"button\" data-text-style=\"bold\" aria-pressed=\"true\"><b>A</b></button><button class=\"option-button\" type=\"button\" data-text-style=\"serif\" aria-pressed=\"false\"><span class=\"serif-sample\">A</span></button><button class=\"option-button\" type=\"button\" data-text-style=\"script\" aria-pressed=\"false\"><span class=\"script-sample\">A</span></button></div></fieldset>\n          <fieldset class=\"option-group\"><legend>Photo layout</legend><div class=\"layout-choice-row\" id=\"photoLayoutChoices\"><button class=\"layout-choice active\" type=\"button\" data-photo-layout=\"cover\" aria-pressed=\"true\">Fill</button><button class=\"layout-choice\" type=\"button\" data-photo-layout=\"contain\" aria-pressed=\"false\">Fit</button><button class=\"layout-choice\" type=\"button\" data-photo-layout=\"portrait\" aria-pressed=\"false\">Portrait</button><button class=\"layout-choice\" type=\"button\" data-photo-layout=\"wide\" aria-pressed=\"false\">Wide</button></div></fieldset>\n          <fieldset class=\"option-group\"><legend>Accent colour</legend><div class=\"accent-choice-row\" id=\"accentChoices\"><button class=\"accent-choice active\" type=\"button\" data-accent=\"#071B45\" style=\"--accent:#071B45\" aria-label=\"Royal navy\" aria-pressed=\"true\"></button><button class=\"accent-choice\" type=\"button\" data-accent=\"#D4A017\" style=\"--accent:#D4A017\" aria-label=\"Warm gold\" aria-pressed=\"false\"></button><button class=\"accent-choice\" type=\"button\" data-accent=\"#9AACC8\" style=\"--accent:#9AACC8\" aria-label=\"Silver blue\" aria-pressed=\"false\"></button><button class=\"accent-choice\" type=\"button\" data-accent=\"#2B2B2B\" style=\"--accent:#2B2B2B\" aria-label=\"Charcoal\" aria-pressed=\"false\"></button><button class=\"accent-choice light\" type=\"button\" data-accent=\"#F5F7FB\" style=\"--accent:#F5F7FB\" aria-label=\"Ice white\" aria-pressed=\"false\"></button></div></fieldset>\n        </div>\n        <div class=\"acrylic-options\" id=\"acrylicOptions\" hidden>\n          <div class=\"acrylic-photo-actions\"><button type=\"button\" id=\"replaceAcrylicPhoto\">Replace image</button><button type=\"button\" id=\"removeAcrylicPhoto\">Remove image</button></div>\n          <fieldset class=\"option-group\"><legend>Frame shape</legend><div class=\"acrylic-choice-grid\" id=\"acrylicShapeChoices\"><button type=\"button\" data-acrylic-shape=\"rectangle\">Rectangle</button><button type=\"button\" data-acrylic-shape=\"square\">Square</button><button type=\"button\" data-acrylic-shape=\"portrait\">Portrait</button><button class=\"active\" type=\"button\" data-acrylic-shape=\"landscape\" aria-pressed=\"true\">Landscape</button><button type=\"button\" data-acrylic-shape=\"heart\">Heart</button><button type=\"button\" data-acrylic-shape=\"circle\">Circle</button><button type=\"button\" data-acrylic-shape=\"hexagon\">Hexagon</button></div></fieldset>\n          <div class=\"acrylic-select-grid\">\n            <label>Frame size<select id=\"acrylicSize\"><option value=\"4x4\">4×4</option><option value=\"5x7\">5×7</option><option value=\"6x8\">6×8</option><option value=\"8x10\" selected>8×10</option><option value=\"10x12\">10×12</option></select></label>\n            <label>Acrylic thickness<select id=\"acrylicThickness\"><option value=\"5\">5 mm</option><option value=\"8\" selected>8 mm</option><option value=\"12\">12 mm</option></select></label>\n            <label>Stand<select id=\"acrylicStand\"><option value=\"none\" selected>Wall Mounted</option><option value=\"wood\">Wooden Stand</option><option value=\"crystal\">Crystal Stand</option><option value=\"metal\">Metal Stand</option></select></label>\n            <label>Background<select id=\"acrylicBackground\"><option value=\"room\" selected>Living Room</option><option value=\"white\">White</option><option value=\"black\">Black</option><option value=\"cream\">Cream</option><option value=\"grey\">Light Grey</option><option value=\"wood\">Wooden Table</option><option value=\"marble\">Marble Surface</option></select></label>\n            <label>Lighting<select id=\"acrylicLighting\"><option value=\"studio\" selected>Studio</option><option value=\"daylight\">Natural Daylight</option><option value=\"warm\">Warm Indoor</option><option value=\"soft\">Soft White</option></select></label>\n            <label>Shadow<select id=\"acrylicShadow\"><option value=\"soft\" selected>Soft Shadow</option><option value=\"medium\">Medium Shadow</option><option value=\"strong\">Strong Shadow</option></select></label>\n          </div>\n          <div class=\"acrylic-preview-actions\" aria-label=\"Acrylic preview controls\"><button type=\"button\" id=\"rotateAcrylicLeft\">↶ Rotate</button><button type=\"button\" id=\"rotateAcrylicRight\">Rotate ↷</button><button type=\"button\" id=\"toggleAcrylicBefore\" aria-pressed=\"false\">Original image</button><button type=\"button\" id=\"fullscreenAcrylicPreview\">Fullscreen</button></div>\n          <label class=\"auto-rotate-toggle\"><input id=\"acrylicAutoRotate\" type=\"checkbox\"> <span>Enable auto rotate</span></label>\n        </div>\n        <div id=\"dynamicVariants\"></div>\n        <div class=\"crop-controls\"><div class=\"crop-control\"><label for=\"photoZoom\">Photo zoom</label><input id=\"photoZoom\" type=\"range\" min=\"100\" max=\"260\" value=\"100\"></div><div class=\"crop-control\"><label for=\"photoX\">Horizontal position</label><input id=\"photoX\" type=\"range\" min=\"-60\" max=\"60\" value=\"0\"></div><div class=\"crop-control\"><label for=\"photoY\">Vertical position</label><input id=\"photoY\" type=\"range\" min=\"-60\" max=\"60\" value=\"0\"></div><div class=\"crop-actions\"><select id=\"photoFit\" aria-label=\"Photo crop mode\"><option value=\"cover\">Fill print area</option><option value=\"contain\">Show full photo</option></select><button id=\"resetPhotoCrop\" type=\"button\">Reset crop</button></div></div>\n        <p class=\"crop-hint\">Drag the uploaded photo inside the product’s print area for precise placement.</p>\n        <p class=\"upload-status\" id=\"uploadStatus\" role=\"status\" aria-live=\"polite\">No photo selected.</p>\n        <div class=\"customise-price-box\">\n          <div class=\"customise-price-wrapper\"><span class=\"price\" id=\"customisePrice\">₹0</span><span class=\"old-price\" id=\"customiseOldPrice\">₹0</span></div>\n          <div class=\"quantity-picker\"><button type=\"button\" class=\"qty-btn\" id=\"qtyMinus\" aria-label=\"Decrease quantity\">−</button><input type=\"number\" id=\"productQuantity\" value=\"1\" min=\"1\" max=\"99\" aria-label=\"Quantity\"><button type=\"button\" class=\"qty-btn\" id=\"qtyPlus\" aria-label=\"Increase quantity\">+</button></div>\n        </div>\n        <button class=\"btn btn-buy customise-order-btn\" id=\"proceedToOrderBtn\" type=\"button\">Proceed to Order</button>\n      </section>\n    </div>\n  </main>\n  <div class=\"cart-backdrop\" id=\"cartDrawer\" aria-hidden=\"true\"><aside class=\"cart-panel\"><div class=\"cart-head\"><h2>My Cart</h2><button id=\"closeCart\" aria-label=\"Close cart\">×</button></div><div id=\"cartItems\"></div><div class=\"cart-footer\"><div class=\"cart-total\"><span>Subtotal</span><span id=\"cartTotal\">₹0</span></div><button class=\"btn btn-buy\" id=\"checkoutCart\">Proceed to Checkout</button></div></aside></div>\n  <div class=\"toast\" id=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n  <footer class=\"site-footer\"><div class=\"container footer-row\"><div><strong>Sai Kumar Digital Lab & Studio</strong><br><small>Personalised memories, made with care.</small></div><a href=\"contact-us.html\">Need help? Contact us →</a></div></footer>";
   function mountRoute() {
@@ -96,6 +96,8 @@ function fetchGiftsFlatCatalog() {
             price, old, off,
             image: (p.images && p.images[0]) || '',
             rating: p.rating ? `${p.rating} (${p.feat.length || 0})` : undefined,
+            input_fields: p.input_fields || [],
+            delivery_days: p.delivery_days || null,
           });
         });
       });
@@ -3781,12 +3783,36 @@ else if (GiftsModule.view === 'product') {
   const requestedName = query.get('product');
   const matchedProduct = PRODUCTS.find(item => item.name === requestedName);
   let product = matchedProduct || PRODUCTS[0];
+  product.input_fields = product.input_fields || [];
   let productGallery = (PRODUCT_GALLERIES[product.name] || [product.image]).slice(0, 5).map(path => (path.startsWith('gifts-assets/') || path.includes('://')) ? path : GALLERY_ROOT + path);
 
+  // When the requested product isn't one of the ~40 hardcoded ones, PRODUCTS[0]
+  // is only a placeholder until the API lookup below resolves it. Rendering it
+  // immediately made every one of those 170+ products flash the wrong product
+  // (PRODUCTS[0]'s title/image) before swapping to the real one a moment later.
+  // productDataReady gates the single initial render at the bottom of this
+  // block so we paint once, with real data (or the fallback, if the lookup
+  // genuinely comes up empty) - never the placeholder first.
+  let productDataReady = !!matchedProduct;
+  function finishProductLoad() {
+    productDataReady = true;
+    renderProduct();
+    resetProductView();
+    resetCrop();
+  }
+  // Renders/refreshes the admin-configured "Customer questions" (Product.input_fields)
+  // block into the personalise box - same shared component studio.js/corporate.js use,
+  // so an admin can require an extra upload/dropdown/text answer here too, independent
+  // of this page's own built-in photo+message personalisation above it.
+  function renderCustomFieldsUI() {
+    const wrap = document.getElementById('productCustomFields');
+    if (wrap && window.ProductFields) ProductFields.renderProductFields(wrap, product);
+  }
   if (!matchedProduct) {
     fetchGiftsFlatCatalog().then(flat => {
       const apiHit = flat.find(item => item.name === requestedName);
-      if (!apiHit) return null;
+      if (!apiHit) return finishProductLoad();
+      product.input_fields = apiHit.input_fields || [];
       return fetch(`${API_BASE}/api/catalog/product/${apiHit.id}`)
         .then(r => r.ok ? r.json() : null)
         .then(full => {
@@ -3794,12 +3820,24 @@ else if (GiftsModule.view === 'product') {
             name: apiHit.name, category: apiHit.category, price: apiHit.price,
             old: apiHit.old, off: apiHit.off, rating: apiHit.rating || '',
             image: apiHit.image,
+            delivery_days: (full && full.delivery_days) || apiHit.delivery_days || null,
           });
+          if (full && full.input_fields) product.input_fields = full.input_fields;
           const images = (full && full.images && full.images.length) ? full.images : (apiHit.image ? [apiHit.image] : []);
           productGallery = (images.length ? images : [product.image]).slice(0, 5);
-          renderProduct();
+          finishProductLoad();
         });
-    }).catch(e => console.log('Product not found via API either, showing fallback product', e));
+    }).catch(e => { console.log('Product not found via API either, showing fallback product', e); finishProductLoad(); });
+  } else {
+    // A hardcoded product's own literal (in PRODUCTS above) has no input_fields -
+    // those only live in the database, so fetch this product's real record just for
+    // that, without touching any of its hardcoded display fields (name/price/image/...).
+    fetchGiftsFlatCatalog().then(flat => {
+      const apiHit = flat.find(item => item.name === product.name);
+      if (!apiHit || !apiHit.input_fields || !apiHit.input_fields.length) return;
+      product.input_fields = apiHit.input_fields;
+      renderCustomFieldsUI();
+    }).catch(() => {});
   }
   const LIVE_PREVIEW_DRINKWARE = new Set([
     'Love You Personalised Photo Mug',
@@ -4163,13 +4201,14 @@ else if (GiftsModule.view === 'product') {
     const deliveryEstEl = document.getElementById('productDeliveryEst');
     if (deliveryEstEl) {
       const est = new Date();
-      est.setDate(est.getDate() + 3);
+      est.setDate(est.getDate() + (product.delivery_days || 3));
       deliveryEstEl.textContent = `Delivery by ${est.toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'short' })}`;
     }
 
     renderGallery();
     renderRelated();
     renderCart();
+    renderCustomFieldsUI();
 
     const previewImage = document.getElementById('previewProductImage');
     if (previewImage) {
@@ -4299,43 +4338,56 @@ else if (GiftsModule.view === 'product') {
     document.getElementById('removeAcrylicPhoto')?.addEventListener('click', () => { state.photoData = ''; state.photoName = ''; uploaded3dImage = null; customPhotoInputEl.value = ''; customPhotoPreview.removeAttribute('src'); customPrintArea.classList.remove('has-photo'); const status = document.getElementById('uploadStatus'); if (status) status.textContent = 'Photo removed. Upload a new image when ready.'; updateThreeTexture(); });
   }
   function cartItem(quantity) {
-    const item = { name: product.name, product_id: giftsProductIdByName(product.name), qty: quantity, price: money(product.price), img: product.image };
-    const customization = currentCustomization();
-    if (customization) item.customization = customization;
-    if (supportsLivePreview) {
-      item.requirement = {
-        label: 'Upload your photo or add personalised text',
-        fields: ['photoData', 'text'],
-        editUrl: `gifts.html?view=product&product=${encodeURIComponent(product.name)}`
-      };
-    }
-    return item;
+    return { name: product.name, product_id: giftsProductIdByName(product.name), qty: quantity, price: money(product.price), img: product.image };
   }
-  // Both a photo AND a message are required on every product here - this is
-  // a personalised-gifts storefront, so an order with neither (or only one)
-  // isn't something the studio can actually print/engrave.
-  function missingRequiredCustomization() {
-    return !state.photoData || !state.text;
+  // Validates + reads the admin-configured "Customer questions" fields (upload
+  // your photo / name or message, plus anything else admin added) the same way
+  // studio.js/corporate.js do - returns null (and pops the same alert() those
+  // pages show) if a required answer is missing, {} if the product has none, or
+  // { fields, fieldLabels } to attach to the cart item's customization otherwise.
+  async function collectCustomFieldsForCart() {
+    const wrap = document.getElementById('productCustomFields');
+    if (!wrap || !window.ProductFields || !(product.input_fields || []).length) return {};
+    const errors = ProductFields.validateProductFields(wrap, product);
+    if (errors.length) { alert(errors.join('\n')); return null; }
+    const fields = await ProductFields.collectProductFields(wrap, product);
+    if (!Object.keys(fields).length) return {};
+    const fieldLabels = Object.fromEntries((product.input_fields || []).map(f => [f.id, f.label]));
+    return { fields, fieldLabels };
   }
-  function addToCart() {
-    if (missingRequiredCustomization()) {
-      showToast('Please upload a photo and add a name/message to personalise this gift first.');
-      return;
-    }
-    const cart = readCart(); const item = cartItem(Number(productQuantity.value)); const key = (state.photoData || state.text) ? `${product.name}::${Date.now()}` : product.name;
+  // A save can fail if an uploaded photo's base64 pushes the cart past
+  // localStorage's quota - same fallback as before (drop the large upload
+  // values and retry), just generalized to whichever upload field(s) this
+  // product has instead of a single hardcoded photoData key.
+  function stripUploadFieldValues(customization) {
+    if (!customization || !customization.fields) return;
+    Object.keys(customization.fields).forEach(fieldId => {
+      const value = customization.fields[fieldId];
+      if (typeof value === 'string' && value.startsWith('data:')) customization.fields[fieldId] = '';
+      else if (Array.isArray(value)) customization.fields[fieldId] = value.map(() => '');
+    });
+  }
+  async function addToCart() {
+    const custom = await collectCustomFieldsForCart();
+    if (custom === null) return;
+    const cart = readCart(); const item = cartItem(Number(productQuantity.value));
+    if (custom.fields) item.customization = custom;
+    const key = custom.fields ? `${product.name}::${Date.now()}` : product.name;
     if (cart[key]) cart[key].qty += item.qty; else cart[key] = item;
     try { saveCart(cart); } catch {
-      if (cart[key].customization) cart[key].customization.photoData = '';
+      stripUploadFieldValues(cart[key].customization);
       saveCart(cart);
+      showToast('The photo name was saved; the photo itself was too large to store.');
+      return;
     }
     showToast('Product added to cart.');
   }
-  function buyNow() {
-    if (missingRequiredCustomization()) {
-      showToast('Please upload a photo and add a name/message to personalise this gift first.');
-      return;
-    }
-    sessionStorage.setItem('sai_studio_checkout', JSON.stringify({ source: 'buy-now', items: [cartItem(Number(productQuantity.value))] })); location.href = 'cart.html';
+  async function buyNow() {
+    const custom = await collectCustomFieldsForCart();
+    if (custom === null) return;
+    const item = cartItem(Number(productQuantity.value));
+    if (custom.fields) item.customization = custom;
+    sessionStorage.setItem('sai_studio_checkout', JSON.stringify({ source: 'buy-now', items: [item] })); location.href = 'cart.html';
   }
   function renderCart() {
     const entries = Object.entries(readCart()); const count = entries.reduce((sum, [, item]) => sum + item.qty, 0); const total = entries.reduce((sum, [, item]) => sum + (parseInt(String(item.price).replace(/\D/g, '')) || 0) * item.qty, 0);
@@ -4385,45 +4437,10 @@ else if (GiftsModule.view === 'product') {
   document.getElementById('productQuantity')?.addEventListener('blur', event => { setGiftProductQuantity(event.target.value); });
 
   // Personalise box: lets the customer attach a photo/text right on this page
-  // before adding to cart, without needing the separate 'customise' view.
-  // missingRequiredCustomization() (used by addToCart/buyNow below) already
-  // blocks the cart add until one of these is filled in for categories that
-  // require it - this just wires the two inputs it checks.
-  const productUploadBtnEl = document.getElementById('productUploadBtn');
-  const productPhotoInputEl = document.getElementById('productPhotoInput');
-  const productUploadStatusEl = document.getElementById('productUploadStatus');
-  const productCustomTextEl = document.getElementById('productCustomText');
-  const DEFAULT_UPLOAD_STATUS = 'JPG or PNG, up to 10MB';
-  async function handleProductPhotoFile(file) {
-    const isImage = file && (file.type.startsWith('image/') || /\.(jpe?g|png|webp|jfif|avif|bmp|tiff?)$/i.test(file.name));
-    if (!isImage) { if (productUploadStatusEl) productUploadStatusEl.textContent = 'Choose a JPG, PNG or WebP image.'; return; }
-    if (file.size > 10 * 1024 * 1024) { if (productUploadStatusEl) productUploadStatusEl.textContent = 'The image must be 10 MB or smaller.'; return; }
-    try {
-      state.photoData = await resizeImage(file);
-      state.photoName = file.name;
-      if (productUploadStatusEl) productUploadStatusEl.textContent = file.name;
-      productUploadBtnEl?.classList.add('has-file');
-    } catch {
-      if (productUploadStatusEl) productUploadStatusEl.textContent = 'This image could not be processed.';
-    }
-  }
-  productUploadBtnEl?.addEventListener('click', () => productPhotoInputEl?.click());
-  productPhotoInputEl?.addEventListener('change', event => handleProductPhotoFile(event.target.files?.[0]));
-  productUploadBtnEl?.addEventListener('dragover', event => { event.preventDefault(); productUploadBtnEl.classList.add('drag-active'); });
-  productUploadBtnEl?.addEventListener('dragleave', () => productUploadBtnEl.classList.remove('drag-active'));
-  productUploadBtnEl?.addEventListener('drop', event => {
-    event.preventDefault();
-    productUploadBtnEl.classList.remove('drag-active');
-    handleProductPhotoFile(event.dataTransfer.files?.[0]);
-  });
-  productCustomTextEl?.addEventListener('input', event => { state.text = event.target.value; });
-
-  // The page's own live-preview photo upload (initThreePreview/currentCustomization
-  // above) was never actually wired to these buttons - they used to build a plain
-  // {name, qty, price, img} item via cartItemDirect(), silently discarding whatever
-  // photo/text the customer had just uploaded to preview on this same page. addToCart/
-  // buyNow (above) already do this correctly (customization + the missing-photo guard),
-  // so route the real buttons through those instead of the separate direct/no-op path.
+  // before adding to cart, without needing the separate 'customise' view. The
+  // photo/message fields themselves are admin-configured Customer Questions now
+  // (#productCustomFields, rendered/validated/collected by collectCustomFieldsForCart
+  // above) rather than a hardcoded pair of inputs, so there's nothing left to wire here.
   detailAddToCart.addEventListener('click', addToCart); detailBuyNow.addEventListener('click', buyNow);
 
   // "About the Product" accordion (Description / Instructions / Delivery Info) -
@@ -4456,9 +4473,11 @@ else if (GiftsModule.view === 'product') {
   document.getElementById('cartButton')?.addEventListener('click', () => location.href = 'cart.html'); document.getElementById('closeCart')?.addEventListener('click', closeCartDrawer); document.getElementById('cartDrawer')?.addEventListener('click', event => { if (event.target === document.getElementById('cartDrawer')) closeCartDrawer(); }); document.getElementById('cartItems')?.addEventListener('click', event => { const button = event.target.closest('[data-key]'); if (!button) return; const cart = readCart(); if (!cart[button.dataset.key]) return; cart[button.dataset.key].qty += Number(button.dataset.delta); if (cart[button.dataset.key].qty <= 0) delete cart[button.dataset.key]; saveCart(cart); }); document.getElementById('checkoutCart')?.addEventListener('click', () => { const items = Object.values(readCart()); if (!items.length) return showToast('Your cart is empty.'); location.href = 'cart.html'; });
   document.getElementById('menuButton')?.addEventListener('click', () => document.getElementById('navLinks')?.classList.toggle('open')); document.addEventListener('keydown', event => { if (event.key === 'Escape') closeCartDrawer(); });
 
-  renderProduct();
-  resetProductView();
-  resetCrop();
+  if (productDataReady) {
+    renderProduct();
+    resetProductView();
+    resetCrop();
+  }
   // Fire-and-forget: this view's own PRODUCTS/geometry stay hardcoded (see the
   // module-level comment near fetchGiftsFlatCatalog), this call only populates
   // window._giftsIdByName so cartItem() above can attach a real product_id.

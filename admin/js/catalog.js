@@ -237,10 +237,8 @@ async function loadProdTable() {
 
 // Extra-JSON keys that have a dedicated, friendlier control elsewhere in this form.
 // Whatever is left over after removing these is what shows up in the "Advanced settings" box.
-const STUDIO_EXTRA_KEYS = ["tag", "badge", "turnaround", "qtyLabel", "quantityOptions", "purposeLabel", "purposeOptions", "requiresPhotoUpload"];
-function extraForAdvancedBox(extra, pageSlug) {
+function extraForAdvancedBox(extra) {
   const known = new Set(["events"]);
-  if (pageSlug === "studio") STUDIO_EXTRA_KEYS.forEach(k => known.add(k));
   const rest = {};
   Object.entries(extra || {}).forEach(([k, v]) => { if (!known.has(k)) rest[k] = v; });
   return rest;
@@ -252,7 +250,6 @@ function slugify(s) {
 function openProductForm(id) {
   const p = id ? window._PRODUCTS_CACHE.find(x => x.id === id) : null;
   const cat = window._ALL_CATS.find(c => c.id === CURRENT_CATEGORY_ID);
-  const isStudio = cat.pageSlug === "studio";
   openModal(`
     <h2>${p ? "Edit" : "Add"} Product / Package</h2>
     <p style="color:var(--text-dim);font-size:12px;margin-top:0;">Category: ${esc(cat.pageName)} — ${esc(cat.name)}</p>
@@ -281,6 +278,8 @@ function openProductForm(id) {
       <label>Advance / deposit amount (₹, optional)</label><input id="f_advance" type="number" step="1" value="${p?.advance_amount ?? ""}">
       <div id="physicalOnlyFields" class="two-col">
         <div><label>Stock available</label><input id="f_stock" type="number" value="${p?.stock ?? ""}"></div>
+        <div><label>Delivery days <span class="form-hint">(optional — shown to the customer as "Delivery by ..." on the product page; leave blank to use the site-wide default of 3 days)</span></label>
+          <input id="f_delivery_days" type="number" min="0" step="1" value="${p?.delivery_days ?? ""}" placeholder="e.g. 3"></div>
         <div><label>Address-change window after ordering <span class="form-hint">(hours, optional — leave blank to use the site-wide default in Settings)</span></label>
           <input id="f_addr_window" type="number" min="0" step="1" value="${p?.address_change_window_hours ?? ""}" placeholder="e.g. 24"></div>
       </div>
@@ -290,7 +289,7 @@ function openProductForm(id) {
       <textarea id="f_features" rows="5">${esc((p?.features || []).join("\n"))}</textarea>
 
       <div class="form-section-title">Customer questions</div>
-      <label style="margin-top:0;">Extra questions on this product's order form <span class="form-hint">— e.g. upload a photo, pick from a dropdown, free text</span></label>
+      <label style="margin-top:0;">Extra questions on this product's order form <span class="form-hint">— e.g. upload a photo, pick from a dropdown, free text. Tick "Required" to block the customer from adding it to cart until they answer. This is the only place to set that up — it works the same on every page (Studio, Corporate, Gifts, Photography).</span></label>
       <div id="inputFieldsRows" class="field-builder"></div>
       <button type="button" class="btn secondary add-field-btn" id="addFieldBtn">+ Add Field</button>
 
@@ -301,30 +300,9 @@ function openProductForm(id) {
       <button type="button" class="btn secondary" id="addEventRowBtn" style="margin-top:6px;">+ Add Row</button>
       ` : ""}
 
-      ${isStudio ? `
-      <div class="form-section-title">Order options (Studio page)</div>
-      <div class="two-col">
-        <div><label>Card badge text <span class="form-hint">(optional, e.g. "Pack of 8")</span></label><input id="f_tag" value="${esc(p?.extra?.tag || "")}"></div>
-        <div><label>Turnaround time <span class="form-hint">(optional, e.g. "20 min")</span></label><input id="f_turnaround" value="${esc(p?.extra?.turnaround || "")}"></div>
-      </div>
-      <div class="studio-checkrow">
-        <label><input type="checkbox" id="f_popular" ${p?.extra?.badge === "Popular" ? "checked" : ""}> Show a "Popular" ribbon on this card</label>
-        <label><input type="checkbox" id="f_requires_photo" ${p?.extra?.requiresPhotoUpload ? "checked" : ""}> Customer must upload a photo to order this</label>
-      </div>
-
-      <label style="margin-top:0;">Quantity / pack options <span class="form-hint">(optional — offer this product at a few different quantities or sizes, each at its own price)</span></label>
-      <input id="f_qty_label" style="margin-bottom:8px;" placeholder="Field label shown to customer, e.g. Photo Quantity" value="${esc(p?.extra?.qtyLabel || "")}">
-      <div id="qtyOptionsRows"></div>
-      <button type="button" class="btn secondary" id="addQtyOptionBtn" style="margin-bottom:14px;">+ Add Option</button>
-
-      <label style="margin-top:0;">Size / purpose choices <span class="form-hint">(optional — a simple list the customer picks from, e.g. print sizes; one per line)</span></label>
-      <input id="f_purpose_label" style="margin-bottom:8px;" placeholder="Field label shown to customer, e.g. Printing &amp; Frame Size" value="${esc(p?.extra?.purposeLabel || "")}">
-      <textarea id="f_purpose_options" rows="3" placeholder="4 x 6&#10;5 x 7&#10;8 x 10">${esc((p?.extra?.purposeOptions || []).join("\n"))}</textarea>
-      ` : ""}
-
       <details class="advanced-details">
         <summary>Advanced settings <span class="form-hint">(rarely needed — for one-off custom fields only; everything above already covers the common cases)</span></summary>
-        <textarea id="f_extra" rows="4" style="font-family:monospace;font-size:12px;" placeholder="{}">${esc(JSON.stringify(extraForAdvancedBox(p?.extra, cat.pageSlug), null, 2))}</textarea>
+        <textarea id="f_extra" rows="4" style="font-family:monospace;font-size:12px;" placeholder="{}">${esc(JSON.stringify(extraForAdvancedBox(p?.extra), null, 2))}</textarea>
       </details>
 
       <div class="form-section-title">Visibility</div>
@@ -376,11 +354,16 @@ function openProductForm(id) {
         </div>`;
     }
     if (type === "dropdown") {
+      const priced = !!(row?.option_prices && Object.keys(row.option_prices).length);
+      const optionsText = priced
+        ? (row.options || []).map(o => `${o} = ${row.option_prices[o] ?? ""}`).join("\n")
+        : (row?.options || []).join("\n");
       return `
         <div class="field-type-panel fp-dropdown">
-          <label>Options (one per line)</label>
-          <textarea class="fr_options" rows="3" placeholder="4x6&#10;5x7&#10;Passport Size">${esc((row?.options || []).join("\n"))}</textarea>
-          <label class="inline" style="font-weight:400;"><input type="checkbox" class="fr_multi_select" ${row?.multi_select ? "checked" : ""}> Allow selecting multiple options</label>
+          <label class="inline" style="font-weight:400;margin-bottom:6px;"><input type="checkbox" class="fr_priced" ${priced ? "checked" : ""}> This dropdown sets the price (e.g. quantity or size options each at their own price)</label>
+          <label class="fr_options_label">Options (one per line)</label>
+          <textarea class="fr_options" rows="3" placeholder="${priced ? "8 Photos = 130&#10;16 Photos = 200&#10;32 Photos = 250" : "4x6&#10;5x7&#10;Passport Size"}">${esc(optionsText)}</textarea>
+          <label class="inline" style="font-weight:400;"><input type="checkbox" class="fr_multi_select" ${row?.multi_select ? "checked" : ""} ${priced ? "disabled" : ""}> Allow selecting multiple options</label>
         </div>`;
     }
     return `
@@ -397,6 +380,7 @@ function openProductForm(id) {
     });
     rowEl.querySelector(".field-type-panel-wrap").innerHTML = fieldTypePanelHTML(row, row.type);
     wireUploadModeToggle(rowEl);
+    wireDropdownPricedToggle(rowEl);
   }
 
   function wireUploadModeToggle(rowEl) {
@@ -407,6 +391,22 @@ function openProductForm(id) {
     [single, multiple].forEach(radio => radio.addEventListener("change", () => {
       if (maxWrap) maxWrap.style.display = multiple.checked ? "block" : "none";
     }));
+  }
+
+  function wireDropdownPricedToggle(rowEl) {
+    const priced = rowEl.querySelector(".fr_priced");
+    const optionsBox = rowEl.querySelector(".fr_options");
+    const multiSelect = rowEl.querySelector(".fr_multi_select");
+    const label = rowEl.querySelector(".fr_options_label");
+    if (!priced || !optionsBox) return;
+    const sync = () => {
+      const on = priced.checked;
+      optionsBox.placeholder = on ? "8 Photos = 130\n16 Photos = 200\n32 Photos = 250" : "4x6\n5x7\nPassport Size";
+      if (label) label.textContent = on ? "Options — one per line, as \"Label = Price\"" : "Options (one per line)";
+      if (multiSelect) { multiSelect.disabled = on; if (on) multiSelect.checked = false; }
+    };
+    priced.addEventListener("change", sync);
+    sync();
   }
 
   function addFieldRow(field) {
@@ -423,6 +423,7 @@ function openProductForm(id) {
       options: field?.options || [],
       multi_select: field?.multi_select ?? false,
       placeholder: field?.placeholder || "",
+      option_prices: field?.option_prices || null,
     };
     const div = document.createElement("div");
     div.className = "field-row";
@@ -458,6 +459,7 @@ function openProductForm(id) {
     div.__field = row;
     fieldsWrap.appendChild(div);
     wireUploadModeToggle(div);
+    wireDropdownPricedToggle(div);
 
     div.querySelectorAll(".type-checkbox").forEach(chip => {
       chip.addEventListener("click", (e) => {
@@ -503,8 +505,24 @@ function openProductForm(id) {
         field.multiple = !!row.querySelector(".fr_upload_multiple")?.checked;
         field.max_files = field.multiple ? Math.max(2, Math.min(10, parseInt(row.querySelector(".fr_max_files")?.value || "3", 10))) : 1;
       } else if (type === "dropdown") {
-        field.options = (row.querySelector(".fr_options")?.value || "").split("\n").map(s => s.trim()).filter(Boolean);
-        field.multi_select = !!row.querySelector(".fr_multi_select")?.checked;
+        const lines = (row.querySelector(".fr_options")?.value || "").split("\n").map(s => s.trim()).filter(Boolean);
+        const priced = !!row.querySelector(".fr_priced")?.checked;
+        if (priced) {
+          const option_prices = {};
+          lines.forEach(line => {
+            const eq = line.lastIndexOf("=");
+            const opt = (eq === -1 ? line : line.slice(0, eq)).trim();
+            const price = eq === -1 ? NaN : Number(line.slice(eq + 1).trim());
+            if (!opt || Number.isNaN(price)) { errors.push(`Dropdown field "${label}": "${line}" should look like "Label = Price".`); return; }
+            field.options.push(opt);
+            option_prices[opt] = price;
+          });
+          field.option_prices = option_prices;
+          field.multi_select = false;
+        } else {
+          field.options = lines;
+          field.multi_select = !!row.querySelector(".fr_multi_select")?.checked;
+        }
         if (!field.options.length) errors.push(`Dropdown field "${label}" needs at least one option.`);
       }
       input_fields.push(field);
@@ -531,36 +549,6 @@ function openProductForm(id) {
     document.getElementById("addEventRowBtn").addEventListener("click", () => addEventRow());
   }
 
-  // ---- Quantity / pack options (extra.quantityOptions, Studio page only) ----
-  const qtyWrap = document.getElementById("qtyOptionsRows");
-  function addQtyOptionRow(opt) {
-    const div = document.createElement("div");
-    div.className = "qty-opt-row";
-    div.innerHTML = `
-      <input class="qo_label" placeholder="Option shown to customer, e.g. 8 Photos" value="${esc(opt?.label || "")}">
-      <input class="qo_price" type="number" step="1" placeholder="Price ₹" value="${opt?.price ?? ""}">
-      <button type="button" class="studio-opt-remove" title="Remove option">×</button>
-    `;
-    div.querySelector(".studio-opt-remove").addEventListener("click", () => div.remove());
-    qtyWrap.appendChild(div);
-  }
-  if (qtyWrap) {
-    (p?.extra?.quantityOptions || []).forEach(addQtyOptionRow);
-    document.getElementById("addQtyOptionBtn").addEventListener("click", () => addQtyOptionRow());
-  }
-  function collectQtyOptions(errors) {
-    if (!qtyWrap) return [];
-    const opts = [];
-    Array.from(qtyWrap.querySelectorAll(".qty-opt-row")).forEach((row) => {
-      const label = row.querySelector(".qo_label").value.trim();
-      const priceRaw = row.querySelector(".qo_price").value;
-      if (!label && priceRaw === "") return;
-      if (!label || priceRaw === "") { errors.push(`Quantity option needs both a label and a price.`); return; }
-      opts.push({ label, value: label, price: Number(priceRaw) });
-    });
-    return opts;
-  }
-
   document.getElementById("prodForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const num = (v) => (v === "" || v === null ? null : Number(v));
@@ -583,24 +571,6 @@ function openProductForm(id) {
       else delete extra.events;
     }
     const { input_fields, errors: fieldErrors } = collectInputFields();
-    if (isStudio) {
-      const tag = document.getElementById("f_tag").value.trim();
-      if (tag) extra.tag = tag; else delete extra.tag;
-      if (document.getElementById("f_popular").checked) extra.badge = "Popular"; else delete extra.badge;
-      const turnaround = document.getElementById("f_turnaround").value.trim();
-      if (turnaround) extra.turnaround = turnaround; else delete extra.turnaround;
-      if (document.getElementById("f_requires_photo").checked) extra.requiresPhotoUpload = true; else delete extra.requiresPhotoUpload;
-
-      const qtyOptions = collectQtyOptions(fieldErrors);
-      const qtyLabel = document.getElementById("f_qty_label").value.trim();
-      if (qtyOptions.length) { extra.quantityOptions = qtyOptions; if (qtyLabel) extra.qtyLabel = qtyLabel; else delete extra.qtyLabel; }
-      else { delete extra.quantityOptions; delete extra.qtyLabel; }
-
-      const purposeOptions = document.getElementById("f_purpose_options").value.split("\n").map(s => s.trim()).filter(Boolean);
-      const purposeLabel = document.getElementById("f_purpose_label").value.trim();
-      if (purposeOptions.length) { extra.purposeOptions = purposeOptions; if (purposeLabel) extra.purposeLabel = purposeLabel; else delete extra.purposeLabel; }
-      else { delete extra.purposeOptions; delete extra.purposeLabel; }
-    }
     if (fieldErrors.length) {
       document.getElementById("formMsg").innerHTML = `<div class="msg error">${fieldErrors.map(esc).join("<br>")}</div>`;
       return;
@@ -616,6 +586,7 @@ function openProductForm(id) {
       mrp: num(document.getElementById("f_mrp").value),
       advance_amount: num(document.getElementById("f_advance").value),
       stock: num(document.getElementById("f_stock").value),
+      delivery_days: num(document.getElementById("f_delivery_days").value),
       address_change_window_hours: num(document.getElementById("f_addr_window").value),
       features: document.getElementById("f_features").value.split("\n").map(s => s.trim()).filter(Boolean),
       is_active: document.getElementById("f_active").checked,

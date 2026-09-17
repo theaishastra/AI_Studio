@@ -318,12 +318,6 @@
         </svg>
         <input type="text" id="mobileSearchInput" placeholder='Search corporate gifts e.g. "welcome kit"'
           oninput="handleGlobalHeaderSearch(event)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-          <line x1="12" y1="19" x2="12" y2="23"></line>
-          <line x1="8" y1="23" x2="16" y2="23"></line>
-        </svg>
       </div>
 
       <div class="mobile-hero-text">
@@ -1836,82 +1830,6 @@
             <span class="stock-badge">In stock</span>
           </div>
 
-          <!-- Logo & Name Engraving Customization Section (PROMINENT TOP POSITION) -->
-          <div class="engraving-custom-box">
-            <div class="engraving-box-header">
-              <div class="engraving-box-heading">
-                <span class="engraving-box-icon">✨</span>
-                <span class="engraving-box-title">Custom Logo &amp; Engraving</span>
-              </div>
-              <span class="engraving-free-tag">Free Laser Etching</span>
-            </div>
-
-            <!-- Text / Company Name Input -->
-            <div class="engraving-field">
-              <label for="engravingTextInput">Company Name or Text to Engrave:</label>
-              <input type="text" id="engravingTextInput" placeholder="e.g. Acme Corp / John Doe"
-                oninput="updateEngravingText(this.value)">
-            </div>
-
-            <!-- Upload Logo Dropzone -->
-            <div class="engraving-field">
-              <label>Upload Logo File (Vector SVG, PNG, JPG, PDF):</label>
-              <div class="logo-upload-dropzone" onclick="document.getElementById('logoFileInput').click()"
-                ondragover="handleLogoDragOver(event)" ondragleave="handleLogoDragLeave(event)"
-                ondrop="handleLogoDrop(event)">
-                <svg class="dropzone-upload-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="17 8 12 3 7 8"></polyline>
-                  <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-                <svg class="dropzone-spinner-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round">
-                  <path d="M21 12a9 9 0 1 1-9-9"></path>
-                </svg>
-                <div class="dropzone-text-group">
-                  <span class="dropzone-title">Click to Upload or Drag &amp; Drop</span>
-                  <span class="dropzone-sub">Supports PNG, JPG, SVG, PDF up to 25MB</span>
-                </div>
-                <input type="file" id="logoFileInput" accept="image/*,.pdf,.svg" style="display: none;"
-                  onchange="handleLogoUpload(event)">
-              </div>
-
-              <div id="logoUploadError" class="logo-upload-error" style="display: none;"></div>
-
-              <!-- Uploaded Logo Preview Thumbnail -->
-              <div id="logoPreviewWrapper" class="logo-preview-wrapper" style="display: none;">
-                <img id="logoPreviewImg" src="" alt="Uploaded Logo Preview">
-                <span id="logoPreviewFileIcon" class="logo-preview-file-icon" style="display: none;"></span>
-                <div class="logo-preview-info">
-                  <span id="logoFileName" class="logo-file-name">Uploaded file</span>
-                  <span class="logo-preview-meta">
-                    <span id="logoFileSize" class="logo-file-size"></span>
-                    <span class="logo-success-badge">✓ Logo Ready</span>
-                  </span>
-                </div>
-                <button type="button" class="remove-logo-btn" onclick="removeUploadedLogo(event)"
-                  title="Remove Logo">✕</button>
-              </div>
-            </div>
-
-            <!-- Customization Method Selector -->
-            <div class="engraving-field">
-              <label>Select Customization Technique:</label>
-              <div class="engrave-technique-options">
-                <button type="button" class="technique-btn active"
-                  onclick="selectEngraveTechnique(this, 'Laser Engraved')">Laser Engraved</button>
-                <button type="button" class="technique-btn" onclick="selectEngraveTechnique(this, 'UV Color Print')">UV
-                  Color Print</button>
-                <button type="button" class="technique-btn" onclick="selectEngraveTechnique(this, 'Foil Embossed')">Foil
-                  Embossed</button>
-              </div>
-            </div>
-          </div>
-
-          <div id="engravingRequiredMsg" class="engraving-required-msg" style="display:none;">
-            Please enter a company name/text or upload a logo before adding this item.
-          </div>
 
           <div class="pf-fields" id="modalCustomFields" style="display:none;"></div>
 

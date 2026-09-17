@@ -2,6 +2,13 @@ routes.orders = renderOrders;
 
 const ORDER_STATUSES = ["created", "payment_pending", "cod_confirmed", "paid", "in_production", "shipped", "delivered", "cancelled", "refunded"];
 
+// "in_production" reads as "Designing" everywhere staff see it (status
+// dropdowns, stage tracker) to match the customer-facing copy - every other
+// status just gets its underscore swapped for a space.
+function orderStatusLabel(s) {
+  return s === "in_production" ? "Designing" : s.replace("_", " ");
+}
+
 const CANCELLATION_REASON_LABELS = {
   changed_mind: "Changed their mind",
   found_better_price: "Found a better price elsewhere",
@@ -108,7 +115,7 @@ async function renderOrdersTable(body) {
     <div class="toolbar">
       <select id="orderStatusFilter">
         <option value="">All statuses</option>
-        ${ORDER_STATUSES.map(s => `<option value="${s}">${s.replace("_", " ")}</option>`).join("")}
+        ${ORDER_STATUSES.map(s => `<option value="${s}">${orderStatusLabel(s)}</option>`).join("")}
       </select>
     </div>
     <div id="ordersWrap">${LOADING}</div>
@@ -143,7 +150,7 @@ async function loadOrders(statusFilter) {
             <td>${fmtINR(o.total)}</td>
             <td><span class="badge ${o.payments.some(p => p.status === "captured") ? "on" : "off"}">${o.status === "cod_confirmed" ? "cod" : (o.payments[0]?.status || "—")}</span> ${refundBadgeHTML(o.refund_status)}</td>
             <td><select class="order-status-select order-status-${esc(o.status)}" onchange="updateOrderStatus('${o.id}', this.value, this)">
-              ${ORDER_STATUSES.map(s => `<option value="${s}" ${s === o.status ? "selected" : ""}>${s.replace("_", " ")}</option>`).join("")}
+              ${ORDER_STATUSES.map(s => `<option value="${s}" ${s === o.status ? "selected" : ""}>${orderStatusLabel(s)}</option>`).join("")}
             </select></td>
             <td>${orderRequestBadges(o)}</td>
             <td>${fmtIST(o.created_at)}</td>
@@ -532,7 +539,7 @@ function orderStageTrackerHTML(order) {
     <div class="stage-tracker-wrap">
       ${trackerBody}
       <select class="order-status-select order-status-${esc(order.status)}" onchange="updateOrderStatusFromModal('${order.id}', this.value)">
-        ${ORDER_STATUSES.map(s => `<option value="${s}" ${s === order.status ? "selected" : ""}>${s.replace("_", " ")}</option>`).join("")}
+        ${ORDER_STATUSES.map(s => `<option value="${s}" ${s === order.status ? "selected" : ""}>${orderStatusLabel(s)}</option>`).join("")}
       </select>
     </div>`;
 }

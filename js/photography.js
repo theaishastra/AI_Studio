@@ -717,7 +717,12 @@
       document.querySelectorAll("#heroDots span").forEach((d, j) => d.classList.toggle("on", j === activeIdx));
     }
     function clearHeroReset() {
-      if (heroResetHandle) { heroResetHandle.cancel(); heroResetHandle = null; }
+      /* a step can start again before the previous loop-wrap reset has fired (cooldown is
+         shorter than the reset delay) - apply the pending correction now instead of dropping
+         it, otherwise heroPos drifts away from the track's real scroll position and the next
+         step's scrollTo target is wrong, which looks like the carousel snapping back and forth
+         and leaves the dots out of sync with what's actually on screen */
+      if (heroResetHandle) { heroResetHandle.cancel(); heroResetHandle.flush(); heroResetHandle = null; }
     }
     /* once the auto-scroll settles on a cloned slide (visually identical to the real one),
        silently snap back to the matching real position with no animation so the loop never jumps */
@@ -731,10 +736,10 @@
       if ("onscrollend" in window) {
         const handler = () => { track.removeEventListener("scrollend", handler); doReset(); };
         track.addEventListener("scrollend", handler);
-        heroResetHandle = { cancel: () => track.removeEventListener("scrollend", handler) };
+        heroResetHandle = { cancel: () => track.removeEventListener("scrollend", handler), flush: doReset };
       } else {
         const t = setTimeout(doReset, 550);
-        heroResetHandle = { cancel: () => clearTimeout(t) };
+        heroResetHandle = { cancel: () => clearTimeout(t), flush: doReset };
       }
     }
     function heroGo(i) {

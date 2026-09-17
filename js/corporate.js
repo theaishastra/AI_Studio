@@ -451,21 +451,29 @@
       if (catTitleEl) catTitleEl.textContent = title;
       if (catDescEl) catDescEl.textContent = desc;
 
+      // De-dupe by id/name (not by image) - two distinct products that happen to
+      // share a photo, or that have no photo at all yet, must never be treated
+      // as "the same product" and dropped. Missing/duplicate images should fall
+      // back to a placeholder thumbnail, not hide the product from the catalog.
       const seen = new Set();
       const uniqueProducts = [];
       products.forEach(p => {
-        if (!seen.has(p.img)) {
-          seen.add(p.img);
+        const key = p.id || p.name;
+        if (!seen.has(key)) {
+          seen.add(key);
           uniqueProducts.push(p);
         }
       });
 
+      const PLACEHOLDER_THUMB = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect width='300' height='300' fill='%23f1e9dd'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='14' fill='%23a88a5c' text-anchor='middle' dominant-baseline='middle'%3ENo photo yet%3C/text%3E%3C/svg%3E";
+
       const productsHTML = uniqueProducts.map((p) => {
         const cleanName = p.name.replace(/'/g, "\\'");
+        const thumbSrc = p.img ? cldOpt(p.img) : PLACEHOLDER_THUMB;
         return `
         <div class="pkg-card fnp-product-card" onclick="orderNowDirect('${cleanName}', '${p.price}', '${p.img}', '${p.id || ''}')">
           <div class="p-thumb">
-            <img src="${cldOpt(p.img)}" alt="${p.name}" loading="lazy">
+            <img src="${thumbSrc}" alt="${p.name}" loading="lazy" onerror="this.onerror=null; this.src='${PLACEHOLDER_THUMB}';">
             ${p.oldPrice ? `<span class="p-discount-badge">${Math.round((1 - parsePrice(p.price) / parsePrice(p.oldPrice)) * 100)}% off</span>` : ''}
             <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -499,12 +507,6 @@
       if (packagesGridEl) packagesGridEl.innerHTML = productsHTML;
     };
 
-    window.selectEngraveTechnique = function (btnEl, technique) {
-      modalEngravingTechnique = technique;
-      document.querySelectorAll('.technique-btn').forEach(b => b.classList.remove('active'));
-      if (btnEl) btnEl.classList.add('active');
-    };
-
     // FNP-style "Choose Delivery Preference" pincode check - purely a
     // frontend estimate (no delivery/serviceability backend exists), so it
     // just confirms a valid-looking pincode and refreshes the estimate text.
@@ -518,7 +520,7 @@
         return;
       }
       const est = new Date();
-      est.setDate(est.getDate() + 3);
+      est.setDate(est.getDate() + (activeModalProduct?.deliveryDays || 3));
       const estDate = est.toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'short' });
       estimateEl.textContent = `Delivered by ${estDate} to ${pincode}.`;
     };
@@ -537,7 +539,7 @@
 
     window.orderNowDirect = function (name, price, img, productId, opts = {}) {
       const product = findCorporateProductById(productId);
-      window.activeModalProduct = activeModalProduct = { name, price, img, id: productId || null, input_fields: product?.input_fields || [] };
+      window.activeModalProduct = activeModalProduct = { name, price, img, id: productId || null, input_fields: product?.input_fields || [], deliveryDays: product?.delivery_days || null };
       const customFieldsWrap = document.getElementById('modalCustomFields');
       if (customFieldsWrap && window.ProductFields) {
         ProductFields.renderProductFields(customFieldsWrap, activeModalProduct);
@@ -545,25 +547,6 @@
       modalSelectedQty = 1;
       modalSelectedColor = "Black";
       currentModalImgIndex = 0;
-
-      // Reset Custom Engraving & Logo Upload State
-      modalEngravingText = "";
-      modalUploadedLogoData = null;
-      modalUploadedLogoFileName = "";
-      modalEngravingTechnique = "Laser Engraved";
-
-      const textInput = document.getElementById('engravingTextInput');
-      const logoInput = document.getElementById('logoFileInput');
-      const previewWrapper = document.getElementById('logoPreviewWrapper');
-      const logoErrEl = document.getElementById('logoUploadError');
-      if (textInput) textInput.value = "";
-      if (logoInput) logoInput.value = "";
-      if (previewWrapper) previewWrapper.style.display = 'none';
-      if (logoErrEl) logoErrEl.style.display = 'none';
-
-      document.querySelectorAll('.technique-btn').forEach((b, idx) => {
-        b.classList.toggle('active', idx === 0);
-      });
 
       activeModalImages = [img];
 
@@ -583,7 +566,11 @@
       if (qtyNumEl) qtyNumEl.textContent = '1';
       if (productCodeEl) productCodeEl.textContent = productId ? `EXCORP${productId}` : '';
       if (pincodeInputEl) pincodeInputEl.value = '';
-      if (deliveryEstimateEl) deliveryEstimateEl.textContent = 'Delivered in 2-3 business days across India.';
+      if (deliveryEstimateEl) {
+        deliveryEstimateEl.textContent = activeModalProduct.deliveryDays
+          ? `Delivered in ${activeModalProduct.deliveryDays} business day${activeModalProduct.deliveryDays === 1 ? '' : 's'} across India.`
+          : 'Delivered in 2-3 business days across India.';
+      }
 
       const thumbsContainer = document.getElementById('modalThumbsContainer');
       if (thumbsContainer) {
@@ -708,139 +695,22 @@
       }
     };
 
-    // Every corporate product leads with the "Custom Logo & Engraving" section as its
-    // primary personalization step, so a company name/text OR a logo is required
-    // before the item makes sense to fulfil - the technique/color choices below it
-    // are just style picks with sensible defaults and never block.
-    function corporateEngravingMissing() {
-      return !modalEngravingText.trim() && !modalUploadedLogoData;
+    // Best-effort synchronous snapshot of the first Customer Questions text-type
+    // answer for this product, for the few fallback spots (order summary /
+    // WhatsApp checkout when nothing's actually in the cart yet) that build a
+    // cart-shaped item straight from window.activeModalProduct instead of the
+    // cart. Uploads need the async collectModalCustomFields() FileReader pass
+    // those callers don't do, so this only covers text - fine for a summary label.
+    function activeModalTextSnapshot() {
+      const wrap = document.getElementById('modalCustomFields');
+      const product = window.activeModalProduct;
+      if (!wrap || !product) return '';
+      const field = (product.input_fields || []).find(f => f.type === 'text');
+      if (!field) return '';
+      const el = document.getElementById(`${wrap.id}_${field.id}`);
+      return el ? el.value.trim() : '';
     }
-
-    function showEngravingRequiredError() {
-      const msgEl = document.getElementById('engravingRequiredMsg');
-      if (msgEl) {
-        msgEl.style.display = 'block';
-        msgEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      const textInput = document.getElementById('engravingTextInput');
-      if (textInput) textInput.focus();
-    }
-
-    window.updateEngravingText = function (value) {
-      modalEngravingText = value;
-      const msgEl = document.getElementById('engravingRequiredMsg');
-      if (msgEl && !corporateEngravingMissing()) msgEl.style.display = 'none';
-    };
-
-    const LOGO_MAX_SIZE_BYTES = 25 * 1024 * 1024;
-    const LOGO_ALLOWED_EXT = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'pdf'];
-
-    function formatFileSize(bytes) {
-      if (bytes < 1024) return bytes + ' B';
-      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-    }
-
-    function showLogoUploadError(msg) {
-      const errEl = document.getElementById('logoUploadError');
-      if (errEl) {
-        errEl.textContent = msg;
-        errEl.style.display = 'block';
-      }
-    }
-
-    function clearLogoUploadError() {
-      const errEl = document.getElementById('logoUploadError');
-      if (errEl) errEl.style.display = 'none';
-    }
-
-    function processLogoFile(file) {
-      clearLogoUploadError();
-      if (!file) return;
-
-      const ext = (file.name.split('.').pop() || '').toLowerCase();
-      if (!LOGO_ALLOWED_EXT.includes(ext)) {
-        showLogoUploadError('Unsupported file type. Please upload a PNG, JPG, SVG or PDF.');
-        return;
-      }
-      if (file.size > LOGO_MAX_SIZE_BYTES) {
-        showLogoUploadError('File is too large. Please upload something under 25MB.');
-        return;
-      }
-
-      const dropzone = document.querySelector('.logo-upload-dropzone');
-      if (dropzone) dropzone.classList.add('uploading');
-
-      const reader = new FileReader();
-      reader.onload = function (evt) {
-        modalUploadedLogoData = evt.target.result;
-        modalUploadedLogoFileName = file.name;
-
-        const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext);
-        const previewWrapper = document.getElementById('logoPreviewWrapper');
-        const previewImg = document.getElementById('logoPreviewImg');
-        const previewFileIcon = document.getElementById('logoPreviewFileIcon');
-        const fileNameEl = document.getElementById('logoFileName');
-        const fileSizeEl = document.getElementById('logoFileSize');
-
-        if (previewImg && previewFileIcon) {
-          if (isImage) {
-            previewImg.src = modalUploadedLogoData;
-            previewImg.style.display = 'block';
-            previewFileIcon.style.display = 'none';
-          } else {
-            previewImg.style.display = 'none';
-            previewFileIcon.style.display = 'flex';
-            previewFileIcon.textContent = ext.toUpperCase();
-          }
-        }
-        if (fileNameEl) fileNameEl.textContent = file.name;
-        if (fileSizeEl) fileSizeEl.textContent = formatFileSize(file.size);
-        if (previewWrapper) previewWrapper.style.display = 'flex';
-        if (dropzone) dropzone.classList.remove('uploading');
-
-        const msgEl = document.getElementById('engravingRequiredMsg');
-        if (msgEl && !corporateEngravingMissing()) msgEl.style.display = 'none';
-      };
-      reader.onerror = function () {
-        if (dropzone) dropzone.classList.remove('uploading');
-        showLogoUploadError('Could not read that file. Please try again.');
-      };
-      reader.readAsDataURL(file);
-    }
-
-    window.handleLogoUpload = function (event) {
-      const file = event.target.files && event.target.files[0];
-      processLogoFile(file);
-    };
-
-    window.handleLogoDragOver = function (event) {
-      event.preventDefault();
-      event.currentTarget.classList.add('drag-active');
-    };
-
-    window.handleLogoDragLeave = function (event) {
-      event.currentTarget.classList.remove('drag-active');
-    };
-
-    window.handleLogoDrop = function (event) {
-      event.preventDefault();
-      event.currentTarget.classList.remove('drag-active');
-      const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
-      processLogoFile(file);
-    };
-
-    window.removeUploadedLogo = function (event) {
-      if (event) event.stopPropagation();
-      modalUploadedLogoData = null;
-      modalUploadedLogoFileName = "";
-      clearLogoUploadError();
-
-      const logoInput = document.getElementById('logoFileInput');
-      const previewWrapper = document.getElementById('logoPreviewWrapper');
-      if (logoInput) logoInput.value = '';
-      if (previewWrapper) previewWrapper.style.display = 'none';
-    };
+    window.activeModalTextSnapshot = activeModalTextSnapshot;
 
     // Validates admin-configured custom fields (if any) and reads any uploads
     // in them into data: URIs, returning { fields, fieldLabels } (fieldLabels
@@ -863,7 +733,6 @@
 
     window.addModalItemToCart = async function () {
       if (!activeModalProduct) return;
-      if (corporateEngravingMissing()) { showEngravingRequiredError(); return; }
       const custom = await collectModalCustomFields();
       if (custom === null) return;
       updateCartQty(
@@ -871,19 +740,8 @@
         modalSelectedQty,
         activeModalProduct.price,
         activeModalProduct.img,
-        {
-          engravingText: modalEngravingText,
-          logoName: modalUploadedLogoFileName,
-          logoData: modalUploadedLogoData,
-          technique: modalEngravingTechnique,
-          color: modalSelectedColor,
-          ...custom
-        },
-        {
-          label: 'Add your company name or upload a logo',
-          fields: ['engravingText', 'logoData'],
-          editUrl: `corporate.html?openProduct=${encodeURIComponent(activeModalProduct.name)}&openPrice=${encodeURIComponent(activeModalProduct.price)}&openImg=${encodeURIComponent(activeModalProduct.img)}${activeModalProduct.id ? `&pid=${encodeURIComponent(activeModalProduct.id)}` : ''}`
-        },
+        { color: modalSelectedColor, ...custom },
+        null,
         activeModalProduct.id
       );
       closeProductDetailModal();
@@ -894,7 +752,6 @@
 
     window.modalBuyNowWhatsApp = async function () {
       if (!activeModalProduct) return;
-      if (corporateEngravingMissing()) { showEngravingRequiredError(); return; }
       const custom = await collectModalCustomFields();
       if (custom === null) return;
       updateCartQty(
@@ -902,19 +759,8 @@
         modalSelectedQty,
         activeModalProduct.price,
         activeModalProduct.img,
-        {
-          engravingText: modalEngravingText,
-          logoName: modalUploadedLogoFileName,
-          logoData: modalUploadedLogoData,
-          technique: modalEngravingTechnique,
-          color: modalSelectedColor,
-          ...custom
-        },
-        {
-          label: 'Add your company name or upload a logo',
-          fields: ['engravingText', 'logoData'],
-          editUrl: `corporate.html?openProduct=${encodeURIComponent(activeModalProduct.name)}&openPrice=${encodeURIComponent(activeModalProduct.price)}&openImg=${encodeURIComponent(activeModalProduct.img)}${activeModalProduct.id ? `&pid=${encodeURIComponent(activeModalProduct.id)}` : ''}`
-        },
+        { color: modalSelectedColor, ...custom },
+        null,
         activeModalProduct.id
       );
       closeProductDetailModal();
@@ -1097,9 +943,7 @@
           img: window.activeModalProduct.img,
           qty: window.modalSelectedQty || 1,
           customization: {
-            engravingText: window.modalEngravingText,
-            logoName: window.modalUploadedLogoFileName,
-            technique: window.modalEngravingTechnique,
+            engravingText: window.activeModalTextSnapshot(),
             color: window.modalSelectedColor
           }
         }];
@@ -1166,9 +1010,7 @@
           img: window.activeModalProduct.img,
           qty: window.modalSelectedQty || 1,
           customization: {
-            engravingText: window.modalEngravingText,
-            logoName: window.modalUploadedLogoFileName,
-            technique: window.modalEngravingTechnique,
+            engravingText: window.activeModalTextSnapshot(),
             color: window.modalSelectedColor
           }
         };
@@ -1215,9 +1057,7 @@
                 img: window.activeModalProduct.img,
                 qty: window.modalSelectedQty || 1,
                 customization: {
-                  engravingText: window.modalEngravingText,
-                  logoName: window.modalUploadedLogoFileName,
-                  technique: window.modalEngravingTechnique,
+                  engravingText: window.activeModalTextSnapshot(),
                   color: window.modalSelectedColor
                 }
               }] : Object.values(getCart()));
@@ -2294,6 +2134,7 @@
               };
               if (p.mrp) prod.oldPrice = p.mrp;
               prod.input_fields = p.input_fields || [];
+              prod.delivery_days = p.delivery_days || null;
               return prod;
             }),
           };

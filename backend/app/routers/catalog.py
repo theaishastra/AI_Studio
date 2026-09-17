@@ -32,6 +32,15 @@ HOMEPAGE_KEY = "homepage_layout"  # same Setting row admin.py's homepage builder
 # seconds) purely to cut how often a visitor pays the ~1.5s DB round trip, with
 # no real staleness cost.
 _PAGE_BUNDLE_CACHE_TTL_SECONDS = 300
+# Bumped by invalidate_catalog_cache() on every admin write. A build that started
+# before the bump but finishes after it is writing data queried before the edit -
+# without this guard it would overwrite the freshly-cleared cache with that stale
+# result (the admin's change then stays invisible on the storefront for up to a
+# full TTL instead of the "live immediately" every write endpoint promises). Each
+# cache-populating block below captures this value before its DB read and only
+# writes back if it's unchanged, so a straggling build just quietly discards its
+# result instead of clobbering a newer one.
+_cache_generation = 0
 _page_bundle_cache: dict[str, tuple[float, dict]] = {}
 # One lock per page_slug so concurrent requests landing in the same cold window
 # don't all independently pay the ~1.5s DB cost - the first one populates the
@@ -127,8 +136,10 @@ def page_bundle(page_slug: str, db: Session = Depends(get_db)):
         cached = _page_bundle_cache.get(page_slug)
         if cached and time.monotonic() - cached[0] < _PAGE_BUNDLE_CACHE_TTL_SECONDS:
             return cached[1]
+        gen = _cache_generation
         result = _build_page_bundle(page_slug, db)
-        _page_bundle_cache[page_slug] = (time.monotonic(), result)
+        if gen == _cache_generation:
+            _page_bundle_cache[page_slug] = (time.monotonic(), result)
         return result
 
 
@@ -200,6 +211,7 @@ def _build_page_bundle(page_slug: str, db: Session) -> dict:
                 "rating": ratings.get(p.id),
                 "extra": p.extra or {},
                 "input_fields": p.input_fields or [],
+                "delivery_days": p.delivery_days,
             }
             for p in active_products
         ]
@@ -261,6 +273,7 @@ def get_product(product_id: str, db: Session = Depends(get_db)):
         "rating": round(float(avg_rating), 1) if avg_rating else None,
         "extra": product.extra or {},
         "input_fields": product.input_fields or [],
+        "delivery_days": product.delivery_days,
     }
 
 
@@ -279,6 +292,8 @@ def invalidate_catalog_cache() -> None:
     TTL. Admin write endpoints call this right after commit. Clearing is O(1) and
     always safe - worst case the next visitor's request just pays the one DB round
     trip that would've happened anyway once the TTL expired, then re-caches."""
+    global _cache_generation
+    _cache_generation += 1
     _page_bundle_cache.clear()
     _homepage_cache.clear()
     _products_cache.clear()
@@ -340,6 +355,7 @@ def public_homepage(db: Session = Depends(get_db)):
     cached = _homepage_cache.get("v")
     if cached and time.monotonic() - cached[0] < _PAGE_BUNDLE_CACHE_TTL_SECONDS:
         return cached[1]
+    gen = _cache_generation
 
     setting = db.get(Setting, HOMEPAGE_KEY)
     layout = setting.value if setting else {}
@@ -385,7 +401,8 @@ def public_homepage(db: Session = Depends(get_db)):
             for p in ordered_prods
         ],
     }
-    _homepage_cache["v"] = (time.monotonic(), result)
+    if gen == _cache_generation:
+        _homepage_cache["v"] = (time.monotonic(), result)
     return result
 
 
@@ -398,9 +415,13 @@ def public_products(category_id: str | None = None, page: int = 1, page_size: in
     re-querying per page/filter combination."""
     cached = _products_cache.get("v")
     if not (cached and time.monotonic() - cached[0] < _PAGE_BUNDLE_CACHE_TTL_SECONDS):
+        gen = _cache_generation
         rows = (
             db.query(Product)
-            .options(selectinload(Product.media), selectinload(Product.category))
+            .options(
+                selectinload(Product.media),
+                selectinload(Product.category).selectinload(Category.page),
+            )
             .filter(Product.is_active == True)
             .order_by(Product.sort)
             .all()
@@ -408,15 +429,22 @@ def public_products(category_id: str | None = None, page: int = 1, page_size: in
         serialized = [
             {
                 "id": p.id, "title": p.title, "slug": p.slug,
+                "description": p.description or "",
                 "price": float(p.price), "mrp": float(p.mrp) if p.mrp else None,
                 "images": [cld_optimize(m.url) for m in p.media],
                 "category_id": p.category_id,
                 "category_slug": p.category.slug if p.category else None,
+                "category_name": p.category.name if p.category else None,
+                # Which storefront tab (gifts/photography/studio/corporate) this product
+                # belongs under - needed by any page-agnostic search (nav search dropdown,
+                # catalog.html) to link back to the right place / category filter.
+                "page_slug": p.category.page.slug if p.category and p.category.page else None,
             }
             for p in rows
         ]
         cached = (time.monotonic(), serialized)
-        _products_cache["v"] = cached
+        if gen == _cache_generation:
+            _products_cache["v"] = cached
     all_products = cached[1]
 
     filtered = [p for p in all_products if not category_id or p["category_id"] == category_id]

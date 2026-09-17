@@ -137,16 +137,27 @@ class Product(Base, TimestampMixin):
     # is assumed to start. Null -> falls back to the site-wide default in
     # Setting["order_policy"] (see services/policy.py).
     address_change_window_hours: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Estimated days to fulfil this product, shown to the customer as "Delivery by
+    # <date>" in the product page's Delivery Info section. Null -> storefront falls
+    # back to a generic 3-day estimate (see catalog.py/*.js delivery estimate code).
+    delivery_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     features: Mapped[list] = mapped_column(JSON, default=list)  # ["150+ High-Res Photos", ...]
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort: Mapped[int] = mapped_column(Integer, default=0)
     # Free-form JSON for fields with no dedicated column yet (studio's configurator:
-    # quantityOptions/purposeOptions/requiresPhotoUpload) - admin edits this as raw JSON
-    # rather than each one-off field needing its own migration + form control.
+    # quantityOptions/purposeOptions) - admin edits this as raw JSON rather than each
+    # one-off field needing its own migration + form control. requiresPhotoUpload used
+    # to live here too (a studio-only "must upload a photo" checkbox) until it was
+    # folded into input_fields below as an upload-type required field - every page
+    # (studio/corporate/gifts/photography) now shares that one mechanism instead of
+    # studio having its own separate one. See migrations.backfill_requires_photo_upload_fields
+    # for the one-time conversion of already-flagged products.
     extra: Mapped[dict] = mapped_column(JSON, default=dict)
     # Admin-configurable extra customer inputs (upload/dropdown/text), built with the
-    # "Customer Input Fields" form builder - see ProductInputFieldIn. Separate from
+    # "Customer Questions" form builder - see ProductInputFieldIn. Separate from
     # `extra` above, which stays reserved for the older pricing-tied qty/purpose config.
+    # Every storefront product page (studio/corporate/gifts/photography) renders,
+    # validates and collects these the same way via js/shared/product-fields.js.
     input_fields: Mapped[list] = mapped_column(JSON, default=list)
 
     category: Mapped["Category"] = relationship(back_populates="products")

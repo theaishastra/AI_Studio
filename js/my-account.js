@@ -4,7 +4,7 @@
       payment_pending: 'Awaiting Payment',
       cod_confirmed: 'Confirmed (Cash on Delivery)',
       paid: 'Paid',
-      in_production: 'In Production',
+      in_production: 'Designing',
       shipped: 'Shipped',
       delivered: 'Delivered',
       cancelled: 'Cancelled',

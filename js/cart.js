@@ -830,6 +830,14 @@
         if (el) el.style.display = 'none';
       });
       saveCart({});
+      // The account's server-side cart (js/shared/customer-api.js CustomerAuth.getCart/
+      // syncCart) is a separate copy from this browser's localStorage one - clearing
+      // only the local copy left the ordered items sitting on the server, so the next
+      // syncCartWithServer() (next visit to this page, or logging in on another device)
+      // merged them straight back into the cart as if they'd never been ordered.
+      if (typeof isCustomerLoggedIn === 'function' && isCustomerLoggedIn()) {
+        CustomerAuth.clearServerCart().catch(() => {});
+      }
       cartOrder = null;
       cartPayment = null;
     }

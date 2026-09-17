@@ -42,7 +42,15 @@ function handleExpiredCustomerSession() {
   clearCustomerSession();
   try {
     localStorage.removeItem("sai_studio_wishlist");
+    // The cart is a single shared localStorage key, not namespaced per-account -
+    // if it's left behind after logout, the next person to sign in on this same
+    // browser (or this same account's next guest session) gets whatever the
+    // previous customer had in their cart merged straight into their account
+    // the moment syncCartWithServer()/pushCartIfLoggedIn() next runs.
+    localStorage.removeItem("sai_studio_cart");
     if (typeof window.updateWishlistUI === "function") window.updateWishlistUI();
+    if (typeof window.renderCartPage === "function") window.renderCartPage();
+    if (typeof window.updateCartUI === "function") window.updateCartUI();
   } catch (_) {}
   if (window.SaiAuthNav && typeof window.SaiAuthNav.refresh === "function") window.SaiAuthNav.refresh();
 }

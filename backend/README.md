@@ -219,3 +219,5 @@ Frontend correctly handles:
 **Status**: ✅ Ready for deployment
 **Database**: Seeded with 218 products
 **Last Updated**: 2026-09-08
+
+ssh -i "C:\Users\mohan\Downloads\AI_Studio.pem" ubuntu@54.160.240.144 "sudo journalctl -u studio-backend -f"

@@ -1,0 +1,156 @@
+========================================================================
+ STOPPING / RESTARTING THE BACKEND SERVER vs. STOPPING THE WHOLE VM
+========================================================================
+
+There are TWO different things you might mean by "stop the server":
+
+  A) Stop/restart just the backend app (the VM keeps running, you keep
+     paying for it, but the API goes offline). Useful when deploying
+     new code or troubleshooting.
+
+  B) Stop the entire EC2 VM (pause it for a day, stop paying for
+     compute time, nothing is reachable at all). Useful when you
+     won't be testing for a while.
+
+Read section C before you do (B) for the first time - it explains a
+gotcha that will break your setup if you don't know about it.
+
+Everywhere below, EC2_IP and PEM_PATH mean:
+  EC2_IP="54.160.240.144"
+  PEM_PATH="/c/Users/mohan/Downloads/AI_Studio.pem"
+
+
+------------------------------------------------------------------------
+ A) STOP / START / RESTART JUST THE BACKEND APP
+------------------------------------------------------------------------
+
+The backend runs as a systemd service called "studio-backend". Nginx
+is a separate service and normally you leave it running.
+
+Stop the backend (API goes offline, VM keeps running):
+  ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo systemctl stop studio-backend"
+
+Start it again:
+  ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo systemctl start studio-backend"
+
+Restart it (stop + start in one step - use this after pulling new
+code or editing backend/.env):
+  ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo systemctl restart studio-backend"
+
+Check whether it's currently running:
+  ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo systemctl status studio-backend --no-pager"
+
+Note: after "start" or "restart", the app can take 30-40 seconds
+before /api/health responds - that first request opens the database
+connection to Supabase. That's normal, not a bug.
+
+
+------------------------------------------------------------------------
+ B) PAUSE THE WHOLE VM FOR A DAY, THEN RESUME
+------------------------------------------------------------------------
+
+This stops the EC2 instance itself - the OS shuts down, AWS stops
+billing you for compute (you still pay a small amount for the disk
+storage, a few cents/month for 20 GiB), and nothing on the VM is
+reachable until you start it again. Your disk and everything on it
+(code, .env, database connection settings, installed packages) is
+preserved untouched while stopped.
+
+  --- To STOP the VM (AWS Console) ---
+  1. Open the EC2 console: https://console.aws.amazon.com/ec2/
+  2. Click "Instances" in the left sidebar
+  3. Select your instance (checkbox)
+  4. Instance state (top right) -> "Stop instance"
+  5. Confirm. It takes ~30-60 seconds to fully stop.
+
+  --- To RESUME the VM (AWS Console) ---
+  1. Same Instances page, select the instance
+  2. Instance state -> "Start instance"
+  3. Wait ~30-60 seconds for it to boot
+  4. Go to section C below BEFORE trying to connect - the IP may
+     have changed.
+
+  Optional - AWS CLI equivalent (only if you have the AWS CLI
+  installed and configured with credentials; you don't right now):
+    aws ec2 stop-instances  --instance-ids <your-instance-id>
+    aws ec2 start-instances --instance-ids <your-instance-id>
+
+
+------------------------------------------------------------------------
+ C) IMPORTANT: THE PUBLIC IP WILL LIKELY CHANGE
+------------------------------------------------------------------------
+
+By default, AWS assigns a NEW public IPv4 address every time you stop
+and then start an instance (the current one, 54.160.240.144, will
+most likely be different after you resume). Nothing about the VM
+itself breaks - but everything that has this IP hardcoded will:
+
+  - Your SSH command (ssh ubuntu@54.160.240.144)
+  - The frontend's js/shared/api-config.js (SAI_API_BASE)
+  - Any bookmarked API URLs or the HTML/PDF runbooks I gave you
+  - The Cloudflare Tunnel, if you're using one - it also gets a brand
+    new https://...trycloudflare.com URL on every restart of that
+    service, IP change or not
+
+  --- After resuming, do this ---
+  1. Find the new public IP:
+     EC2 Console -> Instances -> click your instance -> "Public IPv4
+     address" field near the top of the details panel.
+
+  2. Update EC2_IP in your terminal and re-test:
+     EC2_IP="<new-ip-here>"
+     curl http://$EC2_IP/api/health
+     (allow the usual 30-40s after boot before this responds)
+
+  3. The backend and nginx are both "enabled" services, so they start
+     automatically on boot - you should NOT need to manually start
+     them after a resume. If health doesn't respond after a minute,
+     check status:
+       ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo systemctl status studio-backend nginx --no-pager"
+
+  4. If the IP changed, update js/shared/api-config.js locally:
+       window.SAI_API_BASE = "http://<new-ip-here>";
+     then commit and push so GitHub Pages / your local frontend picks
+     it up.
+
+  5. If you're using the Cloudflare Tunnel, get its new URL and update
+     api-config.js with that instead:
+       ssh -i "$PEM_PATH" ubuntu@$EC2_IP "grep trycloudflare /home/ubuntu/cloudflared.log | tail -1"
+
+  --- To avoid all of this in the future ---
+  Allocate a free "Elastic IP" and attach it to the instance. An
+  Elastic IP stays the SAME across every stop/start, so you never
+  have to update anything again.
+    1. EC2 Console -> "Elastic IPs" (left sidebar) -> "Allocate
+       Elastic IP address" -> Allocate
+    2. Select the new address -> Actions -> "Associate Elastic IP
+       address" -> choose your instance -> Associate
+  Cost note: an Elastic IP is free WHILE it's attached to a running
+  instance. AWS charges a small hourly fee only if it's allocated but
+  NOT attached to a running instance (e.g. sitting idle, or attached
+  to a stopped instance) - so if you get one, keep it associated with
+  this instance whether running or stopped, and release it if you
+  ever stop using the VM for good.
+
+
+------------------------------------------------------------------------
+ QUICK COMMAND CHEAT SHEET
+------------------------------------------------------------------------
+
+# Set these once per terminal session
+EC2_IP="54.160.240.144"
+PEM_PATH="/c/Users/mohan/Downloads/AI_Studio.pem"
+
+# --- Backend app only (VM stays on) ---
+ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo systemctl stop studio-backend"
+ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo systemctl start studio-backend"
+ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo systemctl restart studio-backend"
+ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo systemctl status studio-backend --no-pager"
+
+# --- Whole VM: use the AWS Console (Instances -> Instance state) ---
+#     Stop instance   -> pauses billing for compute
+#     Start instance  -> resumes it (check for a new public IP!)
+
+# --- After resuming, verify ---
+curl http://$EC2_IP/api/health
+ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo systemctl status studio-backend nginx --no-pager"

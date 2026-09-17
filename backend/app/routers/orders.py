@@ -286,7 +286,7 @@ def cancel_order(order_id: str, body: CancellationRequestIn,
 
     if order.status not in REQUESTABLE_CANCEL_STATUSES:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "This order can no longer be cancelled")
-    if any(r.status == "pending" for r in order.cancellation_requests):
+    if any(r.status == "pending" and r.order_item_id is None for r in order.cancellation_requests):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "A cancellation request is already pending for this order")
 
     db.add(OrderCancellationRequest(order_id=order.id, user_id=user.id, reason=body.reason, note=body.note))
@@ -309,7 +309,10 @@ def _cancel_order_item(db: Session, order: Order, body: CancellationRequestIn, u
         )
     if order.status not in (IMMEDIATE_CANCEL_STATUSES + REQUESTABLE_CANCEL_STATUSES):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "This order can no longer be cancelled")
-    if any(r.status == "pending" for r in order.cancellation_requests):
+    # Only a pending whole-order request blocks this item - another item's own
+    # pending request is irrelevant to it (item.status != "active", checked
+    # above, already stops a duplicate request against this same item).
+    if any(r.status == "pending" and r.order_item_id is None for r in order.cancellation_requests):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "A cancellation request is already pending for this order")
 
     title = (item.product_snapshot or {}).get("title") or "Item"

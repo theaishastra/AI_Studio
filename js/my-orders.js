@@ -4,7 +4,7 @@
       payment_pending: 'Awaiting Payment',
       cod_confirmed: 'Confirmed (Cash on Delivery)',
       paid: 'Paid',
-      in_production: 'In Production',
+      in_production: 'Designing',
       shipped: 'Shipped',
       delivered: 'Delivered',
       cancelled: 'Cancelled',
@@ -329,8 +329,8 @@
       // backend requires cancelling the whole order at that point instead).
       let itemCancelDisabledReason = '';
       if (!order.can_cancel) {
-        itemCancelDisabledReason = ['delivered', 'cancelled', 'refunded'].includes(order.status)
-          ? 'This order can no longer be cancelled'
+        itemCancelDisabledReason = ['in_production', 'shipped', 'delivered', 'cancelled', 'refunded'].includes(order.status)
+          ? 'This order can no longer be cancelled once it enters production'
           : 'A cancellation request is already pending for this order';
       } else if (activeCount <= 1) {
         itemCancelDisabledReason = 'This is the last item — cancel the whole order instead';
@@ -484,13 +484,22 @@
     // explanation is always true, not just a generic "unavailable".
     function orderCancelDisabledReason(order) {
       if (order.can_cancel) return '';
-      if (['delivered', 'cancelled', 'refunded'].includes(order.status)) return 'This order can no longer be cancelled';
+      if (['in_production', 'shipped', 'delivered', 'cancelled', 'refunded'].includes(order.status)) {
+        return order.status === 'in_production'
+          ? 'This order can no longer be cancelled once it enters production'
+          : 'This order can no longer be cancelled';
+      }
       return 'Cancellation request pending review';
     }
 
     function orderAddressDisabledReason(order) {
       if (order.can_request_address_change) return '';
       if ((order.address_change_requests || []).length > 0) return 'Address change already requested for this order';
+      if (['in_production', 'shipped', 'delivered', 'cancelled', 'refunded'].includes(order.status)) {
+        return order.status === 'in_production'
+          ? 'Address can no longer be changed once your order enters production'
+          : 'Address changes aren’t available for this order';
+      }
       if (order.address_change_deadline) return 'Address change window has closed';
       return 'Address changes aren’t available for this order';
     }
@@ -655,8 +664,8 @@
         <select id="cancelReasonSelect" class="cart-field-input">
           ${CANCELLATION_REASONS.map(r => `<option value="${r.value}">${escapeOrdHTML(r.label)}</option>`).join('')}
         </select>
-        <label class="cart-field-label">Anything else we should know? (optional)</label>
-        <textarea id="cancelReasonNote" class="cart-field-input" rows="3"></textarea>
+        <label class="cart-field-label">Tell us more (required)</label>
+        <textarea id="cancelReasonNote" class="cart-field-input" rows="3" placeholder="A few words about why you're cancelling..."></textarea>
         <div class="cart-step-actions">
           <button type="button" class="btn-secondary-cart" onclick="closeOrdersModal()">Keep Order</button>
           <button type="button" class="btn-primary-cart" id="cancelOrderSubmitBtn" onclick="submitCancelOrder('${orderId}')">Submit Cancellation</button>
@@ -675,8 +684,8 @@
         <select id="cancelReasonSelect" class="cart-field-input">
           ${CANCELLATION_REASONS.map(r => `<option value="${r.value}">${escapeOrdHTML(r.label)}</option>`).join('')}
         </select>
-        <label class="cart-field-label">Anything else we should know? (optional)</label>
-        <textarea id="cancelReasonNote" class="cart-field-input" rows="3"></textarea>
+        <label class="cart-field-label">Tell us more (required)</label>
+        <textarea id="cancelReasonNote" class="cart-field-input" rows="3" placeholder="A few words about why you're cancelling..."></textarea>
         <div class="cart-step-actions">
           <button type="button" class="btn-secondary-cart" onclick="closeOrdersModal()">Keep Item</button>
           <button type="button" class="btn-primary-cart" id="cancelOrderSubmitBtn" onclick="submitCancelOrder('${orderId}', '${itemId}')">Submit Cancellation</button>
@@ -689,6 +698,11 @@
       const note = document.getElementById('cancelReasonNote').value.trim();
       const msgEl = document.getElementById('cancelOrderMsg');
       const btn = document.getElementById('cancelOrderSubmitBtn');
+      if (note.length < 3) {
+        msgEl.textContent = 'Please tell us a bit more about why you\'re cancelling.';
+        msgEl.style.display = 'block';
+        return;
+      }
       btn.disabled = true;
       try {
         const updated = await CustomerAuth.requestCancellation(orderId, reason, note, itemId);

@@ -11,16 +11,21 @@ from ..schemas import OrderAddressOut, OrderOut
 DEFAULT_ADDRESS_CHANGE_WINDOW_HOURS = 24
 
 # Address changes only make sense before an order's items go into production -
-# once shipped/delivered/cancelled/refunded there's nowhere left to redirect it.
-ADDRESS_CHANGE_ELIGIBLE_STATUSES = ("created", "payment_pending", "cod_confirmed", "paid", "in_production")
+# once a product enters "in_production" (design/manufacturing has actually
+# started) there's nowhere left to redirect it, so that status and everything
+# after it (shipped/delivered/cancelled/refunded) are excluded.
+ADDRESS_CHANGE_ELIGIBLE_STATUSES = ("created", "payment_pending", "cod_confirmed", "paid")
 
 # Nothing has been charged or committed yet at these statuses, so a customer can
 # cancel immediately without staff review.
 IMMEDIATE_CANCEL_STATUSES = ("created", "payment_pending")
 
-# Once money has moved or production has started, cancelling needs a staff
-# decision (refund/restock implications) - raised as a request instead.
-REQUESTABLE_CANCEL_STATUSES = ("cod_confirmed", "paid", "in_production", "shipped")
+# Once money has moved, cancelling needs a staff decision (refund/restock
+# implications) - raised as a request instead. Cancellation stops being
+# offered at all once a product enters "in_production" - production has
+# actually started by then, so it (and shipped/delivered after it) are
+# excluded, same cutoff as address changes above.
+REQUESTABLE_CANCEL_STATUSES = ("cod_confirmed", "paid")
 
 
 def _default_window_hours(db: Session) -> int:
@@ -112,9 +117,14 @@ def _annotate(
     out.can_request_address_change = bool(
         deadline and now <= deadline and not order.address_change_requests
     )
+    # Only a pending *whole-order* request (order_item_id is None) blocks the
+    # "Cancel Order" action - a pending request against one line item must not
+    # lock out the others, or every other product in the order would wrongly
+    # show "cancellation pending" too (see per-item gating in the frontend,
+    # which mirrors this same scoping).
     out.can_cancel = (
         order.status in (IMMEDIATE_CANCEL_STATUSES + REQUESTABLE_CANCEL_STATUSES)
-        and not any(r.status == "pending" for r in order.cancellation_requests)
+        and not any(r.status == "pending" and r.order_item_id is None for r in order.cancellation_requests)
     )
     out.refund_status = refund_status(order)
     return out

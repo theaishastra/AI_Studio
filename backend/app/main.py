@@ -11,7 +11,11 @@ from starlette.types import Scope
 
 from .config import get_settings
 from .database import Base, engine
-from .migrations import backfill_address_snapshots, run_column_migrations, run_index_migrations
+from .migrations import (
+    backfill_address_snapshots, backfill_corporate_engraving_fields,
+    backfill_gifts_personalisation_fields, backfill_requires_photo_upload_fields,
+    backfill_studio_quantity_purpose_fields, run_column_migrations, run_index_migrations,
+)
 from .routers import addresses, admin, auth, bookings, cart, catalog, contact, orders, payments, wishlist
 from .services.storage import ensure_storage_ready
 
@@ -28,6 +32,10 @@ async def lifespan(app: FastAPI):
     run_column_migrations(engine)
     run_index_migrations(engine)
     backfill_address_snapshots(engine)
+    backfill_requires_photo_upload_fields(engine)
+    backfill_studio_quantity_purpose_fields(engine)
+    backfill_corporate_engraving_fields(engine)
+    backfill_gifts_personalisation_fields(engine)
     ensure_storage_ready()
     catalog.warm_catalog_cache()
     yield

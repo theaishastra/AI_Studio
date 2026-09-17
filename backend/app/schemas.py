@@ -1,6 +1,6 @@
 from datetime import datetime, date
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .models import CANCELLATION_REASONS
 
@@ -235,6 +235,11 @@ class ProductInputFieldIn(BaseModel):
     # dropdown only
     options: list[str] = Field(default_factory=list, max_length=50)
     multi_select: bool = False
+    # dropdown only, optional - when set, picking that option replaces the item's
+    # unit price with this value instead of just recording an answer (e.g. Studio's
+    # "16 Photos = ₹200" quantity picker). Keyed by the option string itself; an
+    # option with no entry here just behaves like a normal answer.
+    option_prices: dict[str, float] | None = None
 
     @model_validator(mode="after")
     def _check_type_fields(self):
@@ -257,6 +262,7 @@ class ProductIn(BaseModel):
     advance_amount: float | None = None
     stock: int | None = None
     address_change_window_hours: int | None = Field(default=None, ge=0, le=720)
+    delivery_days: int | None = Field(default=None, ge=0, le=365)
     features: list[str] = []
     is_active: bool = True
     sort: int = 0
@@ -277,6 +283,7 @@ class ProductPatch(BaseModel):
     advance_amount: float | None = None
     stock: int | None = None
     address_change_window_hours: int | None = Field(default=None, ge=0, le=720)
+    delivery_days: int | None = Field(default=None, ge=0, le=365)
     features: list[str] | None = None
     is_active: bool | None = None
     sort: int | None = None
@@ -298,6 +305,7 @@ class ProductOut(BaseModel):
     advance_amount: float | None
     stock: int | None
     address_change_window_hours: int | None
+    delivery_days: int | None
     features: list[str]
     is_active: bool
     sort: int
@@ -471,9 +479,19 @@ class TrackingUpdateIn(BaseModel):
 
 class CancellationRequestIn(BaseModel):
     reason: str = Field(pattern=_CANCELLATION_REASON_PATTERN)
-    note: str = Field(default="", max_length=500)
+    # Free-text is mandatory alongside the reason dropdown - staff reviewing
+    # the request need the customer's own words, not just the category.
+    note: str = Field(min_length=3, max_length=500)
     # When set, cancels just this one line item instead of the whole order.
     order_item_id: str | None = None
+
+    @field_validator("note")
+    @classmethod
+    def _note_not_blank(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 3:
+            raise ValueError("Please tell us a bit more about why you're cancelling")
+        return v
 
 
 class CancellationDecisionIn(BaseModel):

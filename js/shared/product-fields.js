@@ -44,6 +44,28 @@
     container.querySelectorAll('.pf-upload-input').forEach(input => {
       input.addEventListener('change', () => handleUploadChange(container, input));
     });
+    // Priced dropdowns (Product.input_fields option_prices) - let a page listen for
+    // "pf:pricechange" to live-update its own displayed price instead of polling.
+    container.querySelectorAll('.pf-dropdown-input[data-priced]').forEach(select => {
+      select.addEventListener('change', () => {
+        const field = fields.find(f => f.id === select.closest('.pf-field').dataset.fieldId);
+        const price = field && field.option_prices ? field.option_prices[select.value] : null;
+        container.dispatchEvent(new CustomEvent('pf:pricechange', { bubbles: true, detail: { fieldId: field.id, price } }));
+      });
+    });
+  }
+
+  // The currently selected price from this container's first priced dropdown (if
+  // any), or null if the product has none / nothing's priced yet. Callers that need
+  // the value synchronously (e.g. at add-to-cart time) use this instead of the event.
+  function getSelectedPrice(container, product) {
+    if (!container) return null;
+    const field = sortedFields(product).find(f => f.type === 'dropdown' && !f.multi_select && f.option_prices && Object.keys(f.option_prices).length);
+    if (!field) return null;
+    const el = document.getElementById(controlId(container, field));
+    if (!el || !el.value) return null;
+    const price = field.option_prices[el.value];
+    return (price || price === 0) ? price : null;
   }
 
   function renderField(container, field) {
@@ -54,10 +76,18 @@
     if (field.type === 'text') {
       control = `<input type="text" class="pf-text-input" id="${cid}" placeholder="${esc(field.placeholder || '')}">`;
     } else if (field.type === 'dropdown') {
-      const opts = (field.options || []).map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
+      const priced = !field.multi_select && field.option_prices && Object.keys(field.option_prices).length;
+      const opts = (field.options || []).map(o => {
+        const price = priced ? field.option_prices[o] : null;
+        const label = (price || price === 0) ? `${o} — ₹${price}` : o;
+        return `<option value="${esc(o)}">${esc(label)}</option>`;
+      }).join('');
       control = field.multi_select
         ? `<select multiple class="pf-dropdown-input" id="${cid}" size="${Math.min(Math.max((field.options || []).length, 2), 5)}">${opts}</select>`
-        : `<select class="pf-dropdown-input" id="${cid}"><option value="">Choose an option</option>${opts}</select>`;
+        // A priced dropdown always needs a value to price the item by, so (like
+        // Studio's old quantity picker) it skips the blank placeholder and starts
+        // on its first option instead of forcing the customer to pick one.
+        : `<select class="pf-dropdown-input" id="${cid}" ${priced ? `data-priced="true"` : ''}>${priced ? '' : '<option value="">Choose an option</option>'}${opts}</select>`;
     } else if (field.type === 'upload') {
       const max = field.multiple ? (field.max_files || 1) : 1;
       control = `
@@ -173,5 +203,5 @@
     return errors;
   }
 
-  global.ProductFields = { renderProductFields, collectProductFields, validateProductFields };
+  global.ProductFields = { renderProductFields, collectProductFields, validateProductFields, getSelectedPrice };
 })(window);

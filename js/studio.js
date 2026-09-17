@@ -423,7 +423,7 @@ function renderContent() {
     <div class="pkg-card">
       <div class="pkg-image-wrap" onclick="openProductPreview(${idx})">
         <img class="pkg-image" src="${cldOpt(pkg.img)}" alt="${pkg.name}" loading="lazy">
-        <span class="pkg-badge">${pkg.tag}</span>
+        ${pkg.tag ? `<span class="pkg-badge">${escapeHtml(pkg.tag)}</span>` : ''}
         ${pkg.badge ? `<span class="pkg-ribbon pkg-ribbon-${pkg.badge.toLowerCase()}">${pkg.badge}</span>` : ''}
         <button type="button" class="pkg-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -450,7 +450,7 @@ function renderContent() {
 function orderNowFromCard(idx) {
   const pkg = currentPackages[idx];
   if (!pkg) return;
-  if (pkg.requiresPhotoUpload || pkg.quantityOptions || pkg.purposeOptions) {
+  if (pkg.requiresPhotoUpload || (pkg.input_fields && pkg.input_fields.length)) {
     openProductPreview(idx);
     return;
   }
@@ -527,7 +527,7 @@ function openProductPreview(idx, opts = {}) {
   document.getElementById('previewHighlights').innerHTML = highlights.map(h => `<li>${h}</li>`).join('');
 
   const est = new Date();
-  est.setDate(est.getDate() + 3);
+  est.setDate(est.getDate() + (pkg.deliveryDays || 3));
   const estStr = est.toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'short' });
   document.getElementById('previewDeliveryEst').textContent = `Delivery by ${estStr}`;
 
@@ -567,36 +567,21 @@ function renderPreviewOptions(pkg) {
   uploadFilename.textContent = '';
   [qtyGroup, purposeGroup, uploadGroup].forEach(g => g.classList.remove('field-error'));
 
-  const hasQty = !!(pkg.quantityOptions && pkg.quantityOptions.length);
-  const hasPurpose = !!(pkg.purposeOptions && pkg.purposeOptions.length);
+  // Quantity/purpose (with per-option pricing) now live in pkg.input_fields, rendered
+  // generically below - this group only still covers the legacy requiresPhotoUpload flag.
+  qtyGroup.style.display = 'none';
+  purposeGroup.style.display = 'none';
   const hasUpload = !!pkg.requiresPhotoUpload;
-
-  optionsWrap.style.display = (hasQty || hasPurpose || hasUpload) ? 'flex' : 'none';
-
-  qtyGroup.style.display = hasQty ? 'flex' : 'none';
-  if (hasQty) {
-    document.getElementById('previewQtyLabel').textContent = pkg.qtyLabel || 'Photo Quantity';
-    qtySelect.innerHTML = pkg.quantityOptions.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('');
-    const defaultOpt = pkg.quantityOptions.find(opt => pkg.tag && pkg.tag.includes(opt.value)) || pkg.quantityOptions[0];
-    qtySelect.value = defaultOpt.value;
-    activePreviewQtyOption = defaultOpt;
-    document.getElementById('previewPrice').textContent = `₹${defaultOpt.price}`;
-    document.getElementById('previewActionPrice').textContent = `₹${defaultOpt.price}`;
-  }
-
-  purposeGroup.style.display = hasPurpose ? 'flex' : 'none';
-  if (hasPurpose) {
-    document.getElementById('previewPurposeLabel').textContent = pkg.purposeLabel || 'Photo Purpose';
-    purposeSelect.innerHTML = '<option value="">Choose an option</option>' +
-      pkg.purposeOptions.map(p => `<option value="${p}">${p}</option>`).join('');
-    purposeSelect.value = '';
-  }
-
+  optionsWrap.style.display = hasUpload ? 'flex' : 'none';
   uploadGroup.style.display = hasUpload ? 'flex' : 'none';
 
   const customFieldsWrap = document.getElementById('previewCustomFields');
   if (customFieldsWrap && window.ProductFields) {
     ProductFields.renderProductFields(customFieldsWrap, pkg);
+    const price = ProductFields.getSelectedPrice(customFieldsWrap, pkg);
+    const priceText = (price || price === 0) ? `₹${price}` : pkg.price;
+    document.getElementById('previewPrice').textContent = priceText;
+    document.getElementById('previewActionPrice').textContent = priceText;
   }
 }
 
@@ -649,12 +634,6 @@ function validatePreviewOptions() {
   let valid = true;
   const missing = [];
 
-  if (activePreviewPkg.purposeOptions && activePreviewPkg.purposeOptions.length && !activePreviewPurpose) {
-    document.getElementById('previewPurposeGroup').classList.add('field-error');
-    missing.push((activePreviewPkg.purposeLabel || 'Photo Purpose').toLowerCase());
-    valid = false;
-  }
-
   if (activePreviewPkg.requiresPhotoUpload && !activePreviewPhotoFile) {
     document.getElementById('previewUploadGroup').classList.add('field-error');
     missing.push('photo upload');
@@ -678,11 +657,24 @@ function validatePreviewOptions() {
   return valid;
 }
 
+// Reads the currently selected value of every single-select dropdown Customer
+// Question (quantity/purpose/etc, in sort order) straight from the rendered
+// controls, so the cart line's display name keeps the "(16 Photos – 4x6)" style
+// suffix it always had, now driven by input_fields instead of the old
+// quantityOptions/purposeOptions-specific state.
+function previewDropdownSelections() {
+  const wrap = document.getElementById('previewCustomFields');
+  if (!wrap || !activePreviewPkg) return [];
+  return (activePreviewPkg.input_fields || [])
+    .filter(f => f.type === 'dropdown' && !f.multi_select)
+    .slice().sort((a, b) => (a.sort || 0) - (b.sort || 0))
+    .map(f => document.getElementById(`${wrap.id}_${f.id}`)?.value || '')
+    .filter(Boolean);
+}
+
 function buildPreviewCartName() {
   const parts = [activePreviewPkg.name];
-  const details = [];
-  if (activePreviewQtyOption) details.push(activePreviewQtyOption.label);
-  if (activePreviewPurpose) details.push(activePreviewPurpose);
+  const details = previewDropdownSelections();
   if (details.length) parts.push(`(${details.join(' – ')})`);
   return parts.join(' ');
 }
@@ -771,10 +763,19 @@ async function collectPreviewCustomFields() {
   return { fields, fieldLabels };
 }
 
+// The item's price, taking into account a priced Customer Questions dropdown
+// (e.g. Studio's old quantity picker) if this product has one selected -
+// falls back to the package's own price otherwise.
+function currentPreviewPrice() {
+  const wrap = document.getElementById('previewCustomFields');
+  const price = wrap && window.ProductFields ? ProductFields.getSelectedPrice(wrap, activePreviewPkg) : null;
+  return (price || price === 0) ? `₹${price}` : activePreviewPkg.price;
+}
+
 async function previewAddToCart() {
   if (!activePreviewPkg) return;
   if (!validatePreviewOptions()) return;
-  const price = activePreviewQtyOption ? `₹${activePreviewQtyOption.price}` : activePreviewPkg.price;
+  const price = currentPreviewPrice();
   const photoData = await readActivePreviewPhoto();
   const custom = await collectPreviewCustomFields();
   const customization = (photoData || custom) ? { ...(photoData ? { photoData } : {}), ...(custom || {}) } : null;
@@ -804,7 +805,7 @@ function goToCartFromToast() {
 async function previewBuyNow() {
   if (!activePreviewPkg) return;
   if (!validatePreviewOptions()) return;
-  const price = activePreviewQtyOption ? `₹${activePreviewQtyOption.price}` : activePreviewPkg.price;
+  const price = currentPreviewPrice();
   const photoData = await readActivePreviewPhoto();
   const custom = await collectPreviewCustomFields();
   const customization = (photoData || custom) ? { ...(photoData ? { photoData } : {}), ...(custom || {}) } : null;
@@ -1004,8 +1005,13 @@ function renderCheckoutReviewStep() {
   document.getElementById('checkoutReviewItems').innerHTML = items.map(item => cartItemRowHTML(item, false)).join('');
   renderPriceDetails('2');
 
+  // Slowest item in the cart sets the order's delivery estimate.
+  const maxDeliveryDays = items.reduce((max, item) => {
+    const pkg = findPackageByName(item.name);
+    return Math.max(max, (pkg && pkg.deliveryDays) || 3);
+  }, 3);
   const est = new Date();
-  est.setDate(est.getDate() + 3);
+  est.setDate(est.getDate() + maxDeliveryDays);
   const estStr = est.toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'short' });
   document.getElementById('checkoutDeliveryEst').textContent = `Estimated Delivery by ${estStr}`;
 }
@@ -1113,12 +1119,9 @@ async function loadStudioCatalog() {
         if (extra.tag) pkg.tag = extra.tag;
         if (extra.badge) pkg.badge = extra.badge;
         if (extra.turnaround) pkg.turnaround = extra.turnaround;
-        if (extra.qtyLabel) pkg.qtyLabel = extra.qtyLabel;
-        if (extra.quantityOptions) pkg.quantityOptions = extra.quantityOptions;
-        if (extra.purposeLabel) pkg.purposeLabel = extra.purposeLabel;
-        if (extra.purposeOptions) pkg.purposeOptions = extra.purposeOptions;
         if (extra.requiresPhotoUpload) pkg.requiresPhotoUpload = extra.requiresPhotoUpload;
         pkg.input_fields = p.input_fields || [];
+        pkg.deliveryDays = p.delivery_days || null;
         return pkg;
       }),
     };
@@ -1152,6 +1155,17 @@ window.addEventListener('DOMContentLoaded', async () => {
   renderContent();
   initStudioProductAccordions();
   updateStudioCartBadge();
+
+  // Priced Customer Questions dropdown (e.g. a quantity picker) - keep the modal's
+  // displayed price live as the customer changes their selection, same as the old
+  // dedicated quantity-select handler used to.
+  document.getElementById('previewCustomFields')?.addEventListener('pf:pricechange', (e) => {
+    if (!activePreviewPkg) return;
+    const price = e.detail && (e.detail.price || e.detail.price === 0) ? e.detail.price : null;
+    const text = price !== null ? `₹${price}` : activePreviewPkg.price;
+    document.getElementById('previewPrice').textContent = text;
+    document.getElementById('previewActionPrice').textContent = text;
+  });
 
   // A ?category= deep link (header mega-menu, homepage cards, ...) should land on
   // that category's title/packages, not the hero carousel above it - same place

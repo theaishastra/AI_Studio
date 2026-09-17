@@ -41,7 +41,7 @@ ORDER_STATUS_TRACKING_TITLES = {
     "payment_pending": "Awaiting payment",
     "cod_confirmed": "Order confirmed (Cash on Delivery)",
     "paid": "Payment received",
-    "in_production": "Order in production",
+    "in_production": "Designing",
     "shipped": "Order shipped",
     "delivered": "Order delivered",
     "cancelled": "Order cancelled",

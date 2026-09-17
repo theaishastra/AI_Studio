@@ -1,4 +1,6 @@
+import json
 import logging
+import uuid
 
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
@@ -16,6 +18,7 @@ _COLUMN_MIGRATIONS: dict[str, list[str]] = {
     "products": [
         "ADD COLUMN IF NOT EXISTS address_change_window_hours INTEGER",
         "ADD COLUMN IF NOT EXISTS input_fields JSON DEFAULT '[]'::json",
+        "ADD COLUMN IF NOT EXISTS delivery_days INTEGER",
         "DROP COLUMN IF EXISTS is_featured",
     ],
     "orders": [
@@ -98,3 +101,197 @@ def backfill_address_snapshots(engine: Engine) -> None:
               AND (o.address_snapshot IS NULL OR o.address_snapshot::text = '{}')
         """))
     logger.info("Address snapshot backfill applied.")
+
+
+def backfill_requires_photo_upload_fields(engine: Engine) -> None:
+    """One-time (idempotent) migration for the old studio-only "Customer must
+    upload a photo to order this" checkbox (Product.extra.requiresPhotoUpload)
+    - now replaced by the generic Product.input_fields "Customer Questions"
+    builder (an upload-type field with Required checked) so every page
+    (studio/corporate/gifts) shares one mechanism instead of studio having its
+    own separate one. Converts each flagged product's flag into an equivalent
+    input_fields entry (skipped if it already has an upload field, so this
+    never double-adds one) and strips the old flag, so existing products keep
+    requiring a photo upload without the now-removed admin checkbox. Only
+    touches rows still carrying the old flag, so it's safe to run on every
+    startup."""
+    inspector = inspect(engine)
+    if "products" not in inspector.get_table_names():
+        return
+    with engine.begin() as conn:
+        rows = conn.execute(text(
+            "SELECT id, extra, input_fields FROM products WHERE extra->>'requiresPhotoUpload' = 'true'"
+        )).fetchall()
+        for row in rows:
+            extra = dict(row.extra or {})
+            extra.pop("requiresPhotoUpload", None)
+            input_fields = list(row.input_fields or [])
+            if not any(f.get("type") == "upload" for f in input_fields):
+                input_fields.append({
+                    "id": f"f_{uuid.uuid4().hex[:8]}",
+                    "type": "upload",
+                    "label": "Upload your photo",
+                    "required": True,
+                    "help_text": "",
+                    "sort": len(input_fields),
+                    "multiple": False,
+                    "max_files": 1,
+                    "options": [],
+                    "multi_select": False,
+                })
+            conn.execute(
+                text("UPDATE products SET extra = :extra, input_fields = :input_fields WHERE id = :id"),
+                {"extra": json.dumps(extra), "input_fields": json.dumps(input_fields), "id": row.id},
+            )
+    if rows:
+        logger.info("Migrated requiresPhotoUpload flag to input_fields for %d product(s).", len(rows))
+
+
+def backfill_studio_quantity_purpose_fields(engine: Engine) -> None:
+    """One-time (idempotent) migration folding Studio's separate "Order options"
+    admin section (Product.extra.quantityOptions/purposeOptions, a priced
+    quantity picker and a required size/purpose picker) into the generic
+    Product.input_fields "Customer Questions" builder, so Studio no longer has
+    its own separate extra-question mechanism. quantityOptions becomes a
+    dropdown field with option_prices (picking an option still replaces the
+    item's price, exactly as before); purposeOptions becomes a plain required
+    dropdown. Only touches rows still carrying the old extra keys, so it's
+    safe to run on every startup."""
+    inspector = inspect(engine)
+    if "products" not in inspector.get_table_names():
+        return
+    with engine.begin() as conn:
+        rows = conn.execute(text("""
+            SELECT p.id, p.extra, p.input_fields
+            FROM products p
+            JOIN categories c ON p.category_id = c.id
+            JOIN site_pages sp ON c.page_id = sp.id
+            WHERE sp.slug = 'studio'
+              AND (p.extra->'quantityOptions' IS NOT NULL OR p.extra->'purposeOptions' IS NOT NULL)
+        """)).fetchall()
+        for row in rows:
+            extra = dict(row.extra or {})
+            input_fields = list(row.input_fields or [])
+            sort = len(input_fields)
+
+            qty_options = extra.pop("quantityOptions", None)
+            qty_label = extra.pop("qtyLabel", None)
+            if qty_options:
+                option_prices = {o["label"]: o["price"] for o in qty_options if o.get("label") is not None}
+                input_fields.append({
+                    "id": f"f_{uuid.uuid4().hex[:8]}", "type": "dropdown",
+                    "label": qty_label or "Quantity", "required": True, "help_text": "",
+                    "sort": sort, "multiple": False, "max_files": 1,
+                    "options": list(option_prices.keys()), "multi_select": False,
+                    "option_prices": option_prices,
+                })
+                sort += 1
+
+            purpose_options = extra.pop("purposeOptions", None)
+            purpose_label = extra.pop("purposeLabel", None)
+            if purpose_options:
+                input_fields.append({
+                    "id": f"f_{uuid.uuid4().hex[:8]}", "type": "dropdown",
+                    "label": purpose_label or "Size / Purpose", "required": True, "help_text": "",
+                    "sort": sort, "multiple": False, "max_files": 1,
+                    "options": purpose_options, "multi_select": False,
+                })
+
+            conn.execute(
+                text("UPDATE products SET extra = :extra, input_fields = :input_fields WHERE id = :id"),
+                {"extra": json.dumps(extra), "input_fields": json.dumps(input_fields), "id": row.id},
+            )
+    if rows:
+        logger.info("Migrated quantity/purpose options to input_fields for %d studio product(s).", len(rows))
+
+
+def backfill_corporate_engraving_fields(engine: Engine) -> None:
+    """One-time (idempotent) migration giving every corporate product the
+    Customer Questions equivalent of the old hardcoded "Custom Logo &
+    Engraving" box (a fixed text + logo-upload + technique picker shown
+    unconditionally on every corporate product, never admin-configurable).
+    Both the text and upload fields land as NOT required - the old box only
+    required "text OR logo", which the required flag can't express as an
+    either/or rule, so admin can turn either one on individually going
+    forward instead. Only touches corporate products with no input_fields
+    yet (true for all of them before this ran), so it's safe on every
+    startup and never overwrites an admin's own Customer Questions setup."""
+    inspector = inspect(engine)
+    if "products" not in inspector.get_table_names():
+        return
+    with engine.begin() as conn:
+        rows = conn.execute(text("""
+            SELECT p.id
+            FROM products p
+            JOIN categories c ON p.category_id = c.id
+            JOIN site_pages sp ON c.page_id = sp.id
+            WHERE sp.slug = 'corporate'
+              AND (p.input_fields IS NULL OR p.input_fields::text = '[]')
+        """)).fetchall()
+        for row in rows:
+            input_fields = [
+                {
+                    "id": f"f_{uuid.uuid4().hex[:8]}", "type": "text",
+                    "label": "Company name or text to engrave", "required": False, "help_text": "",
+                    "sort": 0, "multiple": False, "max_files": 1, "options": [], "multi_select": False,
+                },
+                {
+                    "id": f"f_{uuid.uuid4().hex[:8]}", "type": "upload",
+                    "label": "Upload your logo", "required": False, "help_text": "",
+                    "sort": 1, "multiple": False, "max_files": 1, "options": [], "multi_select": False,
+                },
+                {
+                    "id": f"f_{uuid.uuid4().hex[:8]}", "type": "dropdown",
+                    "label": "Customization technique", "required": False, "help_text": "",
+                    "sort": 2, "multiple": False, "max_files": 1, "multi_select": False,
+                    "options": ["Laser Engraved", "UV Color Print", "Foil Embossed"],
+                },
+            ]
+            conn.execute(
+                text("UPDATE products SET input_fields = :input_fields WHERE id = :id"),
+                {"input_fields": json.dumps(input_fields), "id": row.id},
+            )
+    if rows:
+        logger.info("Added default engraving/logo Customer Questions to %d corporate product(s).", len(rows))
+
+
+def backfill_gifts_personalisation_fields(engine: Engine) -> None:
+    """One-time (idempotent) migration giving every gift product the Customer
+    Questions equivalent of the old hardcoded "Personalise this gift" box (a
+    fixed photo upload + message text, always shown and always required on
+    every gift product, never admin-configurable). Both fields land as
+    required, matching that old unconditional rule exactly. Only touches
+    gift products with no input_fields yet (true for all of them before
+    this ran), so it's safe on every startup and never overwrites an
+    admin's own Customer Questions setup."""
+    inspector = inspect(engine)
+    if "products" not in inspector.get_table_names():
+        return
+    with engine.begin() as conn:
+        rows = conn.execute(text("""
+            SELECT p.id
+            FROM products p
+            JOIN categories c ON p.category_id = c.id
+            JOIN site_pages sp ON c.page_id = sp.id
+            WHERE sp.slug = 'gifts'
+              AND (p.input_fields IS NULL OR p.input_fields::text = '[]')
+        """)).fetchall()
+        for row in rows:
+            input_fields = [
+                {
+                    "id": f"f_{uuid.uuid4().hex[:8]}", "type": "upload",
+                    "label": "Upload your photo", "required": True, "help_text": "",
+                    "sort": 0, "multiple": False, "max_files": 1, "options": [], "multi_select": False,
+                },
+                {
+                    "id": f"f_{uuid.uuid4().hex[:8]}", "type": "text",
+                    "label": "Name or message to add", "required": True, "help_text": "",
+                    "sort": 1, "multiple": False, "max_files": 1, "options": [], "multi_select": False,
+                },
+            ]
+            conn.execute(
+                text("UPDATE products SET input_fields = :input_fields WHERE id = :id"),
+                {"input_fields": json.dumps(input_fields), "id": row.id},
+            )
+    if rows:
+        logger.info("Added default photo/message Customer Questions to %d gift product(s).", len(rows))
