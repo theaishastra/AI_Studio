@@ -66,7 +66,7 @@
       const msgEl = document.getElementById('acctLoginMsg');
       msgEl.style.display = 'none';
 
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      if (!Validators.isValidEmail(email)) {
         msgEl.textContent = 'Please enter a valid email address.';
         msgEl.style.display = 'block';
         return;
@@ -173,7 +173,7 @@
       msgEl.style.display = 'none';
       msgEl.classList.remove('acct-save-ok');
 
-      if (phone && !/^[6-9]\d{9}$/.test(phone)) {
+      if (phone && !Validators.isValidPhone(phone)) {
         msgEl.textContent = 'Please enter a valid 10-digit mobile number.';
         msgEl.style.display = 'block';
         return;
@@ -290,7 +290,7 @@
         is_default: document.getElementById('acctAddrDefault').checked,
       };
 
-      if (data.full_name.length < 2 || !/^[6-9]\d{9}$/.test(data.phone) || data.line1.length < 3 ||
+      if (data.full_name.length < 2 || !Validators.isValidPhone(data.phone) || data.line1.length < 3 ||
           data.city.length < 2 || data.state.length < 2 || !/^\d{6}$/.test(data.pincode)) {
         msgEl.textContent = 'Please fill in all required fields correctly.';
         msgEl.style.display = 'block';

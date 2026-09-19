@@ -149,8 +149,8 @@ function submitBooking(){
   const date=document.getElementById("fDate").value;
   let ok=true;
   markInvalid("fName",!name); if(!name)ok=false;
-  const phoneOk=phone.length>=10; markInvalid("fPhone",!phoneOk); if(!phoneOk)ok=false;
-  const emailOk=/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email); markInvalid("fEmail",!emailOk); if(!emailOk)ok=false;
+  const phoneOk=Validators.isValidPhone(phone); markInvalid("fPhone",!phoneOk); if(!phoneOk)ok=false;
+  const emailOk=Validators.isValidEmail(email); markInvalid("fEmail",!emailOk); if(!emailOk)ok=false;
   if(!usesEventSchedule){ markInvalid("fDate",!date); if(!date)ok=false; }
   const eventsOk=usesEventSchedule?validateEventRows():true;
   if(!ok||!eventsOk){
@@ -232,7 +232,7 @@ async function sendBookingOtp(){
   const email=document.getElementById("bookingLoginEmail").value.trim();
   const msgEl=document.getElementById("bookingLoginMsg");
   msgEl.style.display="none";
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){
+  if(!Validators.isValidEmail(email)){
     msgEl.textContent="Please enter a valid email address.";
     msgEl.style.display="block";
     return;

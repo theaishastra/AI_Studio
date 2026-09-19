@@ -606,7 +606,7 @@
       let error = '';
       if (!d.name || !d.phone || !d.dno || !d.street || !d.city || !d.state || !d.pincode) {
         error = 'Please fill in all required delivery details (Landmark is optional).';
-      } else if (!/^[6-9]\d{9}$/.test(digitsOnly)) {
+      } else if (!Validators.isValidPhone(digitsOnly)) {
         error = 'Please enter a valid 10-digit mobile number.';
       } else if (!/^\d{6}$/.test(d.pincode)) {
         error = 'Please enter a valid 6-digit pincode.';
@@ -657,7 +657,7 @@
       const msgEl = document.getElementById('cartLoginMsg');
       msgEl.style.display = 'none';
 
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      if (!Validators.isValidEmail(email)) {
         msgEl.textContent = 'Please enter a valid email address.';
         msgEl.style.display = 'block';
         return;

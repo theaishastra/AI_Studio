@@ -104,8 +104,8 @@
 
       const rules = {
         contactName: v => v.trim().length >= 2,
-        contactPhone: v => /^[6-9]\d{9}$/.test(v.replace(/\D/g, '').slice(-10)) && v.replace(/\D/g, '').length >= 10,
-        contactEmail: v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()),
+        contactPhone: v => Validators.isValidPhone(v),
+        contactEmail: v => Validators.isValidEmail(v),
         contactSubject: v => v.trim().length >= 3,
         contactMessage: v => v.trim().length >= 10
       };
