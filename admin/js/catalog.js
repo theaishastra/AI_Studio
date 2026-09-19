@@ -662,8 +662,8 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
         </div>`).join("") || `<div style="color:var(--text-dim);font-size:13px;">No photos yet.</div>`}
     </div>
     <form id="mediaUploadForm" style="margin-top:16px;">
-      <label>Upload a photo</label>
-      <input type="file" id="m_file" accept="image/*">
+      <label>Upload photos <span class="form-hint">(up to 5 at once)</span></label>
+      <input type="file" id="m_file" accept="image/*" multiple>
       <span id="mediaUploadStatus" style="color:var(--text-dim);font-size:12px;"></span>
     </form>
     <p style="color:var(--text-dim);font-size:12px;margin:12px 0 4px;">— or choose from the Media Library —</p>
@@ -679,28 +679,69 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
       </div>
     </form>
   `);
+  const MAX_UPLOAD_FILES = 5;
   document.getElementById("m_file").addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    let files = Array.from(e.target.files || []);
+    if (!files.length) return;
     const status = document.getElementById("mediaUploadStatus");
-    status.textContent = "Uploading…";
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      // Files this photo under media_library/<page>/<category>/... in R2 instead of
-      // one flat folder, when we know which product/category this upload is for -
-      // organization only, the app's own queries never read the key path (see
-      // upload_media_library_asset()'s docstring in services/storage.py).
-      if (pageSlug) fd.append("page_slug", pageSlug);
-      if (categorySlug) fd.append("category_slug", categorySlug);
-      const uploaded = await Api.uploadMedia(fd);
-      await addFn({ url: uploaded.url, alt: uploaded.alt || "", kind, sort: media.length });
-      closeModal();
-      afterChange();
-    } catch (err) {
-      status.textContent = "";
-      document.getElementById("formMsg").innerHTML = `<div class="msg error">${esc(err.message)}</div>`;
+    const formMsg = document.getElementById("formMsg");
+    formMsg.innerHTML = "";
+    if (files.length > MAX_UPLOAD_FILES) {
+      formMsg.innerHTML = `<div class="msg error">You picked ${files.length} photos - only the first ${MAX_UPLOAD_FILES} will be uploaded.</div>`;
+      files = files.slice(0, MAX_UPLOAD_FILES);
     }
+
+    const listEl = document.getElementById("mediaList");
+    const emptyState = listEl.querySelector(":scope > div:only-child");
+    if (files.length && emptyState && !emptyState.classList.contains("media-item")) emptyState.remove();
+
+    const failures = [];
+    // Sequential, not Promise.all - each is its own real network upload (not
+    // just a fast DB write like the multi-select library picker below), so
+    // running them in parallel would fight over the same connection/bandwidth
+    // with no way to show a meaningful "N of 5" progress for any single one.
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const label = files.length > 1 ? `Uploading ${i + 1} of ${files.length}: ${file.name}` : `Uploading ${file.name}`;
+      status.textContent = `${label}… 0%`;
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        // Files this photo under media_library/<page>/<category>/... in R2 instead of
+        // one flat folder, when we know which product/category this upload is for -
+        // organization only, the app's own queries never read the key path (see
+        // upload_media_library_asset()'s docstring in services/storage.py).
+        if (pageSlug) fd.append("page_slug", pageSlug);
+        if (categorySlug) fd.append("category_slug", categorySlug);
+        const uploaded = await Api.uploadMediaWithProgress(fd, (pct) => {
+          status.textContent = `${label}… ${pct}%`;
+        });
+        const added = await addFn({ url: uploaded.url, alt: uploaded.alt || "", kind, sort: media.length + i });
+        // Append the new photo straight into the grid instead of closing the
+        // modal after every single file - previously the admin had to reopen
+        // this same "Photos" dialog from scratch for each additional photo.
+        const item = document.createElement("div");
+        item.className = "media-item";
+        item.innerHTML = `
+          <img src="${esc(mediaUrl(uploaded.url))}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2290%22 height=%2290%22><rect width=%2290%22 height=%2290%22 fill=%22%23e8e0d8%22/></svg>'">
+          <button title="Remove" onclick="removeMedia('${(added && added.id) || ""}', this)">×</button>
+        `;
+        listEl.appendChild(item);
+        media.push({ id: added && added.id, url: uploaded.url, alt: uploaded.alt || "" });
+      } catch (err) {
+        failures.push(`${file.name}: ${err.message}`);
+      }
+    }
+
+    status.textContent = "";
+    e.target.value = "";
+    if (failures.length) {
+      formMsg.innerHTML = `<div class="msg error">${failures.length} of ${files.length} photo(s) failed to upload:<br>${failures.map(esc).join("<br>")}</div>`;
+    }
+    // Left open on purpose (unlike the single-photo flow before) so the admin
+    // can see every photo they just added and keep going - afterChange()
+    // still refreshes the underlying product/category list in the background.
+    afterChange();
   });
   document.getElementById("mediaForm").addEventListener("submit", async (e) => {
     e.preventDefault();

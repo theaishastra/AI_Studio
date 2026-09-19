@@ -139,6 +139,32 @@ const Api = {
       return res.json();
     });
   },
+  // Same endpoint as uploadMedia, but via XMLHttpRequest instead of fetch()
+  // so onProgress(percent) can report real upload progress - fetch has no
+  // upload-progress event, so a big photo (or a slow connection) left the
+  // admin staring at a static "Uploading…" with no sign anything was
+  // happening. onProgress is optional; omit it to behave like uploadMedia.
+  uploadMediaWithProgress: (formData, onProgress) => {
+    const token = getToken();
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${API_BASE}/api/admin/media/upload`);
+      if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      if (onProgress && xhr.upload) {
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+        });
+      }
+      xhr.onload = () => {
+        let body = null;
+        try { body = JSON.parse(xhr.responseText); } catch (_) {}
+        if (xhr.status >= 200 && xhr.status < 300) resolve(body);
+        else reject(new Error((body && body.detail) || xhr.statusText || `HTTP ${xhr.status}`));
+      };
+      xhr.onerror = () => reject(new Error("Network error during upload"));
+      xhr.send(formData);
+    });
+  },
 
   allSettings: () => api("/api/admin/settings"),
 

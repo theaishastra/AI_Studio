@@ -552,7 +552,12 @@
       modalSelectedColor = "Black";
       currentModalImgIndex = 0;
 
-      activeModalImages = [img];
+      // Prefer the product's full photo gallery (every image an admin
+      // attached via Categories > Products > Photos) over the single `img`
+      // the calling card happened to be rendered with - that single value
+      // was silently capping the thumbnail strip at one photo regardless of
+      // how many were actually uploaded.
+      activeModalImages = (product && product.images && product.images.length) ? product.images : [img];
 
       const titleEl = document.getElementById('modalProductTitle');
       const priceEl = document.getElementById('modalProductPrice');
@@ -567,7 +572,7 @@
       if (titleEl) titleEl.textContent = name;
       if (priceEl) priceEl.textContent = price;
       if (breadcrumbNameEl) breadcrumbNameEl.textContent = name;
-      if (mainImgEl) mainImgEl.src = cldOpt(img);
+      if (mainImgEl) mainImgEl.src = cldOpt(activeModalImages[0] || img);
       if (qtyNumEl) qtyNumEl.textContent = '1';
       if (productCodeEl) productCodeEl.textContent = productId ? `EXCORP${productId}` : '';
       if (pincodeInputEl) pincodeInputEl.value = '';
@@ -1906,6 +1911,11 @@
                 name: p.title,
                 price: p.price,
                 img: (p.images && p.images[0]) || "",
+                // Full gallery, not just the first photo - orderNowDirect()
+                // needs this to populate the product modal's thumbnail strip
+                // with every photo an admin attached, not only the one the
+                // card itself was rendered with.
+                images: p.images || [],
                 subtitle: p.description || "",
               };
               if (p.mrp) prod.oldPrice = p.mrp;
