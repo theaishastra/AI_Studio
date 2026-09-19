@@ -343,7 +343,7 @@
           <div class="order-item-custom-body">
             ${uploaded ? `
               <figure class="order-custom-photo-wrap">
-                <img class="order-custom-photo" src="${escapeOrdAttr(uploaded)}" alt="Photo you uploaded for ${escapeOrdAttr(title)}"
+                <img class="order-custom-photo" src="${escapeOrdAttr(uploaded)}" alt="Photo you uploaded for ${escapeOrdAttr(title)}" loading="lazy"
                      title="Click to view full size" onclick="openOrderImagePreview(this.src)">
                 <figcaption class="order-custom-photo-label">Your upload</figcaption>
               </figure>` : ''}

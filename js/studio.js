@@ -6,23 +6,6 @@ let searchQuery = "";
 // Applies Cloudinary's auto-format/auto-quality transformation to any Cloudinary
 // delivery URL right before it's rendered. No-op for non-Cloudinary URLs (local
 // paths, icons8.com, data:/blob: URIs), so it's safe to wrap any image-url
-// expression with cldOpt(...) without checking the source first.
-function cldOpt(url) {
-  // Cloudinary account has Strict Transformations enabled — any on-the-fly
-  // transform (even a plain resize) 400s. No-op until that's turned off.
-  // Locally-uploaded (admin Media Library) images are relative /media/<file>
-  // paths served by FastAPI itself - route them through the same backend
-  // origin every fetch() on this page already uses, or they resolve against
-  // whatever's hosting this static page instead and 404.
-  if (url && url.startsWith('/media/')) return `${window.SAI_API_BASE || "http://localhost:8000"}${url}`;
-  // js/shared/thumb-map.js is a static url -> thumbnail-url lookup generated
-  // ahead of time by scripts/generate_thumbnails.py (Pillow, no runtime proxy or
-  // redirect). Falls back to the full-size original for anything not in it
-  // (a data:/blob: URI, a localhost dev URL, or a newer image the script hasn't
-  // been re-run for yet).
-  if (!url || url.startsWith('data:') || url.startsWith('blob:') || /^https?:\/\/(localhost|127\.0\.0\.1)/.test(url)) return url;
-  return (window.THUMB_MAP && window.THUMB_MAP[url]) || url;
-}
 
 /* ================= DESKTOP FILTER BAR STATE ================= */
 const categoryDefaultTurnaround = {
@@ -260,7 +243,7 @@ function initSidebar() {
     const cat = categoriesData[key];
     return `
       <div class="sidebar-item ${key === currentCategory ? 'active' : ''}" onclick="switchCategory('${key}', false)" data-key="${key}">
-        <img src="${cldOpt(cat.icon)}" alt="${cat.title}">
+        <img src="${cldOpt(cat.icon)}" alt="${cat.title}" loading="lazy">
         <span>${cat.title}</span>
       </div>
     `;
@@ -278,7 +261,7 @@ function initSidebar() {
     const cat = categoriesData[key];
     return `
       <div class="mobile-cat-item ${key === currentCategory ? 'active' : ''}" onclick="switchCategory('${key}', false)" data-mkey="${key}">
-        <img src="${cldOpt(cat.icon)}" alt="${cat.title}">
+        <img src="${cldOpt(cat.icon)}" alt="${cat.title}" loading="lazy">
         <span>${cat.title}</span>
       </div>
     `;
@@ -509,7 +492,7 @@ function openProductPreview(idx, opts = {}) {
 
   const galleryEl = document.getElementById('previewGallery');
   galleryEl.innerHTML = images.map((img, i) => `
-    <img src="${cldOpt(img)}" class="preview-slide" alt="${pkg.name} view ${i + 1}">
+    <img src="${cldOpt(img)}" class="preview-slide" alt="${pkg.name} view ${i + 1}" loading="${i === 0 ? 'eager' : 'lazy'}">
   `).join('');
 
   document.getElementById('previewDots').innerHTML = images.map((img, i) => `
@@ -518,7 +501,7 @@ function openProductPreview(idx, opts = {}) {
   document.getElementById('previewDots').style.display = images.length > 1 ? 'flex' : 'none';
 
   document.getElementById('previewThumbRail').innerHTML = images.map((img, i) => `
-    <img src="${cldOpt(img)}" class="preview-thumb ${i === 0 ? 'active' : ''}" onclick="scrollPreviewTo(${i})" alt="${pkg.name} thumbnail ${i + 1}">
+    <img src="${cldOpt(img)}" class="preview-thumb ${i === 0 ? 'active' : ''}" onclick="scrollPreviewTo(${i})" alt="${pkg.name} thumbnail ${i + 1}" loading="${i === 0 ? 'eager' : 'lazy'}">
   `).join('');
 
   galleryEl.scrollLeft = 0;
@@ -951,7 +934,7 @@ function renderPriceDetails(suffix) {
 function cartItemRowHTML(item, withActions) {
   return `
     <div class="checkout-cart-item">
-      <img src="${cldOpt(item.img)}" alt="${item.name}" class="checkout-item-img">
+      <img src="${cldOpt(item.img)}" alt="${item.name}" class="checkout-item-img" loading="lazy">
       <div class="checkout-item-info">
         <p class="checkout-item-name">${item.name}</p>
         <p class="checkout-item-price">${item.price}</p>

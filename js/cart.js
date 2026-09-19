@@ -22,23 +22,6 @@
       }[c]));
     }
 
-    // ---------- Cloudinary auto-format/auto-quality helper ----------
-    function cldOpt(url) {
-      // Cloudinary account has Strict Transformations enabled — any on-the-fly
-      // transform (even a plain resize) 400s. No-op until that's turned off.
-      // Locally-uploaded (admin Media Library) images are relative /media/<file>
-      // paths served by FastAPI itself - route them through the same backend
-      // origin every fetch() on this page already uses, or they resolve against
-      // whatever's hosting this static page instead and 404.
-      if (url && url.startsWith('/media/')) return `${window.SAI_API_BASE || "http://localhost:8000"}${url}`;
-      // js/shared/thumb-map.js is a static url -> thumbnail-url lookup generated
-      // ahead of time by scripts/generate_thumbnails.py (Pillow, no runtime proxy or
-      // redirect). Falls back to the full-size original for anything not in it
-      // (a data:/blob: URI, a localhost dev URL, or a newer image the script hasn't
-      // been re-run for yet).
-      if (!url || url.startsWith('data:') || url.startsWith('blob:') || /^https?:\/\/(localhost|127\.0\.0\.1)/.test(url)) return url;
-      return (window.THUMB_MAP && window.THUMB_MAP[url]) || url;
-    }
 
     // Cart items are saved by other pages with whatever image path they used
     // at the time (e.g. "assets/..." or "corporate-assets/..."). This project
@@ -380,16 +363,17 @@
       return '';
     }
 
-    function cartItemRowHTML(item, key) {
+    function cartItemRowHTML(item, key, index) {
       const safeKey = escapeForAttr(key);
       const priceNum = parsePrice(item.price);
       const lineTotal = priceNum * item.qty;
       const uploadedImage = cartItemUploadedImage(item);
       const customText = cartItemCustomText(item);
+      const lazyAttr = index === 0 ? '' : ' loading="lazy"';
       return `
         <div class="cart-item-row">
           <div class="cart-item-thumb-wrap">
-            <img class="cart-item-img" src="${cldOpt(resolveCartImagePath(item.img))}" alt="${item.name}" onerror="this.style.visibility='hidden'">
+            <img class="cart-item-img" src="${cldOpt(resolveCartImagePath(item.img))}" alt="${item.name}"${lazyAttr} onerror="this.style.visibility='hidden'">
           </div>
           <div class="cart-item-details">
             <h3>${item.name}</h3>
@@ -399,7 +383,7 @@
             <div class="cart-item-custom-preview">
               ${uploadedImage ? `
               <div class="cart-item-custom-photo-wrap">
-                <img class="cart-item-custom-photo" src="${uploadedImage}" alt="Your uploaded photo" title="Click to view full size" onclick="openImagePreview('${escapeForAttr(uploadedImage)}')">
+                <img class="cart-item-custom-photo" src="${uploadedImage}" alt="Your uploaded photo" loading="lazy" title="Click to view full size" onclick="openImagePreview('${escapeForAttr(uploadedImage)}')">
                 <span class="cart-item-custom-photo-label">Your photo</span>
               </div>` : ''}
               ${customText ? `<span class="cart-item-custom-text">&ldquo;${escapeHtml(customText)}&rdquo;</span>` : ''}
@@ -494,7 +478,7 @@
       emptyStateSection.style.display = 'none';
 
       document.getElementById('cartItemsList').innerHTML =
-        Object.entries(cart).map(([key, item]) => cartItemRowHTML(item, key)).join('');
+        Object.entries(cart).map(([key, item], index) => cartItemRowHTML(item, key, index)).join('');
 
       document.getElementById('cartItemCount').textContent = `${totalQty} ${totalQty === 1 ? 'item' : 'items'}`;
       document.getElementById('cartSubtotalValue').textContent = `₹${totalPrice}`;

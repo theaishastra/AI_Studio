@@ -227,7 +227,7 @@ function updateWishlistUI() {
     return '' +
       '<div class="cart-drawer-item" data-wish-open data-wish-key="' + k + '" ' +
         'role="button" tabindex="0" title="View ' + safeName + '" style="cursor:pointer;">' +
-        '<img class="cart-drawer-item-img" src="' + escapeWishHTML(item.img) + '" alt="' + safeName + '">' +
+        '<img class="cart-drawer-item-img" src="' + escapeWishHTML(item.img) + '" alt="' + safeName + '" loading="lazy">' +
         '<div class="cart-drawer-item-info">' +
           '<h5>' + safeName + '</h5>' +
           '<p>' + escapeWishHTML(item.price) + '</p>' +

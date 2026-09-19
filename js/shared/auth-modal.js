@@ -115,7 +115,7 @@
   function brandBlock() {
     return (
       '<div class="sk-auth-brand">' +
-        '<img src="https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Sai_digital_lab_logo.png" alt="">' +
+        '<img src="https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Sai_digital_lab_logo.png" alt="" loading="lazy">' +
         '<div><strong>Sai Kumar Digital Lab</strong><small>&amp; Studio</small></div>' +
       '</div>'
     );
