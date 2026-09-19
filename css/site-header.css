@@ -1,6 +1,8 @@
 /* Shared site header - the Photography page's header, used by the
    booking flow so every step shows the same navigation.
-   Copied verbatim from photography.css; do not edit one without the other. */
+   Originally copied verbatim from photography.css; photography.html now
+   links this file directly too (its own photography.css keeps only the
+   page's additional overrides for these selectors, not a duplicate copy). */
     .header-sticky-wrap {
       position: sticky;
       top: 0;
