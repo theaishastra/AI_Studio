@@ -238,11 +238,15 @@
 
     // --- Load Sidebar Items ---
     window.initSidebar = function () {
-      const orderedKeys = ['sets', 'kits', 'pens', 'diaries', 'bottles', 'mementos', 'shields', 'trophies', 'promotional', 'wallets'];
-      // Categories not in the curated order above (newly added ones) are appended
-      // at the end instead of being silently dropped from the sidebar/mobile bar.
-      const extraKeys = Object.keys(categoriesData).filter(k => !orderedKeys.includes(k));
-      const keys = [...orderedKeys.filter(k => categoriesData[k]), ...extraKeys];
+      // categoriesData was built (loadProductsFromBackend) by iterating
+      // data.categories in the exact order GET /api/catalog/corporate returned
+      // them - already sorted server-side by each category's admin-configured
+      // Sort Order (Category.sort). A hardcoded slug list used to override that
+      // order here, so changing a category's Sort Order in the admin panel had
+      // no visible effect on the sidebar/mobile bar - Object.keys() on a
+      // string-keyed object preserves insertion order, so this now just
+      // follows the same order the API already gives.
+      const keys = Object.keys(categoriesData);
 
       // Desktop Sidebar
       let sidebarHTML = `
