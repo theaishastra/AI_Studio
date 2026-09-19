@@ -337,24 +337,47 @@
     }
 
     // Different pages store the customer's uploaded artwork under different
-    // field names (corporate.js: logoData, gifts.js/studio.js: photoData) -
-    // this picks whichever is present so the cart can preview it regardless
-    // of which page the item was added from.
+    // field names (corporate.js: logoData, gifts.js/studio.js: photoData), and
+    // an admin-configured "Customer Input Fields" upload (Product.input_fields)
+    // lands under customization.fields[fieldId] instead (single value or, for a
+    // multi-file field, an array) - checked the same way my-orders.js already
+    // does for a placed order, so an uploaded photo shows up here too instead
+    // of only after checkout.
     function cartItemUploadedImage(item) {
       const cust = item.customization;
       if (!cust) return '';
-      const data = cust.logoData || cust.photoData || '';
-      return typeof data === 'string' && data.startsWith('data:image/') ? data : '';
+      const direct = cust.logoData || cust.photoData || '';
+      if (typeof direct === 'string' && direct.startsWith('data:image/')) return direct;
+      const fields = cust.fields;
+      if (fields && typeof fields === 'object') {
+        for (const value of Object.values(fields)) {
+          const candidates = Array.isArray(value) ? value : [value];
+          const hit = candidates.find(v => typeof v === 'string' && (v.startsWith('data:image/') || /^https?:\/\//.test(v)));
+          if (hit) return hit;
+        }
+      }
+      return '';
     }
 
     // Different pages store the customer's custom message under different field
-    // names (gifts.js: text, corporate.js: engravingText) - this picks whichever
-    // is present so the cart can show it regardless of which page added the item.
+    // names (gifts.js: text, corporate.js: engravingText), and an admin-configured
+    // text/dropdown "Customer Input Field" answer lands under
+    // customization.fields[fieldId] instead - checked the same way my-orders.js
+    // already does for a placed order.
     function cartItemCustomText(item) {
       const cust = item.customization;
       if (!cust) return '';
-      const text = cust.text || cust.engravingText || cust.message || cust.customText || '';
-      return typeof text === 'string' ? text.trim() : '';
+      const direct = cust.text || cust.engravingText || cust.message || cust.customText || '';
+      if (typeof direct === 'string' && direct.trim()) return direct.trim();
+      const fields = cust.fields;
+      if (fields && typeof fields === 'object') {
+        for (const value of Object.values(fields)) {
+          if (typeof value === 'string' && value.trim() && !value.startsWith('data:') && !/^https?:\/\//.test(value)) {
+            return value.trim();
+          }
+        }
+      }
+      return '';
     }
 
     function cartItemRowHTML(item, key) {
