@@ -25,6 +25,24 @@ html {
   scroll-behavior: smooth;
 }
 
+/* #giftsHomeMain/#giftsHomeFooter are the old ?view=home markup hardcoded in
+   gifts.html's <body> (hero/bestsellers/personalized/testimonials). js/gifts.js
+   only reaches them at the very end of parsing (mountRoute() removes them and
+   mounts the real category/product fragment instead), which is late enough
+   that the browser paints them first and then rips them out - a visible flash
+   of this dead homepage UI on every load, since nothing links to ?view=home.
+   Hide them by default so nothing paints before JS decides the route; JS
+   still toggles body.gifts-module-home for the (unlinked) home view itself. */
+#giftsHomeMain,
+#giftsHomeFooter {
+  display: none;
+}
+
+body.gifts-module-home #giftsHomeMain,
+body.gifts-module-home #giftsHomeFooter {
+  display: block;
+}
+
 body {
   color: var(--ink);
   background: var(--cream);

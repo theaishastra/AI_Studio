@@ -814,34 +814,33 @@ async function previewBuyNow() {
     : null;
   addToStudioCart(buildPreviewCartName(), price, activePreviewPkg.img, customization, requirement, activePreviewPkg.id, activePreviewItemQty);
   closeProductPreview();
+  // The item's already in the persistent cart above (unlike gifts.js's Buy Now,
+  // which hands the item itself to cart.html) - this just flags the handoff as
+  // "buy now" so cart.js's consumePendingBuyNow() sends the shopper straight to
+  // the address step instead of the cart review list (items: [] - nothing left
+  // for it to merge in).
+  sessionStorage.setItem('sai_studio_checkout', JSON.stringify({ source: 'buy-now', items: [] }));
   location.href = 'cart.html';
 }
 
 /* ================= SITE-WIDE CART (shared 'sai_studio_cart' key — same one used by
    cart.js, catalog.js, corporate.js, gifts.js, bulk-orders.js, index-2.js, so items
    added here show up in the same cart everywhere else on the site) ================= */
+// js/shared/cart-core.js - shared storage/sync logic
 function getStudioCart() {
-  try {
-    return JSON.parse(localStorage.getItem('sai_studio_cart')) || {};
-  } catch (e) {
-    return {};
-  }
+  return CartCore.getCart();
 }
 
 function saveStudioCart(cart) {
-  localStorage.setItem('sai_studio_cart', JSON.stringify(cart));
+  CartCore.saveCart(cart);
   updateStudioCartBadge();
 }
 
 function addToStudioCart(name, price, img, customization, requirement, productId, qty) {
-  const cart = getStudioCart();
-  if (!cart[name]) {
-    cart[name] = { name, product_id: productId || null, qty: 0, price, img, customization: customization || null, requirement: requirement || null };
-  }
-  if (customization) cart[name].customization = customization;
-  if (requirement) cart[name].requirement = requirement;
-  cart[name].qty += qty || 1;
-  saveStudioCart(cart);
+  CartCore.updateQty(name, qty || 1, {
+    name, price, img, product_id: productId, customization, requirement,
+  });
+  updateStudioCartBadge();
 }
 
 function updateStudioCartBadge() {
@@ -883,7 +882,7 @@ function findPackageByName(name) {
 }
 
 function parsePrice(str) {
-  return parseInt(String(str).replace(/[^\d]/g, '')) || 0;
+  return CartCore.parsePrice(str);
 }
 
 function computeCartTotals() {
@@ -983,18 +982,14 @@ function renderCheckoutCartStep() {
 }
 
 function adjustCartQty(name, delta) {
-  const cart = getStudioCart();
-  if (!cart[name]) return;
-  cart[name].qty += delta;
-  if (cart[name].qty <= 0) delete cart[name];
-  saveStudioCart(cart);
+  CartCore.updateQty(name, delta, {}, { createIfMissing: false });
+  updateStudioCartBadge();
   renderCheckoutCartStep();
 }
 
 function removeCartItem(name) {
-  const cart = getStudioCart();
-  delete cart[name];
-  saveStudioCart(cart);
+  CartCore.removeItem(name);
+  updateStudioCartBadge();
   renderCheckoutCartStep();
   const { items } = computeCartTotals();
   if (items.length === 0) closeCheckout();

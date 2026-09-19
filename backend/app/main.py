@@ -14,7 +14,8 @@ from .database import Base, engine
 from .migrations import (
     backfill_address_snapshots, backfill_corporate_engraving_fields,
     backfill_gifts_personalisation_fields, backfill_requires_photo_upload_fields,
-    backfill_studio_quantity_purpose_fields, run_column_migrations, run_index_migrations,
+    backfill_studio_quantity_purpose_fields, run_column_migrations, run_constraint_migrations,
+    run_index_migrations,
 )
 from .routers import addresses, admin, auth, bookings, cart, catalog, contact, orders, payments, wishlist
 from .services.storage import ensure_storage_ready
@@ -31,6 +32,7 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     run_column_migrations(engine)
     run_index_migrations(engine)
+    run_constraint_migrations(engine)
     backfill_address_snapshots(engine)
     backfill_requires_photo_upload_fields(engine)
     backfill_studio_quantity_purpose_fields(engine)

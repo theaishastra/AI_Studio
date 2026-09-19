@@ -90,8 +90,10 @@ const Api = {
   staff: () => api("/api/admin/staff"),
   createStaff: (data) => api("/api/admin/staff", { method: "POST", body: JSON.stringify(data) }),
   deactivateStaff: (id) => api(`/api/admin/staff/${id}`, { method: "DELETE" }),
+  reactivateStaff: (id) => api(`/api/admin/staff/${id}/reactivate`, { method: "POST" }),
 
   auditLog: () => api("/api/admin/audit-log"),
+  clearAuditLog: (olderThanDays) => api(`/api/admin/audit-log${olderThanDays ? `?older_than_days=${olderThanDays}` : ""}`, { method: "DELETE" }),
   activity: () => api("/api/admin/activity"),
 
   orders: (status) => api(`/api/admin/orders${status ? `?status_filter=${encodeURIComponent(status)}` : ""}`),
@@ -107,6 +109,10 @@ const Api = {
   decideAddressChangeRequest: (id, action, adminNote) => api(`/api/admin/orders/address-change-requests/${id}`, { method: "PATCH", body: JSON.stringify({ action, admin_note: adminNote || "" }) }),
 
   customers: (q, page = 1) => api(`/api/admin/customers?page=${page}${q ? `&q=${encodeURIComponent(q)}` : ""}`),
+  deleteCustomer: (id) => api(`/api/admin/customers/${id}`, { method: "DELETE" }),
+  blockEmail: (email, reason) => api("/api/admin/customers/block", { method: "POST", body: JSON.stringify({ email, reason: reason || "" }) }),
+  unblockEmail: (email) => api("/api/admin/customers/unblock", { method: "POST", body: JSON.stringify({ email }) }),
+  clearOtpActivity: (email) => api(`/api/admin/customers/otp-activity/${encodeURIComponent(email)}`, { method: "DELETE" }),
 
   reviews: () => api("/api/admin/reviews"),
   toggleReview: (id) => api(`/api/admin/reviews/${id}/toggle`, { method: "PATCH" }),

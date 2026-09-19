@@ -49,7 +49,24 @@ class OtpCode(Base):
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     used: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Request-time IP, so admin login-activity can spot one IP hammering OTPs
+    # across many emails (or one email from many IPs) before deciding to block.
+    ip: Mapped[str | None] = mapped_column(String(45), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class BlockedEmail(Base, TimestampMixin):
+    """An email address the owner has locked out of OTP request/verify and
+    password login - independent of whether a User row exists yet, since the
+    abuse this guards against (someone hammering OTP requests for an email
+    they don't own) happens before any account is created. See admin.py's
+    block_email/unblock_email and auth.py's request_otp/verify_otp/login."""
+    __tablename__ = "blocked_emails"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=uid)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    reason: Mapped[str] = mapped_column(Text, default="")
+    blocked_by: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
 
 class RefreshToken(Base):
@@ -485,7 +502,11 @@ class Booking(Base, TimestampMixin):
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=uid)
     product_id: Mapped[str | None] = mapped_column(ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
-    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    # CASCADE (not SET NULL): deleting a customer erases their bookings too, same
+    # as orders - stays nullable for guest bookings that were never tied to an
+    # account in the first place. See migrations.run_constraint_migrations for
+    # the ALTER on an already-existing DB, and admin.delete_customer.
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
     customer_name: Mapped[str] = mapped_column(String(120))
     customer_phone: Mapped[str] = mapped_column(String(20))
     customer_email: Mapped[str | None] = mapped_column(String(255), nullable=True)

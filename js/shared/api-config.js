@@ -4,5 +4,8 @@
 // content). NOTE: this is a free "quick tunnel" - the URL changes if the
 // cloudflared service on the VM restarts, so it may need updating.
 (function () {
-  window.SAI_API_BASE = "https://stranger-lake-structural-upgrade.trycloudflare.com";
+  var isLocalDev = /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname);
+  window.SAI_API_BASE = isLocalDev
+    ? "http://127.0.0.1:8000"
+    : "https://stranger-lake-structural-upgrade.trycloudflare.com";
 })();

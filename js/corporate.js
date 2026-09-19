@@ -558,6 +558,7 @@
       const productCodeEl = document.getElementById('modalProductCode');
       const pincodeInputEl = document.getElementById('modalPincodeInput');
       const deliveryEstimateEl = document.getElementById('modalDeliveryEstimate');
+      const deliveryInfoTextEl = document.getElementById('modalDeliveryInfoText');
 
       if (titleEl) titleEl.textContent = name;
       if (priceEl) priceEl.textContent = price;
@@ -570,6 +571,11 @@
         deliveryEstimateEl.textContent = activeModalProduct.deliveryDays
           ? `Delivered in ${activeModalProduct.deliveryDays} business day${activeModalProduct.deliveryDays === 1 ? '' : 's'} across India.`
           : 'Delivered in 2-3 business days across India.';
+      }
+      if (deliveryInfoTextEl) {
+        deliveryInfoTextEl.textContent = activeModalProduct.deliveryDays
+          ? `Delivered in ${activeModalProduct.deliveryDays} business day${activeModalProduct.deliveryDays === 1 ? '' : 's'} across India. 30-day hassle-free replacement and quality warranty.`
+          : 'Delivered in 2-3 business days across India. 30-day hassle-free replacement and quality warranty.';
       }
 
       const thumbsContainer = document.getElementById('modalThumbsContainer');
@@ -590,10 +596,6 @@
           overlay.classList.add('active');
         }, 10);
       }
-      if (typeof window.updateOrderSummary === 'function') {
-        window.updateOrderSummary({ name, price, img }, 1);
-      }
-
       // Reflect the open product in the URL (?openProduct=..&openPrice=..&openImg=..&pid=..)
       // so the address bar is specific to this product, refresh/share/back-button behave
       // sanely, and the existing openProduct deep-link reader (see below) can re-open it.
@@ -690,17 +692,14 @@
       modalSelectedQty = Math.max(1, modalSelectedQty + delta);
       const qtyNumEl = document.getElementById('modalQtyNum');
       if (qtyNumEl) qtyNumEl.textContent = modalSelectedQty;
-      if (window.activeModalProduct && typeof window.updateOrderSummary === 'function') {
-        window.updateOrderSummary(window.activeModalProduct, modalSelectedQty);
-      }
     };
 
     // Best-effort synchronous snapshot of the first Customer Questions text-type
-    // answer for this product, for the few fallback spots (order summary /
-    // WhatsApp checkout when nothing's actually in the cart yet) that build a
-    // cart-shaped item straight from window.activeModalProduct instead of the
-    // cart. Uploads need the async collectModalCustomFields() FileReader pass
-    // those callers don't do, so this only covers text - fine for a summary label.
+    // answer for this product, for the few fallback spots (order summary when
+    // nothing's actually in the cart yet) that build a cart-shaped item straight
+    // from window.activeModalProduct instead of the cart. Uploads need the async
+    // collectModalCustomFields() FileReader pass those callers don't do, so this
+    // only covers text - fine for a summary label.
     function activeModalTextSnapshot() {
       const wrap = document.getElementById('modalCustomFields');
       const product = window.activeModalProduct;
@@ -750,7 +749,7 @@
       // which is the one real cart everywhere on the site.
     };
 
-    window.modalBuyNowWhatsApp = async function () {
+    window.modalBuyNow = async function () {
       if (!activeModalProduct) return;
       const custom = await collectModalCustomFields();
       if (custom === null) return;
@@ -764,20 +763,16 @@
         activeModalProduct.id
       );
       closeProductDetailModal();
-      checkoutWhatsApp();
+      window.location.href = 'cart.html';
     };
 
-    // --- Cart System ---
+    // --- Cart System (js/shared/cart-core.js - shared storage/sync logic) ---
     window.getCart = function () {
-      try {
-        return JSON.parse(localStorage.getItem('sai_studio_cart')) || {};
-      } catch (e) {
-        return {};
-      }
+      return CartCore.getCart();
     };
 
     window.saveCart = function (cart) {
-      localStorage.setItem('sai_studio_cart', JSON.stringify(cart));
+      CartCore.saveCart(cart);
       updateCartUI();
     };
 
@@ -787,29 +782,11 @@
     };
 
     window.updateCartQty = function (productName, delta, priceStr = '', imgUrl = '', customization = null, requirement = null, productId = null) {
-      const cart = getCart();
-      if (!cart[productName]) {
-        cart[productName] = {
-          name: productName,
-          product_id: productId || null,
-          qty: 0,
-          price: priceStr,
-          img: imgUrl,
-          customization: customization || null,
-          requirement: requirement || null
-        };
-      }
-      if (customization) {
-        cart[productName].customization = customization;
-      }
-      if (requirement) {
-        cart[productName].requirement = requirement;
-      }
-      cart[productName].qty += delta;
-      if (cart[productName].qty <= 0) {
-        delete cart[productName];
-      }
-      saveCart(cart);
+      CartCore.updateQty(productName, delta, {
+        name: productName, price: priceStr, img: imgUrl,
+        product_id: productId, customization, requirement,
+      });
+      updateCartUI();
       renderContent();
     };
 
@@ -922,195 +899,6 @@
       if (drawer) drawer.classList.remove('open');
       if (overlay) overlay.style.display = 'none';
     };
-
-    // --- Order Summary Dynamic Sync Engine ---
-    window.updateOrderSummary = function (productOrItems, qty = 1) {
-      let items = [];
-      if (Array.isArray(productOrItems)) {
-        items = productOrItems;
-      } else if (productOrItems && typeof productOrItems === 'object') {
-        items = [{
-          name: productOrItems.name || 'Selected Product',
-          price: productOrItems.price || '₹0',
-          img: productOrItems.img || '',
-          qty: qty || productOrItems.qty || 1,
-          customization: productOrItems.customization || null
-        }];
-      } else if (window.activeModalProduct) {
-        items = [{
-          name: window.activeModalProduct.name,
-          price: window.activeModalProduct.price,
-          img: window.activeModalProduct.img,
-          qty: window.modalSelectedQty || 1,
-          customization: {
-            engravingText: window.activeModalTextSnapshot(),
-            color: window.modalSelectedColor
-          }
-        }];
-      }
-
-      if (items.length === 0) return;
-
-      let subtotal = 0;
-      items.forEach(it => {
-        const unitP = parseInt(String(it.price).replace(/[^\d]/g, '')) || 0;
-        subtotal += unitP * (it.qty || 1);
-      });
-
-      const deliveryFee = 50;
-      const total = subtotal + deliveryFee;
-
-      const productDetailsContainer = document.querySelector('.checkout-summary-section .product-details') || document.querySelector('.product-details');
-      if (productDetailsContainer) {
-        if (items.length > 1) {
-          productDetailsContainer.innerHTML = items.map(it => `
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; width: 100%;">
-              <img src="${cldOpt(it.img || 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/welcome_kit.jpg')}" alt="${it.name}" style="width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb;">
-              <div style="flex: 1;">
-                <h4 style="margin: 0; font-size: 13.5px; font-weight: 700; color: #1f2937;">${it.name}</h4>
-                <p style="margin: 2px 0 0; font-size: 12px; color: #6b7280;">Qty: ${it.qty || 1}</p>
-                ${it.customization && it.customization.engravingText ? `<span style="font-size: 11px; color: #a87126; display: block;">Custom Text: "${it.customization.engravingText}"</span>` : ''}
-              </div>
-              <div style="font-weight: 700; color: #1f2937; font-size: 14px;">${it.price}</div>
-            </div>
-          `).join('');
-        } else {
-          const first = items[0];
-          productDetailsContainer.innerHTML = `
-            <div class="product-thumb">
-              <img id="checkoutProductImg" src="${cldOpt(first.img || 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/corporate_assets/welcome_kit.jpg')}" alt="${first.name}" style="width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb;">
-            </div>
-            <div class="product-info" style="flex: 1; margin-left: 12px;">
-              <h3 id="checkoutProductName" style="margin: 0; font-size: 14px; font-weight: 700; color: #1f2937;">${first.name}</h3>
-              <p class="qty" id="checkoutProductQty" style="margin: 4px 0 0; font-size: 12px; color: #6b7280;">Qty: ${first.qty || 1}</p>
-              ${first.customization && first.customization.engravingText ? `<span style="font-size: 11px; color: #a87126; display: block; margin-top: 2px;">Custom Text: "${first.customization.engravingText}"</span>` : ''}
-            </div>
-            <div class="product-price" id="checkoutProductPrice" style="font-weight: 700; font-size: 15px; color: #1f2937;">${first.price}</div>
-          `;
-        }
-      }
-
-      const subtotalEl = document.getElementById('checkoutSubtotalPrice');
-      const totalEl = document.getElementById('checkoutTotalPrice');
-      if (subtotalEl) subtotalEl.textContent = '₹' + subtotal.toLocaleString('en-IN');
-      if (totalEl) totalEl.textContent = '₹' + total.toLocaleString('en-IN');
-    };
-
-    window.checkoutWhatsApp = function () {
-      const cart = getCart();
-      const items = Object.values(cart);
-      
-      if (items.length > 0) {
-        window.activeCheckoutItems = items;
-        window.updateOrderSummary(items);
-      } else if (window.activeModalProduct) {
-        const directItem = {
-          name: window.activeModalProduct.name,
-          price: window.activeModalProduct.price,
-          img: window.activeModalProduct.img,
-          qty: window.modalSelectedQty || 1,
-          customization: {
-            engravingText: window.activeModalTextSnapshot(),
-            color: window.modalSelectedColor
-          }
-        };
-        window.activeCheckoutItems = [directItem];
-        window.updateOrderSummary([directItem]);
-      } else {
-        return;
-      }
-      
-      closeCartDrawer();
-      // Show the checkout form modal
-      const modal = document.getElementById('checkoutFormModal');
-      if (modal) {
-        modal.style.display = 'flex';
-      }
-    };
-
-    window.closeCheckoutModal = function () {
-      const modal = document.getElementById('checkoutFormModal');
-      if (modal) {
-        modal.style.display = 'none';
-      }
-    };
-
-    // Add submit handler for checkout form
-    document.addEventListener('DOMContentLoaded', () => {
-      const form = document.getElementById('orderCheckoutForm') || document.getElementById('checkoutForm');
-      if (form) {
-        form.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          
-          const formData = new FormData(form);
-          const customerName = formData.get('name') || document.getElementById('customerName')?.value || '';
-          const phone = formData.get('phone') || document.getElementById('customerPhone')?.value || '';
-          const address = formData.get('address') || document.getElementById('customerAddress')?.value || '';
-          const email = formData.get('email') || document.getElementById('customerEmail')?.value || '';
-          const notes = formData.get('notes') || document.getElementById('specialInstructions')?.value || '';
-
-          let items = (window.activeCheckoutItems && window.activeCheckoutItems.length > 0)
-            ? window.activeCheckoutItems
-            : (window.activeModalProduct ? [{
-                name: window.activeModalProduct.name,
-                price: window.activeModalProduct.price,
-                img: window.activeModalProduct.img,
-                qty: window.modalSelectedQty || 1,
-                customization: {
-                  engravingText: window.activeModalTextSnapshot(),
-                  color: window.modalSelectedColor
-                }
-              }] : Object.values(getCart()));
-
-          if (items.length === 0) {
-            alert('Please select a product first.');
-            return;
-          }
-
-          let message = `Hello Sai Kumar Digital Lab & Studio, I would like to place an order:\n\n*Customer Details:*\nName: ${customerName}\nPhone: ${phone}\nAddress: ${address}\nEmail: ${email}\nNotes: ${notes}\n\n*Order Summary:*\n`;
-          let subtotal = 0;
-          items.forEach(item => {
-            const itemPrice = parseInt(String(item.price).replace(/[^\d]/g, '')) || 0;
-            const itemSub = itemPrice * (item.qty || 1);
-            subtotal += itemSub;
-            message += `• ${item.name} (Qty: ${item.qty || 1}) - ₹${itemSub}\n`;
-            if (item.customization) {
-              const c = item.customization;
-              if (c.engravingText) message += `   ↳ Engraved Text: "${c.engravingText}"\n`;
-              if (c.logoName) message += `   ↳ Uploaded Logo: ${c.logoName}\n`;
-              if (c.technique) message += `   ↳ Technique: ${c.technique}\n`;
-              if (c.color) message += `   ↳ Color: ${c.color}\n`;
-            }
-          });
-          const deliveryFee = 50;
-          const total = subtotal + deliveryFee;
-          message += `\n*Subtotal: ₹${subtotal}*\n*Delivery Fee: ₹${deliveryFee}*\n*Total Amount: ₹${total}*`;
-
-          // Try sending to backend
-          try {
-            await fetch(`${CORPORATE_API_BASE}/api/orders`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                product_name: items[0]?.name || "Corporate Order",
-                quantity: items.reduce((acc, it) => acc + (it.qty || 1), 0),
-                price: total.toString(),
-                image_url: items[0]?.img || "",
-                customization: { customerName, phone, email, address, notes, items }
-              })
-            });
-          } catch(err) {
-            console.warn("Backend unavailable, continuing to WhatsApp.");
-          }
-
-          const encodedMessage = encodeURIComponent(message);
-          const whatsappURL = `https://wa.me/919849233501?text=${encodedMessage}`;
-          window.open(whatsappURL, '_blank');
-          
-          closeCheckoutModal();
-        });
-      }
-    });
 
     // --- 2-Up Sliding Hero Carousel (2 slides visible at once, matches Studio Services page) ---
     const HERO_SLIDES_VISIBLE = 2;
@@ -2048,40 +1836,24 @@
 
       const mockupDataUrl = studioCanvas ? studioCanvas.toDataURL('image/png') : '';
 
+      // Route through the same object-keyed 'sai_studio_cart' updateCartQty()
+      // everything else on this page uses (was previously pushing onto a plain
+      // array, which crashed the moment a real customer already had the normal
+      // object-shaped cart saved - array/object aren't interchangeable there).
+      updateCartQty(
+        'CUSTOM: ' + productName,
+        qty,
+        totalPrice,
+        mockupDataUrl || cldOpt(studioState.productImgSrc),
+        { technique: studioState.effect.toUpperCase() + ' BRANDED' }
+      );
+
       if (action === 'cart') {
-        // Add custom item to global cart
-        const customCartItem = {
-          name: 'CUSTOM: ' + productName,
-          price: totalPrice,
-          qty: qty,
-          img: mockupDataUrl || cldOpt(studioState.productImgSrc),
-          technique: studioState.effect.toUpperCase() + ' BRANDED',
-          isCustomDesign: true
-        };
-
-        let cart = [];
-        try {
-          const saved = localStorage.getItem('sai_studio_cart');
-          if (saved) cart = JSON.parse(saved);
-        } catch (err) { }
-
-        cart.push(customCartItem);
-        localStorage.setItem('sai_studio_cart', JSON.stringify(cart));
-
         alert(`✅ Custom Order Added to Cart!\n\nProduct: ${productName}\nQuantity: ${qty} pcs\nTotal: ${totalPrice}\nBranding Effect: ${studioState.effect.toUpperCase()}`);
         window.closeAIStudioModal();
-      } else if (action === 'whatsapp') {
-        const msg = `*NEW CUSTOM PRODUCT ORDER - SAI KUMAR DIGITAL STUDIO*\n\n` +
-          `📦 *Product:* ${productName}\n` +
-          `🔢 *Quantity:* ${qty} pcs\n` +
-          `💰 *Estimated Total:* ${totalPrice}\n` +
-          `🎨 *Branding Technique:* ${studioState.effect.toUpperCase()}\n` +
-          `✏️ *Custom Name/Text:* ${studioState.text || 'None'}\n\n` +
-          `_Generated via AI Custom Product Studio_`;
-
-        const encodedMsg = encodeURIComponent(msg);
-        const whatsappUrl = `https://wa.me/919876543210?text=${encodedMsg}`;
-        window.open(whatsappUrl, '_blank');
+      } else if (action === 'buynow') {
+        window.closeAIStudioModal();
+        window.location.href = 'cart.html';
       }
     };
 

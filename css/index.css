@@ -1159,74 +1159,9 @@
       }
     }
 
-    /* ---------- Feature Cards ---------- */
-    .feature-cards {
-      margin-top: 32px;
-      position: relative;
-      z-index: 5;
-    }
-
-    .feature-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-    }
-
-    @keyframes featureCardPop {
-      0% {
-        transform: translateY(0);
-      }
-
-      40% {
-        transform: translateY(-12px);
-      }
-
-      65% {
-        transform: translateY(-5px);
-      }
-
-      85% {
-        transform: translateY(-9px);
-      }
-
-      100% {
-        transform: translateY(-6px);
-      }
-    }
-
-    .feature-card.promo-card.active-slide {
-      animation: featureCardPop .6s cubic-bezier(.34, 1.56, .64, 1) 1;
-      transform: translateY(-6px);
-      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.18);
-      outline: 3px solid rgba(255, 255, 255, .85);
-      outline-offset: -3px;
-      z-index: 2;
-    }
-
-    .feature-card.promo-card {
-      display: flex;
-      justify-content: space-between;
-      align-items: stretch;
-      height: 178px;
-      border-radius: 16px;
-      overflow: hidden;
-      border: none;
-      position: relative;
-      text-decoration: none;
-      transition: transform 0.35s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.3s ease;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    }
-
-    .feature-card.promo-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
-    }
-
-    .feature-card.promo-card.active-slide:hover {
-      transform: translateY(-6px);
-    }
-
-    /* Card Background Colors */
+    /* Card Background Colors - shared by the mobile-card home-nav tiles
+       (index.html's .mobile-card.card-photography/.card-gifts/.card-studio/
+       .card-corporate elements) */
     .card-photography {
       background: #FDE3F0;
       /* 🟣 Light Lavender */
@@ -1245,121 +1180,6 @@
     .card-corporate {
       background: #FCE0EA;
       /* 🟢 Light Mint */
-    }
-
-    /* Content styling (left side) */
-    .pc-content {
-      flex: 1;
-      padding: 16px 10px 14px 16px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      z-index: 2;
-    }
-
-    .pc-content h3 {
-      font-size: 16px;
-      font-weight: 850;
-      line-height: 1.2;
-      margin: 0;
-      letter-spacing: -0.3px;
-      text-transform: uppercase;
-    }
-
-    .pc-content p {
-      font-size: 11px;
-      opacity: .85;
-      line-height: 1.3;
-      margin: 5px 0 10px;
-      font-weight: 500;
-    }
-
-    .pc-btn {
-      align-self: flex-start;
-      color: #ffffff;
-      font-size: 11px;
-      font-weight: 800;
-      padding: 6px 14px;
-      border-radius: 30px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-      transition: background-color 0.2s, color 0.2s;
-    }
-
-    .card-photography .pc-content h3,
-    .card-photography .pc-content p {
-      color: #7A0C3E;
-    }
-
-    .card-photography .pc-btn {
-      background: #5C0930;
-    }
-
-    .card-photography.promo-card:hover .pc-btn {
-      background: #3D061F;
-    }
-
-    .card-gifts .pc-content h3,
-    .card-gifts .pc-content p {
-      color: #C98F00;
-    }
-
-    .card-gifts .pc-btn {
-      background: #5C0930;
-    }
-
-    .card-gifts.promo-card:hover .pc-btn {
-      background: #3D061F;
-    }
-
-    .card-studio .pc-content h3,
-    .card-studio .pc-content p {
-      color: #A81760;
-    }
-
-    .card-studio .pc-btn {
-      background: #5C0930;
-    }
-
-    .card-studio.promo-card:hover .pc-btn {
-      background: #3D061F;
-    }
-
-    .card-corporate .pc-content h3,
-    .card-corporate .pc-content p {
-      color: #4A0E1A;
-    }
-
-    .card-corporate .pc-btn {
-      background: #5C0930;
-    }
-
-    .card-corporate.promo-card:hover .pc-btn {
-      background: #3D061F;
-    }
-
-    /* Image container styling (right side) */
-    .pc-image {
-      width: 85px;
-      position: relative;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .pc-image img {
-      width: 110%;
-      height: 110%;
-      object-fit: contain !important;
-      position: absolute;
-      right: -5px;
-      bottom: -5px;
-      transform: rotate(-4deg);
-      transition: transform 0.3s ease;
-    }
-
-    .feature-card.promo-card:hover .pc-image img {
-      transform: scale(1.08) rotate(0deg);
     }
 
     /* ---------- Section headings ---------- */
@@ -2404,10 +2224,6 @@
         margin: 0 auto;
       }
 
-      .feature-grid {
-        grid-template-columns: 1fr;
-      }
-
       .card-scroll {
         grid-template-columns: repeat(2, 1fr);
       }
@@ -2868,8 +2684,7 @@
       }
 
       /* Hide desktop elements */
-      header.site-header,
-      .feature-cards {
+      header.site-header {
         display: none !important;
       }
 
@@ -4343,7 +4158,7 @@
 
     /* Floating Bottom Cart Bar */
     .mobile-cart-bar {
-      display: none;
+      display: none !important;
       position: fixed;
       bottom: 78px;
       left: 16px;
@@ -4411,11 +4226,6 @@
       align-items: center;
     }
 
-    @media (min-width: 768px) {
-      .mobile-cart-bar {
-        display: none !important;
-      }
-    }
 
     /* ---------- MOBILE BOTTOM NAVIGATION (maroon/gold home theme) ---------- */
     .mobile-bottom-nav {

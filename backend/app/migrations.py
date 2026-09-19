@@ -34,6 +34,9 @@ _COLUMN_MIGRATIONS: dict[str, list[str]] = {
     "order_cancellation_requests": [
         "ADD COLUMN IF NOT EXISTS order_item_id UUID REFERENCES order_items(id) ON DELETE CASCADE",
     ],
+    "otp_codes": [
+        "ADD COLUMN IF NOT EXISTS ip VARCHAR(45)",
+    ],
 }
 
 
@@ -76,6 +79,35 @@ def run_index_migrations(engine: Engine) -> None:
             for clause in clauses:
                 conn.execute(text(clause))
     logger.info("Index migrations applied.")
+
+
+# Postgres can't ALTER a foreign key's ON DELETE behavior in place - the
+# constraint has to be dropped and recreated. Each entry here is
+# (constraint_name, table, column, referenced_table, new_ondelete); re-running
+# is a no-op once the constraint already has the target ondelete action.
+_CONSTRAINT_MIGRATIONS: list[tuple[str, str, str, str, str]] = [
+    ("bookings_user_id_fkey", "bookings", "user_id", "users", "CASCADE"),
+]
+
+
+def run_constraint_migrations(engine: Engine) -> None:
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    with engine.begin() as conn:
+        for name, table, column, ref_table, ondelete in _CONSTRAINT_MIGRATIONS:
+            if table not in existing_tables:
+                continue
+            current = next(
+                (fk for fk in inspector.get_foreign_keys(table) if fk["name"] == name), None,
+            )
+            if current and current["options"].get("ondelete") == ondelete:
+                continue
+            conn.execute(text(f"ALTER TABLE {table} DROP CONSTRAINT IF EXISTS {name}"))
+            conn.execute(text(
+                f"ALTER TABLE {table} ADD CONSTRAINT {name} "
+                f"FOREIGN KEY ({column}) REFERENCES {ref_table}(id) ON DELETE {ondelete}"
+            ))
+    logger.info("Constraint migrations applied.")
 
 
 def backfill_address_snapshots(engine: Engine) -> None:
@@ -255,19 +287,31 @@ def backfill_corporate_engraving_fields(engine: Engine) -> None:
         logger.info("Added default engraving/logo Customer Questions to %d corporate product(s).", len(rows))
 
 
+_GIFTS_PERSONALISATION_MARKER = "migration_gifts_personalisation_backfilled"
+
+
 def backfill_gifts_personalisation_fields(engine: Engine) -> None:
-    """One-time (idempotent) migration giving every gift product the Customer
-    Questions equivalent of the old hardcoded "Personalise this gift" box (a
-    fixed photo upload + message text, always shown and always required on
-    every gift product, never admin-configurable). Both fields land as
-    required, matching that old unconditional rule exactly. Only touches
-    gift products with no input_fields yet (true for all of them before
-    this ran), so it's safe on every startup and never overwrites an
-    admin's own Customer Questions setup."""
+    """One-time migration giving every *pre-existing* gift product (as of the
+    first run) the Customer Questions equivalent of the old hardcoded
+    "Personalise this gift" box (a fixed photo upload + message text, always
+    shown and always required on every gift product, never admin-configurable).
+    Both fields land as required, matching that old unconditional rule exactly.
+
+    Guarded by a `settings` row (not just "input_fields is empty") so it fires
+    only once ever, on whatever gift products exist at that moment - an admin
+    who later clears a gift product's Customer Questions (because that product
+    genuinely doesn't need a photo/message) has that choice respected on every
+    subsequent restart instead of it being silently reset back by this backfill
+    picking up "empty input_fields" as its trigger indefinitely."""
     inspector = inspect(engine)
-    if "products" not in inspector.get_table_names():
+    if "products" not in inspector.get_table_names() or "settings" not in inspector.get_table_names():
         return
     with engine.begin() as conn:
+        already_ran = conn.execute(
+            text("SELECT 1 FROM settings WHERE key = :key"), {"key": _GIFTS_PERSONALISATION_MARKER}
+        ).first()
+        if already_ran:
+            return
         rows = conn.execute(text("""
             SELECT p.id
             FROM products p
@@ -293,5 +337,10 @@ def backfill_gifts_personalisation_fields(engine: Engine) -> None:
                 text("UPDATE products SET input_fields = :input_fields WHERE id = :id"),
                 {"input_fields": json.dumps(input_fields), "id": row.id},
             )
+        conn.execute(
+            text("INSERT INTO settings (key, value, created_at, updated_at) "
+                 "VALUES (:key, :value, now(), now()) ON CONFLICT (key) DO NOTHING"),
+            {"key": _GIFTS_PERSONALISATION_MARKER, "value": json.dumps({"done": True})},
+        )
     if rows:
         logger.info("Added default photo/message Customer Questions to %d gift product(s).", len(rows))

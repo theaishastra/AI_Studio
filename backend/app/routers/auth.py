@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from ..config import get_settings
 from ..database import get_db
 from ..deps import audit, get_current_user
-from ..models import OtpCode, RefreshToken, User
+from ..models import BlockedEmail, OtpCode, RefreshToken, User
 from ..schemas import (
     LoginIn, OtpRequest, OtpVerify, RefreshRequest, Token, TokenPair, UserOut, UserUpdate,
 )
@@ -24,9 +24,16 @@ OTP_TTL_MINUTES = 5
 OTP_MAX_ATTEMPTS = 5
 
 
+def _is_blocked(db: Session, email: str) -> bool:
+    return db.query(BlockedEmail).filter(BlockedEmail.email == email).first() is not None
+
+
 @router.post("/login", response_model=Token)
 def login(body: LoginIn, request: Request, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == body.email.lower().strip()).first()
+    email = body.email.lower().strip()
+    if _is_blocked(db, email):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This account has been blocked")
+    user = db.query(User).filter(User.email == email).first()
     if not user or not user.is_active or not user.password_hash or not verify_password(body.password, user.password_hash):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password")
     user.last_login = datetime.now(timezone.utc)
@@ -68,8 +75,10 @@ def _issue_tokens(db: Session, user: User) -> TokenPair:
 
 
 @router.post("/otp/request")
-def request_otp(body: OtpRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def request_otp(body: OtpRequest, background_tasks: BackgroundTasks, request: Request, db: Session = Depends(get_db)):
     email = body.email.lower().strip()
+    if _is_blocked(db, email):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This email has been blocked")
     db.query(OtpCode).filter(OtpCode.email == email, OtpCode.used == False).update({"used": True})
 
     code = generate_otp()
@@ -77,6 +86,7 @@ def request_otp(body: OtpRequest, background_tasks: BackgroundTasks, db: Session
         email=email,
         code_hash=hash_otp(email, code),
         expires_at=datetime.now(timezone.utc) + timedelta(minutes=OTP_TTL_MINUTES),
+        ip=request.client.host if request.client else None,
     ))
 
     response = {"message": "OTP sent to your email", "ttl_minutes": OTP_TTL_MINUTES}
@@ -94,6 +104,8 @@ def request_otp(body: OtpRequest, background_tasks: BackgroundTasks, db: Session
 @router.post("/otp/verify", response_model=TokenPair)
 def verify_otp(body: OtpVerify, request: Request, db: Session = Depends(get_db)):
     email = body.email.lower().strip()
+    if _is_blocked(db, email):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This email has been blocked")
     otp = (
         db.query(OtpCode)
         .filter(OtpCode.email == email, OtpCode.used == False)

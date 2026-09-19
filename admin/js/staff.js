@@ -24,8 +24,10 @@ async function loadStaff() {
             <td>${esc(u.name || "—")}</td>
             <td>${esc(u.email)}</td>
             <td>${esc(u.role)}</td>
-            <td><span class="badge on">Active</span></td>
-            <td class="actions">${u.id !== CURRENT_USER.id ? `<button class="btn danger" onclick="removeStaff('${u.id}')">Deactivate</button>` : ""}</td>
+            <td><span class="badge ${u.is_active ? "on" : "off"}">${u.is_active ? "Active" : "Deactivated"}</span></td>
+            <td class="actions">${u.id === CURRENT_USER.id ? "" : u.is_active
+              ? `<button class="btn danger" onclick="removeStaff('${u.id}')">Deactivate</button>`
+              : `<button class="btn secondary" onclick="reactivateStaffAccount('${u.id}')">Reactivate</button>`}</td>
           </tr>`).join("")}
       </tbody>
     </table>
@@ -71,13 +73,38 @@ async function removeStaff(id) {
   catch (err) { alert(err.message); }
 }
 
+async function reactivateStaffAccount(id) {
+  if (!confirm("Reactivate this staff account? They'll be able to log in again.")) return;
+  try { await Api.reactivateStaff(id); loadStaff(); }
+  catch (err) { alert(err.message); }
+}
+
 // ==================================================================== audit log (owner only)
 
 async function renderAudit() {
   const view = document.getElementById("view");
-  view.innerHTML = `<header class="page-head"><h1>Audit Log</h1></header><div id="auditWrap">${LOADING}</div>`;
+  view.innerHTML = `
+    <header class="page-head">
+      <h1>Audit Log</h1>
+      <button class="btn danger owner-only" id="clearAuditBtn">Clear</button>
+    </header>
+    <p style="color:var(--text-dim);font-size:13px;">
+      Every recorded admin/customer action (logins, deletions, blocks, etc). The Activity page
+      is this same data, filtered to just sign-ins/sign-ups - clearing here clears both.
+    </p>
+    <div id="auditWrap">${LOADING}</div>`;
+  document.getElementById("clearAuditBtn").addEventListener("click", () => clearAuditLog(renderAudit));
+  await loadAuditTable();
+}
+
+async function loadAuditTable() {
   const logs = await Api.auditLog();
-  document.getElementById("auditWrap").innerHTML = `
+  const wrap = document.getElementById("auditWrap");
+  if (!logs.length) {
+    wrap.innerHTML = `<div class="empty-state">No audit log entries.</div>`;
+    return;
+  }
+  wrap.innerHTML = `
     <table>
       <thead><tr><th>When (IST)</th><th>Action</th><th>Entity</th><th>Detail</th><th>IP Address</th></tr></thead>
       <tbody>
@@ -94,13 +121,34 @@ async function renderAudit() {
   `;
 }
 
+async function clearAuditLog(onDone) {
+  if (!confirm("Permanently clear the audit log? This also empties the Activity page (same underlying data). This cannot be undone.")) return;
+  try {
+    await Api.clearAuditLog();
+    onDone();
+  } catch (err) { alert(err.message); }
+}
+
 // ==================================================================== activity feed (login/logout/signup)
 
 async function renderActivity() {
   const view = document.getElementById("view");
-  view.innerHTML = `<header class="page-head"><h1>Activity</h1></header>
-    <p style="color:var(--text-dim);font-size:13px;">Recent sign-ins, sign-ups, and admin logins, with the originating IP address.</p>
+  view.innerHTML = `
+    <header class="page-head">
+      <h1>Activity</h1>
+      <button class="btn danger owner-only" id="clearActivityBtn">Clear</button>
+    </header>
+    <p style="color:var(--text-dim);font-size:13px;">
+      Recent sign-ins, sign-ups, and admin logins, with the originating IP address - a filtered
+      view of the Audit Log (same table, narrowed to just these actions). Clearing here clears
+      the full Audit Log too, since it's the same data.
+    </p>
     <div id="activityWrap">${LOADING}</div>`;
+  document.getElementById("clearActivityBtn").addEventListener("click", () => clearAuditLog(renderActivity));
+  await loadActivityTable();
+}
+
+async function loadActivityTable() {
   const logs = await Api.activity();
   const wrap = document.getElementById("activityWrap");
   if (!logs.length) {

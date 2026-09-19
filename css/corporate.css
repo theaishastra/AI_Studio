@@ -8004,23 +8004,6 @@ footer,
   border-radius: 10px !important;
 }
 
-.btn-whatsapp {
-  background: #25d366 !important;
-  color: #ffffff !important;
-  font-weight: 700 !important;
-  border: none !important;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-whatsapp:hover {
-  background: #1eb956 !important;
-  transform: translateY(-2px);
-}
-
 /* Responsive Breakpoints for AI Studio */
 @media (max-width: 1100px) {
   .ai-studio-body {

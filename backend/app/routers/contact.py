@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, status
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
@@ -14,33 +14,44 @@ settings = get_settings()
 logger = logging.getLogger("contact")
 
 
+def _notify_admin_of_contact(message_id: str, name: str, phone: str, email: str,
+                              topic: str | None, subject: str, body_text: str) -> None:
+    # Best-effort notification only - the enquiry is already saved before this
+    # runs, so a down/unconfigured/slow SMTP server must not fail or delay the
+    # request the visitor is waiting on (real Gmail SMTP round trips have been
+    # observed taking several seconds - that used to happen inline, blocking
+    # the visitor's "Sending..." spinner the whole time).
+    try:
+        send_email(
+            settings.admin_email,
+            f"New enquiry: {subject}",
+            f"""
+            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
+              <h2 style="color:#7a1e2c;">New Contact Enquiry</h2>
+              <p><strong>Name:</strong> {name}</p>
+              <p><strong>Phone:</strong> {phone}</p>
+              <p><strong>Email:</strong> {email}</p>
+              <p><strong>Topic:</strong> {topic or '-'}</p>
+              <p><strong>Subject:</strong> {subject}</p>
+              <p><strong>Message:</strong><br>{body_text}</p>
+            </div>
+            """,
+        )
+    except EmailSendError as exc:
+        logger.warning("Failed to email admin about contact message %s: %s", message_id, exc)
+
+
 @router.post("", response_model=ContactOut, status_code=status.HTTP_201_CREATED)
-def create_contact_message(body: ContactIn, db: Session = Depends(get_db)):
+def create_contact_message(body: ContactIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     message = ContactMessage(**body.model_dump())
     db.add(message)
     db.commit()
     db.refresh(message)
 
-    # Best-effort notification only - the enquiry is already saved above, so a
-    # down/unconfigured SMTP server must not fail the request the visitor is
-    # waiting on.
-    try:
-        send_email(
-            settings.admin_email,
-            f"New enquiry: {message.subject}",
-            f"""
-            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
-              <h2 style="color:#7a1e2c;">New Contact Enquiry</h2>
-              <p><strong>Name:</strong> {message.name}</p>
-              <p><strong>Phone:</strong> {message.phone}</p>
-              <p><strong>Email:</strong> {message.email}</p>
-              <p><strong>Topic:</strong> {message.topic or '-'}</p>
-              <p><strong>Subject:</strong> {message.subject}</p>
-              <p><strong>Message:</strong><br>{message.message}</p>
-            </div>
-            """,
-        )
-    except EmailSendError as exc:
-        logger.warning("Failed to email admin about contact message %s: %s", message.id, exc)
+    background_tasks.add_task(
+        _notify_admin_of_contact,
+        message.id, message.name, message.phone, message.email,
+        message.topic, message.subject, message.message,
+    )
 
     return message

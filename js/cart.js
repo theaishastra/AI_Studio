@@ -1,15 +1,15 @@
 
-    // --- Shared Cart System (reads the same 'sai_studio_cart' localStorage used site-wide) ---
+    // --- Shared Cart System (js/shared/cart-core.js - reads the same
+    // 'sai_studio_cart' localStorage used site-wide). Thin wrappers so the
+    // ~900 lines below that already call getCart()/saveCart() by these names
+    // don't need to change, while the actual storage/sync logic lives in one
+    // place shared with every other page's cart. ---
     function getCart() {
-      try {
-        return JSON.parse(localStorage.getItem('sai_studio_cart')) || {};
-      } catch (e) {
-        return {};
-      }
+      return CartCore.getCart();
     }
 
     function saveCart(cart) {
-      localStorage.setItem('sai_studio_cart', JSON.stringify(cart));
+      CartCore.saveCart(cart);
     }
 
     function escapeForAttr(str) {
@@ -51,17 +51,11 @@
     }
 
     function parsePrice(str) {
-      return parseInt(String(str || '0').replace(/[^\d]/g, '')) || 0;
+      return CartCore.parsePrice(str);
     }
 
     function cartTotals() {
-      const items = Object.values(getCart());
-      let totalQty = 0, totalPrice = 0;
-      items.forEach(item => {
-        totalQty += item.qty;
-        totalPrice += parsePrice(item.price) * item.qty;
-      });
-      return { items, totalQty, totalPrice };
+      return CartCore.cartTotals();
     }
 
     // An item can carry a `requirement` (set by the page that added it - gifts.js,
@@ -98,21 +92,13 @@
     // customizations of the same product can coexist) - qty/remove must act
     // on the real object key, not item.name, or those rows silently no-op.
     function changeQty(key, delta) {
-      const cart = getCart();
-      if (!cart[key]) return;
-      cart[key].qty += delta;
-      if (cart[key].qty <= 0) delete cart[key];
-      saveCart(cart);
+      CartCore.updateQty(key, delta, {}, { createIfMissing: false });
       renderCartPage();
-      pushCartIfLoggedIn();
     }
 
     function removeItem(key) {
-      const cart = getCart();
-      delete cart[key];
-      saveCart(cart);
+      CartCore.removeItem(key);
       renderCartPage();
-      pushCartIfLoggedIn();
     }
 
     /* ================= SERVER-SIDE CART SYNC (logged-in customers) =================
@@ -123,33 +109,15 @@
        browser's local storage. */
 
     function cartToServerItems(cart) {
-      return Object.entries(cart).map(([key, item]) => ({
-        key, product_id: item.product_id || null, name: item.name, price: String(item.price), img: item.img || null,
-        qty: item.qty, customization: item.customization || null, requirement: item.requirement || null,
-      }));
+      return CartCore.cartToServerItems(cart);
     }
 
     function serverItemsToCart(items) {
-      const cart = {};
-      (items || []).forEach(item => {
-        cart[item.key] = {
-          product_id: item.product_id || null, name: item.name, price: item.price, img: item.img,
-          qty: item.qty, customization: item.customization, requirement: item.requirement,
-        };
-      });
-      return cart;
+      return CartCore.serverItemsToCart(items);
     }
 
-    // Union merge: an item only on one side is kept as-is; an item on both sides
-    // keeps the higher quantity - avoids silently dropping whichever side has
-    // more without double-adding every time this runs.
     function mergeCarts(localCart, serverCart) {
-      const merged = { ...localCart };
-      Object.entries(serverCart).forEach(([key, item]) => {
-        if (!merged[key]) merged[key] = item;
-        else if (item.qty > merged[key].qty) merged[key] = { ...merged[key], qty: item.qty };
-      });
-      return merged;
+      return CartCore.mergeCarts(localCart, serverCart);
     }
 
     let cartSyncInFlight = null;
@@ -178,9 +146,11 @@
 
     // Fire-and-forget push after a local mutation while logged in, so the
     // account's server-side cart stays current without blocking the UI on it.
+    // (saveCart() above already does this on every mutation via CartCore; this
+    // wrapper remains for the few call sites - e.g. right after OTP login -
+    // that want an explicit push independent of a save.)
     function pushCartIfLoggedIn() {
-      if (typeof isCustomerLoggedIn !== 'function' || !isCustomerLoggedIn()) return;
-      CustomerAuth.syncCart(cartToServerItems(getCart())).catch(() => {});
+      CartCore.pushCartIfLoggedIn();
     }
 
     // Saved-address book (account addresses, recommended at checkout) -----
@@ -307,18 +277,42 @@
       });
     }
 
+    // Same normalization the backend (addresses.py find_matching_address) uses
+    // to recognize "this is the same address, just re-typed" - checked here
+    // first so a repeat customer (or a guest who only logs in at the final
+    // step, re-entering the one real address they always use) doesn't pay for
+    // a whole extra network round trip creating a row the server would have
+    // deduplicated anyway. The backend check still runs regardless - this is
+    // purely a latency shortcut, not the source of truth for dedup.
+    function normAddr(s) { return String(s || '').replace(/\s+/g, ' ').trim().toLowerCase(); }
+    function findMatchingSavedAddress(d) {
+      const line1 = [d.dno, d.street].filter(Boolean).join(', ');
+      return savedAddresses.find(a =>
+        normAddr(a.full_name) === normAddr(d.name) &&
+        normAddr(a.phone) === normAddr(d.phone) &&
+        normAddr(a.line1) === normAddr(line1) &&
+        normAddr(a.line2 || '') === normAddr(d.landmark || '') &&
+        normAddr(a.city) === normAddr(d.city) &&
+        normAddr(a.state) === normAddr(d.state) &&
+        normAddr(a.pincode) === normAddr(d.pincode));
+    }
+
     // The order's address_id (backend/app/schemas.py CheckoutIn) always has to
     // point at a real row in the address book, so every order needs one - but
     // that shouldn't mean creating a fresh duplicate every time:
     //  - picked a saved address and didn't touch it -> reuse its id, no request.
-    //  - typed a new/edited one -> save it for next time only if the "Save
-    //    this address" checkbox (checked by default) is still checked; either
-    //    way it becomes the order's address, but only a saved one can ever
-    //    become the account default, and only when it's the very first one -
-    //    a one-off checkout address should never silently displace whatever
-    //    the customer already had marked default.
+    //  - typed one that already matches a saved address -> reuse its id too.
+    //  - typed a genuinely new/edited one -> save it for next time only if the
+    //    "Save this address" checkbox (checked by default) is still checked;
+    //    either way it becomes the order's address, but only a saved one can
+    //    ever become the account default, and only when it's the very first
+    //    one - a one-off checkout address should never silently displace
+    //    whatever the customer already had marked default.
     async function resolveOrderAddressId(d) {
       if (selectedSavedAddressId) return selectedSavedAddressId;
+
+      const matching = findMatchingSavedAddress(d);
+      if (matching) return matching.id;
 
       // Note: the checkbox row can be hidden at this point (e.g. a guest who
       // only logs in at this final step never saw step 2's address picker) -
@@ -412,6 +406,37 @@
     function closeImagePreview() {
       document.getElementById('imagePreviewOverlay').style.display = 'none';
       document.getElementById('imagePreviewOverlayImg').src = '';
+    }
+
+    // "Buy Now" on a product page (js/gifts.js, js/corporate.js, js/index-2.js)
+    // stashes the single item here instead of the persistent cart, then sends
+    // the shopper straight to this page - merge it in once on load so it's not
+    // silently dropped in favour of whatever was already in the cart. A plain
+    // "Proceed to Checkout" click also writes this key with source:'cart', but
+    // those items are already in the persistent cart, so there's nothing to add.
+    // Returns true when this load is a genuine Buy Now handoff, so the caller
+    // can skip straight to the address step (see DOMContentLoaded below) -
+    // false for a plain page visit or a "Proceed to Checkout" handoff (which
+    // writes this same key with source:'cart', but is meant to land on the
+    // cart review list as usual).
+    function consumePendingBuyNow() {
+      let pending;
+      try { pending = JSON.parse(sessionStorage.getItem('sai_studio_checkout')); } catch (e) { pending = null; }
+      sessionStorage.removeItem('sai_studio_checkout');
+      if (!pending || pending.source !== 'buy-now' || !Array.isArray(pending.items)) return false;
+
+      const cart = getCart();
+      pending.items.forEach(item => {
+        const key = hasCustomizationFields(item.customization) ? `${item.name}::${Date.now()}` : item.name;
+        if (cart[key]) cart[key].qty += item.qty || 1;
+        else cart[key] = { ...item, qty: item.qty || 1 };
+      });
+      saveCart(cart);
+      return true;
+    }
+
+    function hasCustomizationFields(customization) {
+      return !!(customization && Object.values(customization).some(v => v));
     }
 
     function renderCartPage() {
@@ -653,6 +678,14 @@
         // in step 1, so login shouldn't silently add anything from another device on
         // top of what they're about to pay for.
         pushCartIfLoggedIn();
+        // A guest who only logs in at this final step (step 2's address picker never
+        // ran, since they weren't logged in yet) still deserves the same "reuse my
+        // saved address" treatment as someone already signed in - without this,
+        // resolveOrderAddressId() below has no saved-address list to match against
+        // and always creates a fresh row, even for a returning customer's real
+        // address (the backend's own dedup check is the real safety net, but this
+        // also spares them the extra create-address round trip).
+        savedAddresses = await CustomerAuth.getAddresses().catch(() => savedAddresses);
         window.SaiAuthNav?.refresh();
         document.getElementById('cartLoginGate').style.display = 'none';
         document.getElementById('cartPaymentBody').style.display = 'block';
@@ -843,6 +876,7 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+      const isBuyNowHandoff = consumePendingBuyNow();
       renderCartPage();
       prefillDeliveryDetails();
       wireDeliveryFormDirtyTracking();
@@ -850,5 +884,17 @@
       // pull in whatever's saved on the account (cart items + default address)
       // before the user starts reviewing/editing anything.
       syncCartWithServer();
-      prefillAddressFromServer();
+      prefillAddressFromServer().then(() => {
+        // Buy Now already ran its own "is everything required filled in"
+        // check before handing off here (gifts.js/studio.js/corporate.js/
+        // index-2.js all validate first) - so there's nothing left to review
+        // on the cart list, and it goes straight to entering/picking a
+        // delivery address, same place "Proceed to Checkout" leads to.
+        // Waiting for prefillAddressFromServer() first means a logged-in
+        // customer's saved-address picker is already populated the moment
+        // step 2 appears, instead of popping in a beat later. goToCartStep(2)
+        // still re-checks itemNeedsAttention on its own, so this is a fast
+        // path, not a bypass, if something unexpected slipped through.
+        if (isBuyNowHandoff) goToCartStep(2);
+      });
     });

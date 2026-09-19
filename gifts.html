@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/shared/mobile-nav-extra.css">
   <link rel="stylesheet" href="css/shared/product-fields.css">
-  <link rel="stylesheet" href="css/gifts.css?v=1788880000000">
+  <link rel="stylesheet" href="css/gifts.css?v=1788880000001">
 </head>
 
 <body>
@@ -361,7 +361,7 @@
     </div>
   </div>
 
-  <main>
+  <main id="giftsHomeMain">
     <section class="hero" aria-label="Featured customised gifts">
       <div class="hero-window">
         <div class="hero-track" id="heroTrack">
@@ -563,7 +563,7 @@
   </main>
 
   <!-- ================= FOOTER ================= -->
-  <footer>
+  <footer id="giftsHomeFooter">
     <div class="container">
       <div class="footer-grid">
         <div class="footer-col">
@@ -682,7 +682,7 @@
     <div class="drawer-items" id="drawerItems"></div>
     <div class="drawer-foot">
       <div class="subtotal"><span>Subtotal</span><span id="subtotal">₹0</span></div><button class="whatsapp"
-        onclick="checkoutWhatsApp()">Checkout via WhatsApp</button>
+        onclick="goToCartCheckout()">Proceed to Checkout</button>
     </div>
   </aside>
 
@@ -774,6 +774,7 @@
   <script src="js/shared/customer-api.js"></script>
   <script src="js/shared/thumb-map.js"></script>
   <script src="js/shared/product-fields.js"></script>
+  <script src="js/shared/cart-core.js"></script>
   <script src="js/gifts.js?v=1"></script>
   <script src="js/gifts-2.js"></script>
   <script src="js/shared/bottom-nav.js"></script>

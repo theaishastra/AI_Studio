@@ -27,6 +27,7 @@ class UserOut(BaseModel):
     name: str | None
     phone: str | None
     role: str
+    is_active: bool
     created_at: datetime
 
 
@@ -65,15 +66,26 @@ class UserUpdate(BaseModel):
 
 
 class CustomerOut(BaseModel):
-    id: str
+    # id/is_active/joined are null for an email that has requested OTPs but
+    # never completed signup - see admin.py's list_customers, which surfaces
+    # those rows too so pre-signup OTP abuse is still visible/blockable.
+    id: str | None
     name: str | None
     email: str
     phone: str | None
-    is_active: bool
-    joined: datetime
+    is_active: bool | None
+    joined: datetime | None
     last_login: datetime | None
     orders: int
     spend: float
+    otp_requests: int
+    last_otp_request: datetime | None
+    is_blocked: bool
+
+
+class BlockEmailIn(BaseModel):
+    email: str
+    reason: str = ""
 
 
 # ---------------------------------------------------------------- addresses

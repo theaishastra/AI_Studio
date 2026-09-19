@@ -2,28 +2,28 @@ import csv
 import io
 import re
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import httpx
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from ..config import get_settings
 from ..database import get_db
 from ..deps import audit, require_owner, require_staff
 from ..models import (
-    Address, AuditLog, Booking, Category, Coupon, Media, Order,
+    Address, AuditLog, BlockedEmail, Booking, Category, Coupon, Media, Order,
     OrderAddressChangeRequest, OrderCancellationRequest, OrderTrackingEvent,
-    Product, Review, Setting, SitePage, User,
+    OtpCode, Product, Review, Setting, SitePage, User,
 )
 from ..schemas import (
     AddressChangeDecisionIn, AdminAddressChangeRequestOut, AdminCancellationRequestOut,
-    ArrangeIn, BookingOut, BookingStatusUpdate, CancellationDecisionIn, CategoryIn, CategoryOut,
-    CouponIn, CouponOut, CustomerOut, HomepageLayoutIn, MediaIn, MediaLibraryOut, MediaOut, OrderOut,
-    OrderStatusUpdate, ProductIn, ProductOut, ProductPatch, SettingIn, SettingOut, SitePageIn,
-    SitePageOut, StaffIn, TrackingUpdateIn, UserOut,
+    ArrangeIn, BlockEmailIn, BookingOut, BookingStatusUpdate, CancellationDecisionIn, CategoryIn,
+    CategoryOut, CouponIn, CouponOut, CustomerOut, HomepageLayoutIn, MediaIn, MediaLibraryOut,
+    MediaOut, OrderOut, OrderStatusUpdate, ProductIn, ProductOut, ProductPatch, SettingIn,
+    SettingOut, SitePageIn, SitePageOut, StaffIn, TrackingUpdateIn, UserOut,
 )
 from ..security import hash_password
 from ..services.media import process_image
@@ -504,6 +504,19 @@ def deactivate_staff(user_id: str, request: Request,
     db.commit()
 
 
+@router.post("/staff/{user_id}/reactivate", response_model=UserOut)
+def reactivate_staff(user_id: str, request: Request,
+                     admin: User = Depends(require_owner), db: Session = Depends(get_db)):
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Staff not found")
+    user.is_active = True
+    audit(db, admin, "reactivate", "staff", user_id, {}, request)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 @router.get("/audit-log")
 def list_audit_log(limit: int = 100, admin: User = Depends(require_owner), db: Session = Depends(get_db)):
     logs = db.query(AuditLog).order_by(AuditLog.created_at.desc()).limit(min(limit, 500)).all()
@@ -515,6 +528,23 @@ def list_audit_log(limit: int = 100, admin: User = Depends(require_owner), db: S
         }
         for l in logs
     ]
+
+
+@router.delete("/audit-log")
+def clear_audit_log(request: Request, older_than_days: int | None = None,
+                    admin: User = Depends(require_owner), db: Session = Depends(get_db)):
+    """Clears the audit_log table - which backs both the Audit Log and Activity
+    pages (Activity is just that same table filtered to login/logout/signup/
+    admin_login), so this empties both at once. Writes one fresh entry recording
+    the clear itself, so there's always a record that a wipe happened and by whom."""
+    query = db.query(AuditLog)
+    if older_than_days is not None:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=older_than_days)
+        query = query.filter(AuditLog.created_at < cutoff)
+    deleted = query.delete(synchronize_session=False)
+    audit(db, admin, "clear_audit_log", "audit_log", None, {"deleted": deleted, "older_than_days": older_than_days}, request)
+    db.commit()
+    return {"deleted": deleted}
 
 
 @router.get("/activity")
@@ -855,13 +885,21 @@ def export_bookings_csv(admin: User = Depends(require_staff), db: Session = Depe
 @router.get("/customers")
 def list_customers(q: str | None = None, page: int = 1,
                    admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    """Customers, merged with their OTP/login activity. Also surfaces emails that
+    requested OTPs (or got blocked) but never completed signup, so pre-signup OTP
+    abuse - someone hammering the login form with an email they don't own - is
+    visible and blockable even though there's no User row for it yet."""
     page_size = 30
-    query = db.query(User).filter(User.role == "customer")
-    if q:
-        like = f"%{q}%"
-        query = query.filter(or_(User.email.ilike(like), User.name.ilike(like), User.phone.ilike(like)))
-    total = query.count()
-    users = query.order_by(User.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+
+    users = db.query(User).filter(User.role == "customer").all()
+    otp_by_email = {
+        email: (cnt, last)
+        for email, cnt, last in (
+            db.query(OtpCode.email, func.count(OtpCode.id), func.max(OtpCode.created_at))
+            .group_by(OtpCode.email).all()
+        )
+    }
+    blocked_emails = {b.email for b in db.query(BlockedEmail).all()}
 
     paid_statuses = ("cod_confirmed", "paid", "in_production", "shipped", "delivered")
     user_ids = [u.id for u in users]
@@ -870,15 +908,117 @@ def list_customers(q: str | None = None, page: int = 1,
         for o in db.query(Order).filter(Order.user_id.in_(user_ids)).all():
             orders_by_user[o.user_id].append(o)
 
-    items = []
+    rows: dict[str, CustomerOut] = {}
     for u in users:
         orders = orders_by_user[u.id]
         spend = sum(float(o.total) for o in orders if o.status in paid_statuses)
-        items.append(CustomerOut(
+        otp_count, otp_last = otp_by_email.get(u.email, (0, None))
+        rows[u.email] = CustomerOut(
             id=u.id, name=u.name, email=u.email, phone=u.phone, is_active=u.is_active,
             joined=u.created_at, last_login=u.last_login, orders=len(orders), spend=spend,
-        ))
-    return {"items": items, "total": total, "page": page, "page_size": page_size}
+            otp_requests=otp_count, last_otp_request=otp_last, is_blocked=u.email in blocked_emails,
+        )
+    for email, (otp_count, otp_last) in otp_by_email.items():
+        if email not in rows:
+            rows[email] = CustomerOut(
+                id=None, name=None, email=email, phone=None, is_active=None, joined=None,
+                last_login=None, orders=0, spend=0.0, otp_requests=otp_count,
+                last_otp_request=otp_last, is_blocked=email in blocked_emails,
+            )
+    for email in blocked_emails:
+        if email not in rows:
+            rows[email] = CustomerOut(
+                id=None, name=None, email=email, phone=None, is_active=None, joined=None,
+                last_login=None, orders=0, spend=0.0, otp_requests=0,
+                last_otp_request=None, is_blocked=True,
+            )
+
+    items = list(rows.values())
+    if q:
+        ql = q.lower()
+        items = [
+            c for c in items
+            if ql in c.email.lower() or (c.name and ql in c.name.lower()) or (c.phone and ql in c.phone)
+        ]
+
+    epoch = datetime.min.replace(tzinfo=timezone.utc)
+    items.sort(key=lambda c: c.joined or c.last_otp_request or epoch, reverse=True)
+    total = len(items)
+    start = (page - 1) * page_size
+    return {"items": items[start:start + page_size], "total": total, "page": page, "page_size": page_size}
+
+
+@router.get("/blocked-emails")
+def list_blocked_emails(admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    rows = db.query(BlockedEmail).order_by(BlockedEmail.created_at.desc()).all()
+    return [
+        {"email": b.email, "reason": b.reason, "created_at": b.created_at.isoformat()}
+        for b in rows
+    ]
+
+
+@router.post("/customers/block", status_code=status.HTTP_204_NO_CONTENT)
+def block_email(body: BlockEmailIn, request: Request,
+                admin: User = Depends(require_owner), db: Session = Depends(get_db)):
+    email = body.email.lower().strip()
+    if db.query(User).filter(User.email == email, User.role.in_(("staff", "owner"))).first():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cannot block a staff/owner account")
+    existing = db.query(BlockedEmail).filter(BlockedEmail.email == email).first()
+    if existing:
+        existing.reason = body.reason
+    else:
+        db.add(BlockedEmail(email=email, reason=body.reason, blocked_by=admin.id))
+    audit(db, admin, "block", "email", email, {"reason": body.reason}, request)
+    db.commit()
+
+
+@router.post("/customers/unblock", status_code=status.HTTP_204_NO_CONTENT)
+def unblock_email(body: BlockEmailIn, request: Request,
+                  admin: User = Depends(require_owner), db: Session = Depends(get_db)):
+    email = body.email.lower().strip()
+    db.query(BlockedEmail).filter(BlockedEmail.email == email).delete(synchronize_session=False)
+    audit(db, admin, "unblock", "email", email, {}, request)
+    db.commit()
+
+
+@router.delete("/customers/otp-activity/{email}", status_code=status.HTTP_204_NO_CONTENT)
+def clear_otp_activity(email: str, request: Request,
+                       admin: User = Depends(require_owner), db: Session = Depends(get_db)):
+    """Purges OTP-request history for an email that never completed signup (no
+    User row) - the "no signup" rows in the customers list. Not for a real
+    account; use DELETE /customers/{user_id} for that."""
+    email = email.lower().strip()
+    if db.query(User).filter(User.email == email).first():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "This email has an account - delete the customer instead")
+    deleted = db.query(OtpCode).filter(OtpCode.email == email).delete(synchronize_session=False)
+    if not deleted:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No OTP activity found for this email")
+    audit(db, admin, "clear_otp_activity", "email", email, {"deleted": deleted}, request)
+    db.commit()
+
+
+@router.delete("/customers/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_customer(user_id: str, request: Request,
+                    admin: User = Depends(require_owner), db: Session = Depends(get_db)):
+    """Permanently erases a customer and everything tied to them: addresses, cart/wishlist,
+    reviews, notifications, refresh tokens, pending OTPs, bookings, and their orders (which
+    in turn cascades to that order's items/payments/tracking events/cancellation &
+    address-change requests). The audit-log entry for this action, and any older audit-log
+    rows referencing them, keep their own snapshot and just have user_id cleared - that
+    trail is deliberately kept. Irreversible, so the admin UI must confirm before calling
+    this."""
+    user = db.get(User, user_id)
+    if not user or user.role != "customer":
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Customer not found")
+
+    audit(db, admin, "delete", "customer", user_id, {"email": user.email, "name": user.name}, request)
+
+    db.query(OtpCode).filter(OtpCode.email == user.email).delete(synchronize_session=False)
+    # orders.user_id is ON DELETE RESTRICT (an accidental-delete guard elsewhere in the
+    # app) - clear them explicitly first so the User delete below doesn't hit that guard.
+    db.query(Order).filter(Order.user_id == user_id).delete(synchronize_session=False)
+    db.delete(user)
+    db.commit()
 
 
 # ---------------------------------------------------------------- reviews

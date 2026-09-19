@@ -4,20 +4,11 @@
       var dots = document.querySelectorAll('#heroDots .hero-dot');
       var prevBtn = document.getElementById('heroPrev');
       var nextBtn = document.getElementById('heroNext');
-      var featureCards = document.querySelectorAll('.feature-cards .feature-card.promo-card');
-      var slideCardClass = ['card-photography', 'card-gifts', 'card-studio', 'card-corporate'];
       var slideCount = 4;
       var totalSlots = slideCount + 2; // leading clone + 4 real + trailing clone
       var slotWidth = 100 / totalSlots;
       var pos = 1; // starts on real slide 0 (Photography)
       var timer;
-
-      function highlightCard(realIndex) {
-        var activeClass = slideCardClass[realIndex];
-        featureCards.forEach(function (card) {
-          card.classList.toggle('active-slide', card.classList.contains(activeClass));
-        });
-      }
 
       function goTo(p, animate) {
         track.style.transition = animate === false ? 'none' : 'transform .7s cubic-bezier(.65,0,.35,1)';
@@ -26,7 +17,6 @@
         dots.forEach(function (d, di) {
           d.classList.toggle('active', di === realIndex);
         });
-        highlightCard(realIndex);
       }
 
       function next() {

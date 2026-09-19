@@ -9,13 +9,9 @@
       document.getElementById('successModal').style.display = 'none';
     }
 
-    // --- Cart Badge Sync (reads the same 'sai_studio_cart' localStorage used site-wide) ---
+    // --- Cart Badge Sync (js/shared/cart-core.js - shared storage/sync logic) ---
     function getCart() {
-      try {
-        return JSON.parse(localStorage.getItem('sai_studio_cart')) || {};
-      } catch (e) {
-        return {};
-      }
+      return CartCore.getCart();
     }
 
     function updateNavCartBadge() {

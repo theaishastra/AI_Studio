@@ -1829,28 +1829,6 @@
       gap: 12px;
     }
 
-    /* ─── Floating WhatsApp Button ─── */
-    .floating-whatsapp-btn {
-      position: fixed;
-      bottom: 24px;
-      left: 24px;
-      background: #25D366;
-      color: #FFFFFF;
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 18px rgba(37, 211, 102, 0.4);
-      z-index: 99;
-      transition: var(--transition);
-    }
-
-    .floating-whatsapp-btn:hover {
-      transform: scale(1.1);
-    }
-
     /* ─── Responsive Styles ─── */
     @media (max-width: 1024px) {
       .catalog-layout-grid {
@@ -1927,7 +1905,6 @@
       .catalog-view-sort,
       .active-filters-bar,
       .site-footer,
-      .floating-whatsapp-btn,
       .btn-card-action,
       .wishlist-heart-btn,
       .quick-view-overlay-btn,

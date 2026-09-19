@@ -542,17 +542,13 @@
     let activeQuickViewItem = null;
     let modalQuantity = 1;
 
-    // ─── LocalStorage Shared Cart Functions ───
+    // ─── LocalStorage Shared Cart Functions (js/shared/cart-core.js) ───
     function getStoredCart() {
-      try {
-        return JSON.parse(localStorage.getItem('sai_studio_cart')) || {};
-      } catch (e) {
-        return {};
-      }
+      return CartCore.getCart();
     }
 
     function saveStoredCart(cart) {
-      localStorage.setItem('sai_studio_cart', JSON.stringify(cart));
+      CartCore.saveCart(cart);
       updateCartBadge();
       renderCartDrawerItems();
     }
@@ -927,12 +923,9 @@
     }
 
     function addItemToCart(productName, priceStr, imgUrl, qty = 1) {
-      const cart = getStoredCart();
-      if (!cart[productName]) {
-        cart[productName] = { name: productName, qty: 0, price: priceStr, img: imgUrl };
-      }
-      cart[productName].qty += qty;
-      saveStoredCart(cart);
+      CartCore.updateQty(productName, qty, { name: productName, price: priceStr, img: imgUrl });
+      updateCartBadge();
+      renderCartDrawerItems();
     }
 
     // Saving is gated behind sign-in (see js/shared/wishlist-menu.js) - if the
@@ -1072,18 +1065,15 @@
     }
 
     function updateDrawerQty(name, delta) {
-      const cart = getStoredCart();
-      if (cart[name]) {
-        cart[name].qty += delta;
-        if (cart[name].qty <= 0) delete cart[name];
-        saveStoredCart(cart);
-      }
+      CartCore.updateQty(name, delta, {}, { createIfMissing: false });
+      updateCartBadge();
+      renderCartDrawerItems();
     }
 
     function removeDrawerItem(name) {
-      const cart = getStoredCart();
-      delete cart[name];
-      saveStoredCart(cart);
+      CartCore.removeItem(name);
+      updateCartBadge();
+      renderCartDrawerItems();
       showToast(`Removed "${name}" from cart.`, 'delete');
     }
 

@@ -18,34 +18,24 @@
       return (window.THUMB_MAP && window.THUMB_MAP[url]) || url;
     }
 
-    // --- Cart System (shared "sai_studio_cart" localStorage key with index.html) ---
+    // --- Cart System (js/shared/cart-core.js - shared storage/sync logic) ---
     function getCart() {
-      try {
-        return JSON.parse(localStorage.getItem('sai_studio_cart')) || {};
-      } catch (e) {
-        return {};
-      }
+      return CartCore.getCart();
     }
 
     function saveCart(cart) {
-      localStorage.setItem('sai_studio_cart', JSON.stringify(cart));
+      CartCore.saveCart(cart);
       updateCartUI();
     }
 
     function updateCartQty(productName, delta, priceStr = '', imgUrl = '') {
-      const cart = getCart();
-      if (!cart[productName]) {
-        cart[productName] = { name: productName, qty: 0, price: priceStr, img: imgUrl };
-      }
-      cart[productName].qty += delta;
-      if (cart[productName].qty <= 0) delete cart[productName];
-      saveCart(cart);
+      CartCore.updateQty(productName, delta, { name: productName, price: priceStr, img: imgUrl });
+      updateCartUI();
     }
 
     function removeCartItem(productName) {
-      const cart = getCart();
-      delete cart[productName];
-      saveCart(cart);
+      CartCore.removeItem(productName);
+      updateCartUI();
     }
 
     function updateCartUI() {
@@ -114,25 +104,6 @@
     function closeCartDrawer() {
       document.getElementById('cartDrawer').classList.remove('open');
       document.getElementById('cartDrawerOverlay').style.display = 'none';
-    }
-
-    function checkoutWhatsApp() {
-      const cart = getCart();
-      const items = Object.values(cart);
-      if (items.length === 0) return;
-
-      let message = "Hello Sai Kumar Digital Lab & Studio, I would like to place an order:\n\n";
-      let total = 0;
-      items.forEach(item => {
-        const itemPrice = parseInt(item.price.replace(/[^\d]/g, '')) || 0;
-        const subtotal = itemPrice * item.qty;
-        total += subtotal;
-        message += `• ${item.name} x${item.qty} - ₹${subtotal}\n`;
-      });
-      message += `\n*Total Order Value: ₹${total}*`;
-
-      const encodedMessage = encodeURIComponent(message);
-      window.open(`https://wa.me/919849233501?text=${encodedMessage}`, '_blank');
     }
 
     // --- Wishlist + drawer ---
