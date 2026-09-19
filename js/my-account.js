@@ -205,7 +205,7 @@
         acctAddresses = await CustomerAuth.getAddresses();
         renderAcctAddresses();
       } catch (err) {
-        wrap.innerHTML = `<div class="cart-form-msg" style="display:block;">${err.message || 'Could not load your addresses.'}</div>`;
+        wrap.innerHTML = `<div class="cart-form-msg" style="display:block;">${escapeAcctHTML(err.message || 'Could not load your addresses.')}</div>`;
       }
     }
 
@@ -349,7 +349,7 @@
         }
         wrap.innerHTML = orders.slice(0, 3).map(orderMiniHTML).join('');
       } catch (err) {
-        wrap.innerHTML = `<div class="cart-form-msg" style="display:block;">${err.message || 'Could not load your orders.'}</div>`;
+        wrap.innerHTML = `<div class="cart-form-msg" style="display:block;">${escapeAcctHTML(err.message || 'Could not load your orders.')}</div>`;
       }
     }
 
@@ -378,7 +378,7 @@
         }
         wrap.innerHTML = bookings.slice(0, 3).map(bookingMiniHTML).join('');
       } catch (err) {
-        wrap.innerHTML = `<div class="cart-form-msg" style="display:block;">${err.message || 'Could not load your bookings.'}</div>`;
+        wrap.innerHTML = `<div class="cart-form-msg" style="display:block;">${escapeAcctHTML(err.message || 'Could not load your bookings.')}</div>`;
       }
     }
 

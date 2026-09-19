@@ -140,9 +140,23 @@
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
+  // item.name/item.category can come from the admin-entered catalog (see
+  // loadLiveProducts() below: name: p.title, category: p.category_name) - unlike the
+  // hardcoded CATALOG entries above, that text isn't trusted and must be escaped
+  // before landing in this dropdown's innerHTML, same as the query text already is
+  // a few lines down.
+  function escHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
   function highlight(name, query) {
-    var re = new RegExp("(" + escapeRegExp(query) + ")", "ig");
-    return name.replace(re, "<mark>$1</mark>");
+    var safeName = escHtml(name);
+    var safeQuery = escHtml(query);
+    if (!safeQuery) return safeName;
+    var re = new RegExp("(" + escapeRegExp(safeQuery) + ")", "ig");
+    return safeName.replace(re, "<mark>$1</mark>");
   }
 
   function filterCatalog(query) {
@@ -204,9 +218,9 @@
       }
 
       panel.innerHTML = currentItems.map(function (item, i) {
-        return '<a href="' + item.url + '" class="sk-search-row" data-index="' + i + '">'
+        return '<a href="' + escHtml(item.url) + '" class="sk-search-row" data-index="' + i + '">'
           + '<span class="sk-search-row-name">' + highlight(item.name, query.trim()) + '</span>'
-          + '<span class="sk-search-row-cat">' + item.category + '</span>'
+          + '<span class="sk-search-row-cat">' + escHtml(item.category) + '</span>'
           + '</a>';
       }).join("");
       panel.classList.add("open");
@@ -230,6 +244,7 @@
     }
 
     input.addEventListener("input", function () {
+      loadLiveProducts(); // no-op after the first call - see the focus handler below
       render(input.value);
     });
 
@@ -269,6 +284,11 @@
     });
 
     input.addEventListener("focus", function () {
+      // Loads the full catalog on first real interaction with a search box instead
+      // of unconditionally on every page load - most visitors never open search at
+      // all, so this was fetching the entire product list for nothing on every
+      // single navigation. loadLiveProducts() guards itself against re-fetching.
+      loadLiveProducts();
       if (input.value.trim()) render(input.value);
     });
 
@@ -279,7 +299,6 @@
 
   function init() {
     injectStyles();
-    loadLiveProducts();
     var inputs = document.querySelectorAll(".nav-search-bar input, .mobile-search-bar input");
     Array.prototype.forEach.call(inputs, setup);
   }

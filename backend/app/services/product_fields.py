@@ -52,3 +52,26 @@ def validate_product_field_values(product: Product, fields_values: dict | None) 
     for field in input_fields:
         errors.extend(_field_value_errors(field, values.get(field.get("id"))))
     return errors
+
+
+def resolve_product_price(product: Product, fields_values: dict | None) -> float:
+    """Server-side mirror of js/shared/product-fields.js's getSelectedPrice(): the first
+    non-multi-select dropdown field with option_prices replaces the product's base price
+    entirely once the customer picks one of its priced options (e.g. Studio's "16 Photos
+    = ₹200" quantity picker) - it does not add to product.price.
+
+    This is the one and only place a checkout line's price should come from for any item
+    with a resolvable product_id - see routers/orders.py's checkout(), which must never
+    trust a client-supplied price for such lines."""
+    values = fields_values or {}
+    fields = sorted(product.input_fields or [], key=lambda f: f.get("sort", 0))
+    priced_field = next(
+        (f for f in fields if f.get("type") == "dropdown" and not f.get("multi_select") and f.get("option_prices")),
+        None,
+    )
+    if priced_field:
+        selected = values.get(priced_field.get("id"))
+        price = (priced_field.get("option_prices") or {}).get(selected)
+        if price is not None:
+            return float(price)
+    return float(product.price)

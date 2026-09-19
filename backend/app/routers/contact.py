@@ -1,3 +1,4 @@
+import html
 import logging
 
 from fastapi import APIRouter, BackgroundTasks, Depends, status
@@ -21,6 +22,11 @@ def _notify_admin_of_contact(message_id: str, name: str, phone: str, email: str,
     # request the visitor is waiting on (real Gmail SMTP round trips have been
     # observed taking several seconds - that used to happen inline, blocking
     # the visitor's "Sending..." spinner the whole time).
+    # Every field here is visitor-submitted and unauthenticated - escape before
+    # interpolating into the HTML email body below (the subject line right after
+    # this isn't HTML, so it's passed as-is - Python's email module handles header
+    # encoding/safety on its own).
+    esc = html.escape
     try:
         send_email(
             settings.admin_email,
@@ -28,12 +34,12 @@ def _notify_admin_of_contact(message_id: str, name: str, phone: str, email: str,
             f"""
             <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
               <h2 style="color:#7a1e2c;">New Contact Enquiry</h2>
-              <p><strong>Name:</strong> {name}</p>
-              <p><strong>Phone:</strong> {phone}</p>
-              <p><strong>Email:</strong> {email}</p>
-              <p><strong>Topic:</strong> {topic or '-'}</p>
-              <p><strong>Subject:</strong> {subject}</p>
-              <p><strong>Message:</strong><br>{body_text}</p>
+              <p><strong>Name:</strong> {esc(name)}</p>
+              <p><strong>Phone:</strong> {esc(phone)}</p>
+              <p><strong>Email:</strong> {esc(email)}</p>
+              <p><strong>Topic:</strong> {esc(topic) if topic else '-'}</p>
+              <p><strong>Subject:</strong> {esc(subject)}</p>
+              <p><strong>Message:</strong><br>{esc(body_text)}</p>
             </div>
             """,
         )

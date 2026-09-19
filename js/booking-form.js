@@ -29,9 +29,14 @@ document.getElementById("lkPrice").textContent=price;
 const equipments=params.get("equipments")||"";
 if(equipments){
   document.getElementById("selectedEquipSummaryField").style.display="";
-  document.getElementById("selectedEquipListDisplay").innerHTML=
-    equipments.split(",").map(n=>n.trim()).filter(Boolean)
-      .map(n=>`<span class="equip-tag">${n}</span>`).join("");
+  const listEl=document.getElementById("selectedEquipListDisplay");
+  listEl.innerHTML="";
+  equipments.split(",").map(n=>n.trim()).filter(Boolean).forEach(n=>{
+    const span=document.createElement("span");
+    span.className="equip-tag";
+    span.textContent=n;
+    listEl.appendChild(span);
+  });
 }
 document.title=`Book ${pkg} — Sai Kumar Digital Lab & Studio`;
 

@@ -24,6 +24,20 @@ function clearToken() {
   localStorage.removeItem("admin_token");
 }
 
+// FastAPI's `detail` on a 422 is a list of {loc, msg, ...} objects, not a string -
+// new Error(thatArray) stringifies to "[object Object]"/similar instead of the
+// actual per-field message. Every other error shape (a plain string detail, or no
+// body at all) passes through unchanged.
+function formatApiErrorDetail(detail, fallback) {
+  if (Array.isArray(detail)) {
+    return detail.map((d) => {
+      const field = Array.isArray(d.loc) ? d.loc[d.loc.length - 1] : null;
+      return field && field !== "body" ? `${field}: ${d.msg}` : d.msg;
+    }).join("; ") || fallback;
+  }
+  return detail || fallback;
+}
+
 async function api(path, options = {}) {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
   const token = getToken();
@@ -43,7 +57,7 @@ async function api(path, options = {}) {
     let detail = res.statusText;
     try {
       const body = await res.json();
-      detail = body.detail || detail;
+      detail = formatApiErrorDetail(body.detail, detail);
     } catch (_) {}
     throw new Error(detail);
   }
@@ -134,7 +148,7 @@ const Api = {
     }).then(async (res) => {
       if (!res.ok) {
         let detail = res.statusText;
-        try { detail = (await res.json()).detail || detail; } catch (_) {}
+        try { detail = formatApiErrorDetail((await res.json()).detail, detail); } catch (_) {}
         throw new Error(detail);
       }
       return res.json();
@@ -160,7 +174,7 @@ const Api = {
         let body = null;
         try { body = JSON.parse(xhr.responseText); } catch (_) {}
         if (xhr.status >= 200 && xhr.status < 300) resolve(body);
-        else reject(new Error((body && body.detail) || xhr.statusText || `HTTP ${xhr.status}`));
+        else reject(new Error(formatApiErrorDetail(body && body.detail, xhr.statusText || `HTTP ${xhr.status}`)));
       };
       xhr.onerror = () => reject(new Error("Network error during upload"));
       xhr.send(formData);

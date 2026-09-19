@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
@@ -19,6 +20,7 @@ from ..services.email_service import send_otp_email
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 OTP_TTL_MINUTES = 5
 OTP_MAX_ATTEMPTS = 5
@@ -89,16 +91,20 @@ def request_otp(body: OtpRequest, background_tasks: BackgroundTasks, request: Re
         ip=request.client.host if request.client else None,
     ))
 
-    response = {"message": "OTP sent to your email", "ttl_minutes": OTP_TTL_MINUTES}
-    if settings.debug_otp:
-        response["debug_otp"] = code
-    else:
-        if not settings.smtp_configured:
-            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Email delivery is not configured")
+    # The OTP itself must never be returned in the API response - doing so lets anyone
+    # take over any email address with zero access to that inbox (POST this endpoint,
+    # read the code back, POST /otp/verify). SMTP-configured deployments always email
+    # it; an unconfigured *local/dev* setup (debug_otp=True) instead logs it server-side
+    # only, which stays readable to a developer but not reachable over the network.
+    if settings.smtp_configured:
         background_tasks.add_task(send_otp_email, email, code, OTP_TTL_MINUTES)
+    elif settings.debug_otp:
+        logger.warning("DEBUG_OTP: no SMTP configured, OTP for %s is %s", email, code)
+    else:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Email delivery is not configured")
 
     db.commit()
-    return response
+    return {"message": "OTP sent to your email", "ttl_minutes": OTP_TTL_MINUTES}
 
 
 @router.post("/otp/verify", response_model=TokenPair)

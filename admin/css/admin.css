@@ -135,6 +135,13 @@ a { color: var(--accent); }
   border-left-color: var(--accent);
   font-weight: 700;
 }
+/* .owner-only is also used outside the sidebar (order-row Refund buttons, the
+   Customers "Block an email" button, Clear Audit Log/Activity) - those are plain
+   .btn elements (display: inline-block), not the sidebar's icon+label flex rows,
+   so they need their own display value. The more specific .sidebar rule below
+   still wins for sidebar links regardless of rule order. */
+.owner-only { display: none; }
+body.is-owner .owner-only { display: inline-block; }
 .sidebar .owner-only { display: none; }
 body.is-owner .sidebar .owner-only { display: flex; }
 #logoutLink {

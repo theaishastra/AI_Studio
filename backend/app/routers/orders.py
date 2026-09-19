@@ -19,7 +19,7 @@ from ..services.policy import (
     address_change_deadline, annotate_order, annotate_orders,
 )
 from ..services.pricing import money, price_cart, to_paise
-from ..services.product_fields import validate_product_field_values
+from ..services.product_fields import resolve_product_price, validate_product_field_values
 from ..services.razorpay_service import create_rzp_order
 from ..services.storage import CUSTOM_UPLOAD_FIELDS, upload_data_uri
 
@@ -106,7 +106,12 @@ def checkout(body: CheckoutIn, user: User = Depends(get_current_user), db: Sessi
     # most storefront pages still render hardcoded package data with no backend row.
     product_ids = [entry.product_id for entry in body.items if entry.product_id]
     products = {p.id: p for p in db.query(Product).filter(Product.id.in_(product_ids)).all()} if product_ids else {}
-    for entry in body.items:
+    # A client-supplied price is only ever trusted for lines with no product_id at all
+    # (hardcoded storefront pages with no backend Product row). Any line that names a
+    # real product gets its price re-derived from the catalog here — see
+    # resolve_product_price(); the client's `price` field for such lines is discarded.
+    resolved_prices: dict[int, float] = {}
+    for idx, entry in enumerate(body.items):
         if not entry.product_id:
             continue
         product = products.get(entry.product_id)
@@ -119,10 +124,23 @@ def checkout(body: CheckoutIn, user: User = Depends(get_current_user), db: Sessi
         )
         if field_errors:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, f'"{product.title}": {"; ".join(field_errors)}')
+        resolved_prices[idx] = resolve_product_price(
+            product, (entry.customization or {}).get("fields") if entry.customization else None
+        )
 
     priced = price_cart(
         db,
-        [{"product_id": i.product_id, "title": i.title, "price": i.price, "qty": i.qty, "image": i.image, "customization": i.customization} for i in body.items],
+        [
+            {
+                "product_id": i.product_id,
+                "title": i.title,
+                "price": resolved_prices[idx] if i.product_id else i.price,
+                "qty": i.qty,
+                "image": i.image,
+                "customization": i.customization,
+            }
+            for idx, i in enumerate(body.items)
+        ],
         body.coupon_code,
     )
     if not priced["lines"]:

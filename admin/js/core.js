@@ -79,9 +79,20 @@ function parseHash() {
   return { path: path || "dashboard", params: new URLSearchParams(qs || "") };
 }
 
+// Nav links to these are already hidden from staff via .owner-only, but that's
+// cosmetic only - direct hash navigation (typing #/staff in the address bar)
+// used to still call the route handler, which would await Api.staff() (or
+// Api.auditLog()/Api.activity()), get a 403 with no try/catch around it, and
+// leave the page on an unhandled-rejection, permanently-stuck loading spinner.
+const OWNER_ONLY_ROUTES = ["staff", "audit", "activity"];
+
 function route() {
   const { path, params } = parseHash();
   document.querySelectorAll(".sidebar nav a").forEach(a => a.classList.toggle("active", a.dataset.route === path));
+  if (OWNER_ONLY_ROUTES.includes(path) && CURRENT_USER && CURRENT_USER.role !== "owner") {
+    document.getElementById("view").innerHTML = `<div class="empty-state">Access denied — this page is owner-only.</div>`;
+    return;
+  }
   (routes[path] || routes.dashboard)(params);
 }
 

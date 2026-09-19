@@ -930,6 +930,7 @@ async function loadMediaLibraryPicker(picker, kind, media, addFn, afterChange, {
 }
 
 async function removeMedia(id, btnEl) {
+  if (!confirm("Delete this photo?")) return;
   try {
     await Api.deleteMedia(id);
     const listEl = btnEl.closest(".media-list");

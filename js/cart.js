@@ -63,7 +63,7 @@
         `${entries.length} ${entries.length === 1 ? 'item needs' : 'items need'} your attention before checkout`;
       document.getElementById('attentionBannerList').innerHTML = entries.map(([, item]) => `
         <div class="attention-banner-row">
-          <span class="abr-text"><b>${item.name}</b>${item.requirement.label}</span>
+          <span class="abr-text"><b>${escapeHtml(item.name)}</b>${item.requirement.label}</span>
           <a class="abr-fix-btn" href="${item.requirement.editUrl || '#'}">Fix this</a>
         </div>`).join('');
       banner.style.display = 'block';
@@ -373,10 +373,10 @@
       return `
         <div class="cart-item-row">
           <div class="cart-item-thumb-wrap">
-            <img class="cart-item-img" src="${cldOpt(resolveCartImagePath(item.img))}" alt="${item.name}"${lazyAttr} onerror="this.style.visibility='hidden'">
+            <img class="cart-item-img" src="${cldOpt(resolveCartImagePath(item.img))}" alt="${escapeHtml(item.name)}"${lazyAttr} onerror="this.style.visibility='hidden'">
           </div>
           <div class="cart-item-details">
-            <h3>${item.name}</h3>
+            <h3>${escapeHtml(item.name)}</h3>
             <p>${item.price} each</p>
             ${item.customization && Object.values(item.customization).some(Boolean) ? '<span class="cart-item-customized-badge">&#10003; Customized</span>' : ''}
             ${uploadedImage || customText ? `
@@ -508,7 +508,7 @@
       const { items, totalPrice } = cartTotals();
       document.getElementById(listId).innerHTML = items.map(item => `
         <div class="cart-mini-row">
-          <span class="cart-mini-name">${item.name} <span class="cart-mini-qty">&times;${item.qty}</span></span>
+          <span class="cart-mini-name">${escapeHtml(item.name)} <span class="cart-mini-qty">&times;${item.qty}</span></span>
           <span class="cart-mini-price">₹${parsePrice(item.price) * item.qty}</span>
         </div>`).join('');
       if (totalId) document.getElementById(totalId).textContent = `₹${totalPrice}`;

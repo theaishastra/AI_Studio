@@ -9,6 +9,16 @@ function orderStatusLabel(s) {
   return s === "in_production" ? "Designing" : s.replace("_", " ");
 }
 
+// The backend now 403s a non-owner PATCHing an order to "refunded" (only the
+// owner-gated Refund button actually talks to Razorpay and restocks) - hide the
+// option from the plain status dropdown for staff so it doesn't dead-end in an
+// alert(). Always keeps whatever the order's current status already is, so an
+// already-refunded order still renders correctly for staff viewing it read-only.
+function orderStatusOptionsFor(currentStatus) {
+  if (CURRENT_USER && CURRENT_USER.role === "owner") return ORDER_STATUSES;
+  return ORDER_STATUSES.filter(s => s !== "refunded" || s === currentStatus);
+}
+
 const CANCELLATION_REASON_LABELS = {
   changed_mind: "Changed their mind",
   found_better_price: "Found a better price elsewhere",
@@ -150,7 +160,7 @@ async function loadOrders(statusFilter) {
             <td>${fmtINR(o.total)}</td>
             <td><span class="badge ${o.payments.some(p => p.status === "captured") ? "on" : "off"}">${o.status === "cod_confirmed" ? "cod" : (o.payments[0]?.status || "—")}</span> ${refundBadgeHTML(o.refund_status)}</td>
             <td><select class="order-status-select order-status-${esc(o.status)}" onchange="updateOrderStatus('${o.id}', this.value, this)">
-              ${ORDER_STATUSES.map(s => `<option value="${s}" ${s === o.status ? "selected" : ""}>${orderStatusLabel(s)}</option>`).join("")}
+              ${orderStatusOptionsFor(o.status).map(s => `<option value="${s}" ${s === o.status ? "selected" : ""}>${orderStatusLabel(s)}</option>`).join("")}
             </select></td>
             <td>${orderRequestBadges(o)}</td>
             <td>${fmtIST(o.created_at)}</td>
@@ -539,7 +549,7 @@ function orderStageTrackerHTML(order) {
     <div class="stage-tracker-wrap">
       ${trackerBody}
       <select class="order-status-select order-status-${esc(order.status)}" onchange="updateOrderStatusFromModal('${order.id}', this.value)">
-        ${ORDER_STATUSES.map(s => `<option value="${s}" ${s === order.status ? "selected" : ""}>${orderStatusLabel(s)}</option>`).join("")}
+        ${orderStatusOptionsFor(order.status).map(s => `<option value="${s}" ${s === order.status ? "selected" : ""}>${orderStatusLabel(s)}</option>`).join("")}
       </select>
     </div>`;
 }

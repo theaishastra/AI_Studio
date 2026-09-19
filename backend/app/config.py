@@ -21,7 +21,11 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_secret_key: str = ""
 
-    cors_origins: str = "http://localhost:5500,http://127.0.0.1:5500,null"
+    # "null" (the Origin browsers send for a sandboxed iframe or file:// page) was
+    # previously included here - combined with allow_credentials=True on the
+    # CORSMiddleware below, that's a real misconfiguration regardless of today's
+    # Bearer-token (not cookie-based) auth, so it's never included by default now.
+    cors_origins: str = "http://localhost:5500,http://127.0.0.1:5500"
 
     cloudinary_cloud_name: str = ""
     cloudinary_api_key: str = ""
@@ -44,7 +48,9 @@ class Settings(BaseSettings):
     razorpay_key_secret: str = "rzp_secret_placeholder"
     razorpay_webhook_secret: str = "whsec_placeholder"
 
-    # SMTP — OTP codes are returned in the API response (debug_otp) while this is unconfigured.
+    # SMTP — while unconfigured, request_otp() only proceeds if debug_otp is also
+    # explicitly enabled, and even then logs the OTP server-side rather than ever
+    # returning it in the API response (see routers/auth.py).
     smtp_host: str = ""
     smtp_port: int = 587
     smtp_user: str = ""
@@ -53,7 +59,9 @@ class Settings(BaseSettings):
     smtp_from_name: str = "Sai Kumar Studio"
     smtp_use_tls: bool = True
 
-    debug_otp: bool = True
+    # Defaults False - a deployment must opt in (and only matters when SMTP is also
+    # unconfigured; see routers/auth.py's request_otp()).
+    debug_otp: bool = False
     refresh_token_days: int = 14
 
     @property

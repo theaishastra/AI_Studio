@@ -24,7 +24,7 @@ import httpx
 from botocore.config import Config as BotoConfig
 
 from ..config import get_settings
-from .media import make_thumbnail
+from .media import make_thumbnail, process_image
 
 logger = logging.getLogger("storage")
 settings = get_settings()
@@ -80,8 +80,10 @@ def _put_object(data: bytes, key: str, content_type: str) -> str | None:
 
 def upload_data_uri(data_uri: str, subfolder: str) -> str | None:
     """Uploads a data: URI to R2, returning the public URL - or None if it isn't a
-    data: URI, R2 isn't configured, or the upload fails, in which case the caller falls
-    back to keeping the original base64 inline."""
+    data: URI, R2 isn't configured, the upload fails, or (see process_image() below)
+    it isn't actually a valid image, in which case the caller falls back to keeping
+    the original base64 inline (never served back out as a URL, so an invalid/bogus
+    upload never reaches the public CDN)."""
     if not storage_configured() or not isinstance(data_uri, str) or not data_uri.startswith("data:"):
         return None
     try:
@@ -98,15 +100,16 @@ def upload_data_uri(data_uri: str, subfolder: str) -> str | None:
     except Exception:
         return None
 
-    ext = ".bin"
-    if "png" in header:
-        ext, content_type = ".png", "image/png"
-    elif "webp" in header:
-        ext, content_type = ".webp", "image/webp"
-    elif "gif" in header:
-        ext, content_type = ".gif", "image/gif"
-    else:
-        ext, content_type = ".jpg", "image/jpeg"
+    # Same Pillow-based decode/format-allowlist/re-encode admin Media Library uploads
+    # go through (services/media.py) - a customer's checkout upload is untrusted input
+    # too, and previously only had its declared data: header string-matched (not its
+    # actual bytes validated) before being written to the public R2 bucket under
+    # whatever content-type that guess produced.
+    try:
+        data, ext, content_type = process_image(data)
+    except Exception as e:
+        logger.warning("Checkout upload rejected (not a valid image): %s", e)
+        return None
 
     key = f"{settings.cloudinary_folder}/order_uploads/{subfolder}/{uuid.uuid4().hex}{ext}"
     return _put_object(data, key, content_type)

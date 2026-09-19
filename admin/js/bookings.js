@@ -220,9 +220,8 @@ function viewBooking(id) {
 
   openModal(`
     <div class="bk-hero-banner">
-      <img class="bk-hero-img" src="${esc(bookingImage(details))}" alt="${esc(details.package || "Photography Booking")}"
+      <img class="bk-hero-img" id="bkHeroImg" src="${esc(bookingImage(details))}" alt="${esc(details.package || "Photography Booking")}"
            title="Click to view full size"
-           onclick="openBookingImageZoom('${esc(bookingImage(details))}', '${esc(details.package || "Photography Booking")}')"
            onerror="this.closest('.bk-hero-banner').remove()">
     </div>
     <div class="bk-modal-head">
@@ -300,4 +299,15 @@ function viewBooking(id) {
       <button type="button" class="btn secondary" onclick="closeModal()">Close</button>
     </div>
   `, true);
+
+  // Wired here (not via onclick="openBookingImageZoom('${details.package}')" in the
+  // template above) because details.package is customer-submitted text from the public
+  // booking form — esc() makes it safe as an HTML attribute value, not as JS source
+  // re-parsed out of an onclick="..." string, so it can't be interpolated into one.
+  const heroImg = document.getElementById("bkHeroImg");
+  if (heroImg) {
+    heroImg.addEventListener("click", () => {
+      openBookingImageZoom(bookingImage(details), details.package || "Photography Booking");
+    });
+  }
 }

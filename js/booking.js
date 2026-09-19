@@ -164,7 +164,13 @@ document.getElementById("changePackageLink").href=cat?`photography.html?category
 function applyProductData(p){
   current.pkg=p.pkg; current.tier=p.tier; current.price=p.price; current.feat=p.feat; current.extra=p.extra||{};
 
-  document.getElementById("crumb").innerHTML=`Home / ${catLabel} / <b>${p.pkg}</b>`;
+  {
+    const crumb=document.getElementById("crumb");
+    crumb.textContent="Home / "+catLabel+" / ";
+    const b=document.createElement("b");
+    b.textContent=p.pkg;
+    crumb.appendChild(b);
+  }
   document.getElementById("iCat").textContent=catLabel;
   document.getElementById("iTitle").textContent=p.pkg;
   document.getElementById("iSub").textContent=(p.tier?p.tier.charAt(0).toUpperCase()+p.tier.slice(1)+" package — ":"")+"professionally shot & edited by Sai Kumar Digital Lab & Studio.";

@@ -447,6 +447,16 @@
       }
     ];
 
+    // product.title/desc for API-sourced entries (mapApiProductToCatalogItem below)
+    // come from the admin-entered catalog, unlike every other product field on this
+    // page which is either a hardcoded literal here or a constant the mapper assigns
+    // itself - escape before templating either into innerHTML.
+    function escCatalogHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s == null ? '' : String(s);
+      return d.innerHTML;
+    }
+
     // ─── Live Catalog Data (keeps search/filters in sync with admin-added products) ───
     // CATALOG_PRODUCTS above is the curated starter set; this fetches every active
     // product from the real database and merges in anything not already listed, so a
@@ -655,7 +665,7 @@
                 title="${isWishlisted ? 'Remove from wishlist' : 'Save to wishlist'}">
                 <span class="material-symbols-outlined">${isWishlisted ? 'favorite' : 'favorite_border'}</span>
               </button>
-              <img src="${cldOpt(product.img)}" alt="${product.title}" loading="lazy" onerror="this.onerror=null;this.src='https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/customized_gifts_card.jpg'">
+              <img src="${cldOpt(product.img)}" alt="${escCatalogHtml(product.title)}" loading="lazy" onerror="this.onerror=null;this.src='https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/customized_gifts_card.jpg'">
               <button class="quick-view-overlay-btn" onclick="openQuickViewModal('${product.id}')">
                 <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
                 <span>Quick View</span>
@@ -672,8 +682,8 @@
                 </div>
               </div>
 
-              <h3 class="card-title" title="${product.title}">${product.title}</h3>
-              <p class="card-desc">${product.desc}</p>
+              <h3 class="card-title" title="${escCatalogHtml(product.title)}">${escCatalogHtml(product.title)}</h3>
+              <p class="card-desc">${escCatalogHtml(product.desc)}</p>
 
               <div class="card-delivery-info ${product.speed === 'express_15min' ? 'express' : ''}">
                 <span class="material-symbols-outlined" style="font-size: 15px;">local_shipping</span>

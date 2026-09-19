@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 from starlette.responses import Response
 from starlette.types import Scope
 
@@ -14,8 +15,8 @@ from .database import Base, engine
 from .migrations import (
     backfill_address_snapshots, backfill_corporate_engraving_fields,
     backfill_gifts_personalisation_fields, backfill_requires_photo_upload_fields,
-    backfill_studio_quantity_purpose_fields, run_column_migrations, run_constraint_migrations,
-    run_index_migrations,
+    backfill_studio_quantity_purpose_fields, run_check_constraint_migrations, run_column_migrations,
+    run_constraint_migrations, run_index_migrations,
 )
 from .routers import addresses, admin, auth, bookings, cart, catalog, contact, orders, payments, wishlist
 from .services.storage import ensure_storage_ready
@@ -33,6 +34,7 @@ async def lifespan(app: FastAPI):
     run_column_migrations(engine)
     run_index_migrations(engine)
     run_constraint_migrations(engine)
+    run_check_constraint_migrations(engine)
     backfill_address_snapshots(engine)
     backfill_requires_photo_upload_fields(engine)
     backfill_studio_quantity_purpose_fields(engine)
@@ -107,5 +109,11 @@ app.mount("/media", CachedStaticFiles(directory=MEDIA_DIR), name="media")
 
 
 @app.get("/api/health")
-def health():
+def health(response: Response):
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception:
+        response.status_code = 503
+        return {"status": "error", "detail": "database unreachable"}
     return {"status": "ok"}

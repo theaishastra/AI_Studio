@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, date
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -7,12 +8,44 @@ from .models import CANCELLATION_REASONS
 _CANCELLATION_REASON_PATTERN = f"^({'|'.join(CANCELLATION_REASONS)})$"
 _REQUEST_ACTION_PATTERN = "^(approve|reject)$"
 
+# A plain format check (not full RFC 5322) that's deliberately strict about the
+# characters allowed around @ — this is also what stands between a submitted
+# "email" and it being rendered into an admin-panel onclick="..." attribute
+# elsewhere (see admin/js/customers.js), so rejecting quotes/angle-brackets/
+# parens here closes that off at the source, not just at the render site.
+_EMAIL_RE = re.compile(r"^[^\s@'\"<>();]+@[^\s@'\"<>();]+\.[^\s@'\"<>();]{2,}$")
+
+
+def _validate_email_str(v: str) -> str:
+    v = (v or "").strip()
+    if not _EMAIL_RE.match(v):
+        raise ValueError("Invalid email address")
+    return v
+
+
+# Same reasoning as _EMAIL_RE: this app renders media URLs into admin-panel
+# onclick="copyMediaUrl('...')" attributes (admin/js/media.js), so a URL
+# containing a quote or angle bracket must be rejected here rather than relied
+# on to be escaped correctly at every render site.
+_UNSAFE_URL_CHARS = re.compile(r"[\"'<>]")
+
+
+def _validate_media_url(v: str) -> str:
+    v = (v or "").strip()
+    if not v or _UNSAFE_URL_CHARS.search(v):
+        raise ValueError("Invalid URL")
+    if not (v.startswith("http://") or v.startswith("https://") or v.startswith("/")):
+        raise ValueError("Invalid URL")
+    return v
+
 
 # ---------------------------------------------------------------- auth
 
 class LoginIn(BaseModel):
     email: str
     password: str
+
+    _validate_email = field_validator("email")(_validate_email_str)
 
 
 class Token(BaseModel):
@@ -37,17 +70,23 @@ class StaffIn(BaseModel):
     password: str
     role: str = Field(default="staff", pattern="^(staff|owner)$")
 
+    _validate_email = field_validator("email")(_validate_email_str)
+
 
 # ---------------------------------------------------------------- customer auth (OTP)
 
 class OtpRequest(BaseModel):
     email: str
 
+    _validate_email = field_validator("email")(_validate_email_str)
+
 
 class OtpVerify(BaseModel):
     email: str
     code: str = Field(pattern=r"^\d{6}$")
     name: str | None = None
+
+    _validate_email = field_validator("email")(_validate_email_str)
 
 
 class TokenPair(BaseModel):
@@ -177,6 +216,8 @@ class MediaIn(BaseModel):
     kind: str = Field(default="portfolio", pattern="^(portfolio|package)$")
     sort: int = 0
 
+    _validate_url = field_validator("url")(_validate_media_url)
+
 
 class MediaOut(MediaIn):
     model_config = ConfigDict(from_attributes=True)
@@ -269,9 +310,9 @@ class ProductIn(BaseModel):
     slug: str
     description: str = ""
     type: str = Field(default="service", pattern="^(service|product)$")
-    price: float
-    mrp: float | None = None
-    advance_amount: float | None = None
+    price: float = Field(ge=0)
+    mrp: float | None = Field(default=None, ge=0)
+    advance_amount: float | None = Field(default=None, ge=0)
     stock: int | None = None
     address_change_window_hours: int | None = Field(default=None, ge=0, le=720)
     delivery_days: int | None = Field(default=None, ge=0, le=365)
@@ -290,9 +331,9 @@ class ProductPatch(BaseModel):
     slug: str | None = None
     description: str | None = None
     type: str | None = None
-    price: float | None = None
-    mrp: float | None = None
-    advance_amount: float | None = None
+    price: float | None = Field(default=None, ge=0)
+    mrp: float | None = Field(default=None, ge=0)
+    advance_amount: float | None = Field(default=None, ge=0)
     stock: int | None = None
     address_change_window_hours: int | None = Field(default=None, ge=0, le=720)
     delivery_days: int | None = Field(default=None, ge=0, le=365)
@@ -331,15 +372,21 @@ class ProductOut(BaseModel):
 class CouponIn(BaseModel):
     code: str
     type: str = Field(pattern="^(percent|flat)$")
-    value: float
-    min_order: float = 0
-    max_discount: float | None = None
+    value: float = Field(ge=0)
+    min_order: float = Field(default=0, ge=0)
+    max_discount: float | None = Field(default=None, ge=0)
     title: str = ""
     banner_image: str | None = None
     placement: str | None = None
     starts_at: datetime | None = None
     ends_at: datetime | None = None
     is_active: bool = True
+
+    @model_validator(mode="after")
+    def _check_percent_value(self):
+        if self.type == "percent" and self.value > 100:
+            raise ValueError("A percent coupon's value cannot exceed 100")
+        return self
 
 
 class CouponOut(CouponIn):

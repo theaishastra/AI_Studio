@@ -3,6 +3,7 @@ import io
 import logging
 import re
 import time
+from urllib.parse import urlparse
 from datetime import datetime, timedelta, timezone
 
 import httpx
@@ -44,6 +45,21 @@ logger = logging.getLogger(__name__)
 # out of this sequence since they can legitimately be reached from several
 # points in the flow (an order can be cancelled/refunded from most states).
 ORDER_STATUS_FLOW = ["created", "payment_pending", "cod_confirmed", "paid", "in_production", "shipped", "delivered"]
+
+
+def _is_own_r2_url(url: str) -> bool:
+    """A prefix check (url.startswith(r2_public_base_url)) passes for
+    "https://pub-xxxx.r2.dev.attacker.com/..." since that's a real string prefix
+    match while pointing at a completely different host - compare the parsed
+    scheme+host instead, which is what the check actually means to enforce."""
+    if not settings.r2_public_base_url:
+        return False
+    try:
+        target = urlparse(url)
+        base = urlparse(settings.r2_public_base_url)
+    except ValueError:
+        return False
+    return bool(target.scheme) and bool(target.netloc) and target.scheme == base.scheme and target.netloc == base.netloc
 
 
 def _validate_order_status_transition(current: str, new: str) -> None:
@@ -642,6 +658,13 @@ def update_order_status(order_id: str, body: OrderStatusUpdate, request: Request
     order = db.query(Order).options(*ORDER_ADMIN_LOAD).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Order not found")
+    if body.status == "refunded" and admin.role != "owner":
+        # Only POST /api/payments/refund/{order_id} (owner-gated, actually calls
+        # Razorpay and restocks) may move an order to "refunded". Without this, any
+        # staff account could pick "Refunded" from this plain status dropdown and the
+        # customer would get the same "your refund has been initiated" notification
+        # with no real refund ever happening.
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Owner access required to mark an order as refunded")
     _validate_order_status_transition(order.status, body.status)
     order.status = body.status
     db.add(OrderTrackingEvent(
@@ -1129,10 +1152,13 @@ def download_media(url: str, filename: str = "artwork",
     admin panel calls this same-origin (it's served by this same FastAPI app).
     Restricted to this app's own R2 bucket to avoid this becoming an
     open proxy/SSRF vector."""
-    if not settings.r2_public_base_url or not url.startswith(settings.r2_public_base_url):
+    if not _is_own_r2_url(url):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid file URL")
     try:
-        resp = httpx.get(url, timeout=30, follow_redirects=True)
+        # No redirects: a same-origin R2 object URL has no legitimate reason to
+        # redirect, and following one would silently widen the SSRF check above
+        # to whatever host it points at.
+        resp = httpx.get(url, timeout=30, follow_redirects=False)
         resp.raise_for_status()
     except Exception:
         logger.warning("download_media failed to fetch %s", url, exc_info=True)

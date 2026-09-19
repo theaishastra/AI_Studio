@@ -66,6 +66,16 @@ _INDEX_MIGRATIONS: dict[str, list[str]] = {
         "CREATE INDEX IF NOT EXISTS ix_order_cancellation_requests_order_item_id "
         "ON order_cancellation_requests (order_item_id)",
     ],
+    # Every write path already normalizes case before storing (auth.py/admin.py
+    # .lower() the email, admin.py .upper()s the coupon code) - these are the DB-level
+    # backstop so that stays true even if a future code path forgets to, instead of
+    # silently creating a same-email second account or a same-code second coupon.
+    "users": [
+        "CREATE UNIQUE INDEX IF NOT EXISTS ux_users_email_lower ON users (lower(email))",
+    ],
+    "coupons": [
+        "CREATE UNIQUE INDEX IF NOT EXISTS ux_coupons_code_upper ON coupons (upper(code))",
+    ],
 }
 
 
@@ -108,6 +118,44 @@ def run_constraint_migrations(engine: Engine) -> None:
                 f"FOREIGN KEY ({column}) REFERENCES {ref_table}(id) ON DELETE {ondelete}"
             ))
     logger.info("Constraint migrations applied.")
+
+
+# DB-level backstop for two things the API already validates (schemas.py's
+# Field(ge=...) on price/coupon fields, admin.py's _validate_order_status_transition
+# for status) - these CHECK constraints exist so a bad value can't reach these
+# columns through any path other than the validated API, now or in the future.
+# Each entry is (constraint_name, table, check_sql); re-running is a no-op once
+# a constraint with that name exists (Postgres has no ADD CONSTRAINT IF NOT
+# EXISTS, unlike CREATE INDEX above, so existence is checked explicitly).
+_CHECK_CONSTRAINT_MIGRATIONS: list[tuple[str, str, str]] = [
+    ("ck_products_price_nonneg", "products", "price >= 0"),
+    ("ck_products_mrp_nonneg", "products", "mrp IS NULL OR mrp >= 0"),
+    ("ck_products_advance_amount_nonneg", "products", "advance_amount IS NULL OR advance_amount >= 0"),
+    ("ck_coupons_value_nonneg", "coupons", "value >= 0"),
+    ("ck_coupons_min_order_nonneg", "coupons", "min_order >= 0"),
+    ("ck_coupons_max_discount_nonneg", "coupons", "max_discount IS NULL OR max_discount >= 0"),
+    (
+        "ck_orders_status_valid", "orders",
+        "status IN ('created','payment_pending','cod_confirmed','paid','in_production',"
+        "'shipped','delivered','cancelled','refunded')",
+    ),
+    ("ck_order_items_status_valid", "order_items", "status IN ('active','cancel_requested','cancelled')"),
+    ("ck_payments_status_valid", "payments", "status IN ('created','authorized','captured','failed','refunded')"),
+]
+
+
+def run_check_constraint_migrations(engine: Engine) -> None:
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    with engine.begin() as conn:
+        for name, table, check_sql in _CHECK_CONSTRAINT_MIGRATIONS:
+            if table not in existing_tables:
+                continue
+            existing = {c["name"] for c in inspector.get_check_constraints(table)}
+            if name in existing:
+                continue
+            conn.execute(text(f"ALTER TABLE {table} ADD CONSTRAINT {name} CHECK ({check_sql})"))
+    logger.info("Check constraint migrations applied.")
 
 
 def backfill_address_snapshots(engine: Engine) -> None:

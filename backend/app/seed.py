@@ -652,6 +652,16 @@ def seed_admin_user(db):
     user = db.query(User).filter(User.email == email).first()
     if user:
         return
+    default_password = type(settings).model_fields["admin_password"].default
+    if settings.admin_password == default_password:
+        # Refuse to create the owner account with the exact password shipped as
+        # config.py's fallback default - that string is visible to anyone who can
+        # read this repo, and admin.py has no in-app "change my password" flow, so
+        # a seeded-then-forgotten default here would sit unrotated indefinitely.
+        raise RuntimeError(
+            "ADMIN_PASSWORD is still set to the default shipped in config.py. "
+            "Set a real ADMIN_PASSWORD in backend/.env before running the seed script."
+        )
     db.add(User(
         email=email,
         name=settings.admin_name,

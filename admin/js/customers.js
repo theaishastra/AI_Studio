@@ -48,11 +48,11 @@ async function loadCustomers(q) {
             <td>${c.is_blocked ? `<span class="badge off">Blocked</span>` : `<span class="badge on">Active</span>`}</td>
             <td class="actions owner-only">
               ${c.is_blocked
-                ? `<button class="btn secondary" onclick="unblockCustomerEmail('${esc(c.email)}')">Unblock</button>`
-                : `<button class="btn secondary" onclick="blockCustomerEmail('${esc(c.email)}')">Block</button>`}
+                ? `<button class="btn secondary" data-action="unblock" data-email="${esc(c.email)}">Unblock</button>`
+                : `<button class="btn secondary" data-action="block" data-email="${esc(c.email)}">Block</button>`}
               ${c.id
-                ? `<button class="btn danger" onclick="removeCustomer('${c.id}', '${esc(c.email)}', ${c.orders})">Delete</button>`
-                : `<button class="btn danger" onclick="removeOtpActivity('${esc(c.email)}')">Remove</button>`}
+                ? `<button class="btn danger" data-action="delete" data-id="${esc(c.id)}" data-email="${esc(c.email)}" data-orders="${c.orders}">Delete</button>`
+                : `<button class="btn danger" data-action="remove-otp" data-email="${esc(c.email)}">Remove</button>`}
             </td>
           </tr>`).join("")}
       </tbody>
@@ -62,6 +62,19 @@ async function loadCustomers(q) {
     </p>
   `;
   wrap._lastQuery = q;
+  // Row actions are wired via data-* attributes + a delegated listener, not inline
+  // onclick="fn('${email}')" strings — an email is untrusted (submitted through the
+  // public, unauthenticated OTP-request endpoint) and esc() only makes it safe to sit
+  // inside an HTML attribute, not to be re-parsed as JS source inside onclick="...".
+  wrap.querySelectorAll("button[data-action]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const { action, email, id, orders } = btn.dataset;
+      if (action === "unblock") unblockCustomerEmail(email);
+      else if (action === "block") blockCustomerEmail(email);
+      else if (action === "delete") removeCustomer(id, email, parseInt(orders, 10));
+      else if (action === "remove-otp") removeOtpActivity(email);
+    });
+  });
 }
 
 async function removeCustomer(id, email, orderCount) {
