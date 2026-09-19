@@ -78,6 +78,11 @@
 
 .pf-upload-btn:hover { background: #f9e3ee; }
 
+.pf-upload-hint {
+  font-size: 11px;
+  color: #8a7688;
+}
+
 .pf-upload-list {
   display: flex;
   flex-wrap: wrap;

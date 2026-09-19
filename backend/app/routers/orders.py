@@ -265,8 +265,14 @@ def checkout(body: CheckoutIn, background_tasks: BackgroundTasks,
     db.add(payment)
     db.add(OrderTrackingEvent(order_id=order.id, status=order.status, title="Order placed"))
     db.commit()
+    # Only order.created_at is actually needed below (annotate_order() -> OrderOut),
+    # and that's a server-side default (TimestampMixin's server_default=func.now())
+    # this session's expire_on_commit=False means isn't picked up without a refresh.
+    # payment.id/razorpay_order_id/amount are all Python-side values already set
+    # above - _payment_init() below never touches a server-generated column, so
+    # refreshing it is a second remote round trip (~1.5s on this DB, per the other
+    # comments in this file) that was never doing anything.
     db.refresh(order)
-    db.refresh(payment)
 
     for item_id, customization in pending_externalization:
         background_tasks.add_task(_externalize_order_item_background, item_id, customization, number)

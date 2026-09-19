@@ -681,7 +681,13 @@
   justify-content: space-between;
   gap: 16px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  z-index: 1300;
+  /* Above every modal overlay that can be open when showCartToast() fires -
+     corporate.html's product-detail-overlay (z-index 10000) and
+     ai-studio-modal-overlay (99999) both sit on top of the old 1300, which
+     hid the "Item added to cart" toast behind them until the modal closed
+     (looked like the toast was firing on the page behind, not on the
+     product UI the Add to Cart click actually happened in). */
+  z-index: 100000;
   opacity: 0;
   transform: translateY(12px);
   pointer-events: none;

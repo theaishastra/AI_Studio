@@ -92,6 +92,7 @@
       const max = field.multiple ? (field.max_files || 1) : 1;
       control = `
         <label class="pf-upload-btn" for="${cid}">${field.multiple ? 'Choose photo(s)' : 'Choose a photo'}</label>
+        <span class="pf-upload-hint">Max 2 MB per photo</span>
         <input type="file" accept="image/*" class="pf-upload-input" id="${cid}" data-max-files="${max}" ${field.multiple ? 'multiple' : ''}>
         <div class="pf-upload-list" id="${cid}_list"></div>`;
     }
@@ -145,6 +146,11 @@
   // (services/media.py) still validates/re-encodes it again at checkout.
   const MAX_UPLOAD_SIDE = 1600;
   const UPLOAD_JPEG_QUALITY = 0.85;
+  // Matches the per-photo cap enforced elsewhere (gifts.js's hardcoded upload
+  // flows) - checked in validateProductFields() before add-to-cart so an
+  // oversized raw file can't slip through just because this shared field type
+  // has no per-file size check of its own.
+  const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 
   function fileToDataUri(file) {
     return new Promise((resolve, reject) => {
@@ -224,8 +230,10 @@
         const store = _fileStore.get(container) || {};
         const files = store[field.id] || [];
         const max = field.multiple ? (field.max_files || 1) : 1;
+        const oversized = files.find(f => f.size > MAX_UPLOAD_BYTES);
         if (field.required && files.length === 0) message = `"${field.label}" is required.`;
         else if (files.length > max) message = `"${field.label}" allows at most ${max} file(s).`;
+        else if (oversized) message = `"${field.label}": "${oversized.name}" is larger than 2 MB - please choose a smaller photo.`;
       }
       if (message) {
         errors.push(message);
