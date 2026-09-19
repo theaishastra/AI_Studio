@@ -237,21 +237,35 @@ def backfill_studio_quantity_purpose_fields(engine: Engine) -> None:
         logger.info("Migrated quantity/purpose options to input_fields for %d studio product(s).", len(rows))
 
 
+_CORPORATE_ENGRAVING_MARKER = "migration_corporate_engraving_backfilled"
+
+
 def backfill_corporate_engraving_fields(engine: Engine) -> None:
-    """One-time (idempotent) migration giving every corporate product the
-    Customer Questions equivalent of the old hardcoded "Custom Logo &
-    Engraving" box (a fixed text + logo-upload + technique picker shown
-    unconditionally on every corporate product, never admin-configurable).
-    Both the text and upload fields land as NOT required - the old box only
-    required "text OR logo", which the required flag can't express as an
-    either/or rule, so admin can turn either one on individually going
-    forward instead. Only touches corporate products with no input_fields
-    yet (true for all of them before this ran), so it's safe on every
-    startup and never overwrites an admin's own Customer Questions setup."""
+    """One-time migration giving every *pre-existing* corporate product (as of
+    the first run) the Customer Questions equivalent of the old hardcoded
+    "Custom Logo & Engraving" box (a fixed text + logo-upload + technique
+    picker shown unconditionally on every corporate product, never
+    admin-configurable). Both the text and upload fields land as NOT required
+    - the old box only required "text OR logo", which the required flag can't
+    express as an either/or rule, so admin can turn either one on individually
+    going forward instead.
+
+    Guarded by a `settings` row (not just "input_fields is empty") so it fires
+    only once ever, on whatever corporate products exist at that moment - an
+    admin who creates a new corporate product, or clears an existing one's
+    Customer Questions, and deliberately leaves it empty needs that respected
+    on every subsequent restart instead of it being silently overwritten by
+    this backfill picking up "empty input_fields" as its trigger indefinitely
+    (see backfill_gifts_personalisation_fields, which this now matches)."""
     inspector = inspect(engine)
-    if "products" not in inspector.get_table_names():
+    if "products" not in inspector.get_table_names() or "settings" not in inspector.get_table_names():
         return
     with engine.begin() as conn:
+        already_ran = conn.execute(
+            text("SELECT 1 FROM settings WHERE key = :key"), {"key": _CORPORATE_ENGRAVING_MARKER}
+        ).first()
+        if already_ran:
+            return
         rows = conn.execute(text("""
             SELECT p.id
             FROM products p
@@ -283,6 +297,11 @@ def backfill_corporate_engraving_fields(engine: Engine) -> None:
                 text("UPDATE products SET input_fields = :input_fields WHERE id = :id"),
                 {"input_fields": json.dumps(input_fields), "id": row.id},
             )
+        conn.execute(
+            text("INSERT INTO settings (key, value, created_at, updated_at) "
+                 "VALUES (:key, :value, now(), now()) ON CONFLICT (key) DO NOTHING"),
+            {"key": _CORPORATE_ENGRAVING_MARKER, "value": json.dumps({"done": True})},
+        )
     if rows:
         logger.info("Added default engraving/logo Customer Questions to %d corporate product(s).", len(rows))
 
