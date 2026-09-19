@@ -946,11 +946,14 @@
       updateServiceSectionsVisibility();
 
       /* Only ever auto-open the portfolio modal when a link explicitly asks for it with
-         openGallery=true (gallery.html is the one that does). It used to open for ANY
-         ?category= link too, so arriving from the home page's service links, "Change
-         package" on booking.html/booking-form.html or equipment-details.html popped the
-         Wedding portfolio modal open on its own, with nothing clicked. Those links still
-         select the category below — they just no longer force the modal. */
+         openGallery=true. It used to open for ANY ?category= link too, so arriving from
+         the home page's service links, "Change package" on booking.html/booking-form.html
+         or equipment-details.html popped the Wedding portfolio modal open on its own,
+         with nothing clicked. Those links still select the category below — they just
+         no longer force the modal. (gallery.html used to be the page that set
+         openGallery=true before redirecting here; it was dead code - always redirected
+         before rendering - and was removed, but this page's own handling of the query
+         param is unrelated and still works exactly as before for whatever else sets it.) */
       if (openGallery === "true") {
         const catToOpen = deepLinkCat || "wedding";
         const itemToOpen = deepLinkItem ? parseInt(deepLinkItem, 10) : 0;
