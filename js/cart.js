@@ -514,6 +514,24 @@
       if (totalId) document.getElementById(totalId).textContent = `₹${totalPrice}`;
     }
 
+    // "Continue Shopping" used to always hardcode index.html - a customer who
+    // opened cart.html from a specific product on gifts.html/corporate.html/
+    // studio.html (to check their cart, or after Add to Cart) and then wanted
+    // to keep shopping got dumped on the homepage instead of back on the
+    // product they were just looking at. Going back in history instead returns
+    // them to wherever they actually came from, regardless of which page that
+    // was - falling back to the plain index.html link (the href stays on the
+    // <a> tag) only when there's no useful same-site history to return to,
+    // e.g. cart.html opened directly/first in a tab.
+    function continueShoppingBack(event) {
+      if (document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1) {
+        event.preventDefault();
+        history.back();
+        return false;
+      }
+      return true;
+    }
+
     function goToCartStep(step) {
       const cart = getCart();
       const { items } = cartTotals();

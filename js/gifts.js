@@ -4383,7 +4383,7 @@ else if (GiftsModule.view === 'product') {
       showToast('The photo name was saved; the photo itself was too large to store.');
       return;
     }
-    showToast('Product added to cart.');
+    showCartToast();
   }
   async function buyNow() {
     const custom = await collectCustomFieldsForCart();
@@ -4444,7 +4444,22 @@ else if (GiftsModule.view === 'product') {
   // photo/message fields themselves are admin-configured Customer Questions now
   // (#productCustomFields, rendered/validated/collected by collectCustomFieldsForCart
   // above) rather than a hardcoded pair of inputs, so there's nothing left to wire here.
-  detailAddToCart.addEventListener('click', addToCart); detailBuyNow.addEventListener('click', buyNow);
+  // addToCart()/buyNow() are async (collectCustomFieldsForCart() reads/resizes
+  // any uploaded photo, which takes real time on a slow connection) with no
+  // guard against a second tap before the first finishes - each customized
+  // add gets its own Date.now()-based cart key (see addToCart below), so an
+  // impatient double/triple tap on a slow network created that many separate,
+  // identical-looking line items instead of one. Disabling the button for the
+  // duration of the call closes that off regardless of how slow the network is.
+  function guardAsyncClick(button, handler) {
+    button.addEventListener('click', async () => {
+      if (button.disabled) return;
+      button.disabled = true;
+      try { await handler(); } finally { button.disabled = false; }
+    });
+  }
+  guardAsyncClick(detailAddToCart, addToCart);
+  guardAsyncClick(detailBuyNow, buyNow);
 
   // "About the Product" accordion (Description / Instructions / Delivery Info) -
   // same open/close pattern as Corporate's .corporate-accordion-trigger and

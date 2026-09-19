@@ -47,6 +47,30 @@
     `;
   }
 
+  // "Item added to cart / GO TO CART" toast - originally only studio.html/
+  // studio.js had this (paired with the .cart-toast markup+CSS every page
+  // linking css/shared/site-chrome.css now has too); centralized here so
+  // gifts.js/corporate.js's own Add to Cart flows can show the same
+  // confirmation instead of a plain, dead-end toast with no way back to the
+  // cart. Requires the page to have `<div class="cart-toast" id="cartToast">
+  // <span>Item added to cart</span><button onclick="goToCartFromToast()">
+  // GO TO CART</button></div>` somewhere in its markup - a no-op if it doesn't.
+  let cartToastTimer = null;
+
+  function showCartToast() {
+    const toast = document.getElementById('cartToast');
+    if (!toast) return;
+    toast.classList.add('show');
+    clearTimeout(cartToastTimer);
+    cartToastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  function goToCartFromToast() {
+    location.href = 'cart.html';
+  }
+
   global.cldOpt = cldOpt;
   global.cartDrawerEmptyStateHTML = cartDrawerEmptyStateHTML;
+  global.showCartToast = showCartToast;
+  global.goToCartFromToast = goToCartFromToast;
 })(window);

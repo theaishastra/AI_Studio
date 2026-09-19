@@ -1,12 +1,12 @@
+import logging
 import secrets
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from ..config import get_settings
-from ..database import get_db
+from ..database import SessionLocal, get_db
 from ..deps import get_current_user
 from ..models import (
     Address, Order, OrderAddressChangeRequest, OrderCancellationRequest,
@@ -25,6 +25,27 @@ from ..services.storage import CUSTOM_UPLOAD_FIELDS, upload_data_uri
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
 settings = get_settings()
+logger = logging.getLogger("orders")
+
+
+def _customization_has_upload(customization: dict | None) -> bool:
+    """True if this line's customization contains at least one inline data:
+    URI still waiting to be externalized to R2 - used to decide whether it's
+    worth scheduling a background job for this order item at all."""
+    if not isinstance(customization, dict):
+        return False
+    for field in CUSTOM_UPLOAD_FIELDS:
+        value = customization.get(field)
+        if isinstance(value, str) and value.startswith("data:"):
+            return True
+    fields = customization.get("fields")
+    if isinstance(fields, dict):
+        for value in fields.values():
+            if isinstance(value, str) and value.startswith("data:"):
+                return True
+            if isinstance(value, list) and any(isinstance(v, str) and v.startswith("data:") for v in value):
+                return True
+    return False
 
 
 def _externalize_customization(customization: dict | None, order_number: str) -> dict | None:
@@ -32,7 +53,15 @@ def _externalize_customization(customization: dict | None, order_number: str) ->
     inline base64 data: URI to a small Supabase Storage URL before it's
     persisted - keeps the order (and every admin/customer list that reads it
     back) out of multi-MB-per-item territory. Falls back to the original
-    base64 field-by-field if a given upload can't be externalized."""
+    base64 field-by-field if a given upload can't be externalized.
+
+    This does real work (Pillow decode/validate/re-encode, then an R2 upload) -
+    a few hundred ms to a couple of seconds per image. It must never run on the
+    request path (see _externalize_order_item_background below): checkout
+    already stores the raw base64 as OrderItem.product_snapshot, which is a
+    perfectly valid, permanent value on its own (the same fallback already used
+    if this externalization ever fails) - this just opportunistically shrinks
+    it afterward, off the customer's critical path."""
     if not isinstance(customization, dict):
         return customization
     out = dict(customization)
@@ -61,6 +90,35 @@ def _externalize_customization(customization: dict | None, order_number: str) ->
                 ]
         out["fields"] = new_fields
     return out
+
+
+def _externalize_order_item_background(order_item_id: str, customization: dict, order_number: str) -> None:
+    """Runs after checkout()'s response has already been sent (see
+    background_tasks.add_task below) - opens its own DB session since the
+    request's session is gone by then. Best-effort: OrderItem.product_snapshot
+    already holds the valid, permanent inline-base64 version from checkout()
+    itself, so a failure here just leaves that in place, exactly like a failed
+    upload_data_uri() call always has."""
+    try:
+        externalized = _externalize_customization(customization, order_number)
+    except Exception:
+        logger.warning("Background customization externalization failed for order item %s", order_item_id, exc_info=True)
+        return
+    db = SessionLocal()
+    try:
+        item = db.get(OrderItem, order_item_id)
+        if not item:
+            return
+        snapshot = dict(item.product_snapshot or {})
+        snapshot["customization"] = externalized
+        item.product_snapshot = snapshot
+        db.commit()
+    except Exception:
+        logger.warning("Failed to save externalized customization for order item %s", order_item_id, exc_info=True)
+        db.rollback()
+    finally:
+        db.close()
+
 
 ORDER_LOAD = (
     selectinload(Order.items),
@@ -95,7 +153,8 @@ def _payment_init(order: Order, payment: Payment, user: User) -> PaymentInitOut:
 
 
 @router.post("/checkout", status_code=status.HTTP_201_CREATED)
-def checkout(body: CheckoutIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def checkout(body: CheckoutIn, background_tasks: BackgroundTasks,
+             user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     address = db.query(Address).filter(Address.id == body.address_id, Address.user_id == user.id).first()
     if not address:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Address not found")
@@ -147,53 +206,56 @@ def checkout(body: CheckoutIn, user: User = Depends(get_current_user), db: Sessi
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cart is empty")
 
     number = order_number()
+    rzp_order = create_rzp_order(to_paise(priced["total"]), receipt=number)
 
-    # The Razorpay order-creation call and any per-item photo/logo uploads to R2
-    # are both blocking network I/O and don't depend on each other or on the DB -
-    # running them on a thread pool instead of one after another means checkout
-    # latency is bounded by the slowest of them, not their sum.
-    with ThreadPoolExecutor(max_workers=max(1, len(priced["lines"])) + 1) as executor:
-        rzp_future = executor.submit(create_rzp_order, to_paise(priced["total"]), receipt=number)
-        externalize_futures = [
-            executor.submit(_externalize_customization, line.get("customization"), number)
-            for line in priced["lines"]
-        ]
+    # id is assigned client-side (models.uid) rather than left to the column
+    # default, so OrderItem rows below can reference order.id immediately -
+    # no need to flush the Order insert to the DB just to learn its own id.
+    order = Order(
+        id=uid(),
+        number=number,
+        user_id=user.id,
+        status="payment_pending",
+        subtotal=priced["subtotal"],
+        discount=priced["discount"],
+        total=priced["total"],
+        coupon_code=priced["coupon"].code if priced["coupon"] else None,
+        address_id=address.id,
+        address_snapshot={
+            "full_name": address.full_name, "phone": address.phone,
+            "line1": address.line1, "line2": address.line2,
+            "city": address.city, "state": address.state, "pincode": address.pincode,
+        },
+        delivery_slot=body.delivery_slot,
+    )
+    db.add(order)
 
-        # id is assigned client-side (models.uid) rather than left to the column
-        # default, so OrderItem rows below can reference order.id immediately -
-        # no need to flush the Order insert to the DB just to learn its own id.
-        order = Order(
-            id=uid(),
-            number=number,
-            user_id=user.id,
-            status="payment_pending",
-            subtotal=priced["subtotal"],
-            discount=priced["discount"],
-            total=priced["total"],
-            coupon_code=priced["coupon"].code if priced["coupon"] else None,
-            address_id=address.id,
-            address_snapshot={
-                "full_name": address.full_name, "phone": address.phone,
-                "line1": address.line1, "line2": address.line2,
-                "city": address.city, "state": address.state, "pincode": address.pincode,
+    # Any uploaded photo/logo customization is stored inline (base64) right now -
+    # externalizing it to a small R2 URL involves real Pillow processing plus a
+    # network upload (a few hundred ms to multiple seconds per image, worse with
+    # several items), which used to run synchronously here and was the single
+    # biggest contributor to slow checkouts. It's scheduled as a background task
+    # below instead, well after this response is already on its way to the
+    # customer - see _externalize_order_item_background()'s docstring for why
+    # the inline base64 stored here is already a complete, valid final value on
+    # its own, not a placeholder waiting to be filled in.
+    pending_externalization: list[tuple[str, dict]] = []
+    for line in priced["lines"]:
+        item_id = uid()
+        customization = line.get("customization")
+        db.add(OrderItem(
+            id=item_id,
+            order_id=order.id,
+            product_id=line.get("product_id"),
+            product_snapshot={
+                "title": line["title"], "image": line.get("image"),
+                "customization": customization,
             },
-            delivery_slot=body.delivery_slot,
-        )
-        db.add(order)
-
-        for line, customization_future in zip(priced["lines"], externalize_futures):
-            db.add(OrderItem(
-                order_id=order.id,
-                product_id=line.get("product_id"),
-                product_snapshot={
-                    "title": line["title"], "image": line.get("image"),
-                    "customization": customization_future.result(),
-                },
-                unit_price=line["unit_price"],
-                qty=line["qty"],
-            ))
-
-        rzp_order = rzp_future.result()
+            unit_price=line["unit_price"],
+            qty=line["qty"],
+        ))
+        if _customization_has_upload(customization):
+            pending_externalization.append((item_id, customization))
 
     payment = Payment(
         order_id=order.id,
@@ -205,6 +267,9 @@ def checkout(body: CheckoutIn, user: User = Depends(get_current_user), db: Sessi
     db.commit()
     db.refresh(order)
     db.refresh(payment)
+
+    for item_id, customization in pending_externalization:
+        background_tasks.add_task(_externalize_order_item_background, item_id, customization, number)
 
     return {"order": annotate_order(db, order), "payment": _payment_init(order, payment, user)}
 

@@ -133,11 +133,44 @@
     });
   }
 
+  // A raw phone-camera photo (often 3-10MB) read straight into a base64 data:
+  // URI and stored in the cart's localStorage entry can blow past the ~5-10MB
+  // per-origin quota, especially with 2+ customized items in the cart at once -
+  // saveCart() then throws, the fallback silently drops the photo (keeping
+  // only its filename), and the customer sees "the photo itself was too large
+  // to store" despite believing they'd attached it. Downscaling here (matching
+  // the resize already used by the older hardcoded-customizer upload flow -
+  // see gifts.js's resizeUploadedImage) keeps ample resolution for print while
+  // reliably fitting in localStorage; the backend's own Pillow pipeline
+  // (services/media.py) still validates/re-encodes it again at checkout.
+  const MAX_UPLOAD_SIDE = 1600;
+  const UPLOAD_JPEG_QUALITY = 0.85;
+
   function fileToDataUri(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
       reader.onerror = () => reject(reader.error);
+      reader.onload = () => {
+        const rawDataUri = reader.result;
+        // Non-image uploads (a future field type, or an unexpected accept
+        // override) pass through unresized - only photos are ever this large.
+        if (!file.type || !file.type.startsWith('image/')) {
+          resolve(rawDataUri);
+          return;
+        }
+        const img = new Image();
+        img.onerror = () => resolve(rawDataUri); // not a decodable image - let the backend reject it, don't block the upload here
+        img.onload = () => {
+          const scale = Math.min(1, MAX_UPLOAD_SIDE / Math.max(img.width, img.height));
+          if (scale >= 1) { resolve(rawDataUri); return; } // already small enough
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(img.width * scale));
+          canvas.height = Math.max(1, Math.round(img.height * scale));
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', UPLOAD_JPEG_QUALITY));
+        };
+        img.src = rawDataUri;
+      };
       reader.readAsDataURL(file);
     });
   }

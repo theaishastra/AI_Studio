@@ -656,3 +656,63 @@
   }
 
 }
+
+/* "Item added to cart / GO TO CART" confirmation toast, shown after Add to
+   Cart on pages where the customer stays put (unlike Buy Now, which leaves
+   for checkout anyway). Not an extracted duplicate like the rest of this file -
+   originally only studio.css/studio.html had this; added here so gifts.html
+   and corporate.html can share the exact same markup/behavior (js/shared/
+   cart-ui.js's showCartToast()/goToCartFromToast()) instead of each growing
+   their own copy. #FACC15 matches studio.css's --yellow, hardcoded since
+   gifts.css/corporate.css don't define that variable. */
+.cart-toast {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 76px;
+  max-width: 448px;
+  margin: 0 auto;
+  background: #1a1a1a;
+  color: #fff;
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 1300;
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.cart-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.cart-toast span {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.cart-toast button {
+  background: none;
+  border: none;
+  color: #FACC15;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 0;
+}
+
+@media (min-width: 768px) {
+  .cart-toast {
+    bottom: 24px;
+  }
+}

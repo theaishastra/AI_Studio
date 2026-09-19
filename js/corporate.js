@@ -742,40 +742,62 @@
       return { fields, fieldLabels };
     }
 
+    // Both are async (collectModalCustomFields() reads/resizes any uploaded
+    // photo) and bound via a plain onclick="..." in corporate.html, not
+    // addEventListener - a module-level in-flight flag guards against a
+    // second tap on a slow connection firing this again before the first call
+    // finishes, which would otherwise double up modalSelectedQty via a second
+    // updateCartQty() call.
+    let modalCartActionInFlight = false;
+
     window.addModalItemToCart = async function () {
-      if (!activeModalProduct) return;
-      const custom = await collectModalCustomFields();
-      if (custom === null) return;
-      updateCartQty(
-        activeModalProduct.name,
-        modalSelectedQty,
-        activeModalProduct.price,
-        activeModalProduct.img,
-        { color: modalSelectedColor, ...custom },
-        null,
-        activeModalProduct.id
-      );
-      closeProductDetailModal();
-      // No per-page cart drawer anymore - the cart badge (updated via updateCartQty
-      // above) is the confirmation; the nav cart icon goes straight to cart.html,
-      // which is the one real cart everywhere on the site.
+      if (modalCartActionInFlight || !activeModalProduct) return;
+      modalCartActionInFlight = true;
+      try {
+        const custom = await collectModalCustomFields();
+        if (custom === null) return;
+        updateCartQty(
+          activeModalProduct.name,
+          modalSelectedQty,
+          activeModalProduct.price,
+          activeModalProduct.img,
+          { color: modalSelectedColor, ...custom },
+          null,
+          activeModalProduct.id
+        );
+        // Deliberately does NOT close the modal (unlike modalBuyNow below, where
+        // leaving to check out is the point) - a customer adding one item still
+        // wants to keep reviewing/customizing this same product, or add a second
+        // one at a different quantity, without the view getting yanked out from
+        // under them. showCartToast() (js/shared/cart-ui.js) is the confirmation
+        // that the add actually happened, with a way to jump to the cart if
+        // that's what they actually wanted.
+        showCartToast();
+      } finally {
+        modalCartActionInFlight = false;
+      }
     };
 
     window.modalBuyNow = async function () {
-      if (!activeModalProduct) return;
-      const custom = await collectModalCustomFields();
-      if (custom === null) return;
-      updateCartQty(
-        activeModalProduct.name,
-        modalSelectedQty,
-        activeModalProduct.price,
-        activeModalProduct.img,
-        { color: modalSelectedColor, ...custom },
-        null,
-        activeModalProduct.id
-      );
-      closeProductDetailModal();
-      window.location.href = 'cart.html';
+      if (modalCartActionInFlight || !activeModalProduct) return;
+      modalCartActionInFlight = true;
+      try {
+        const custom = await collectModalCustomFields();
+        if (custom === null) return;
+        updateCartQty(
+          activeModalProduct.name,
+          modalSelectedQty,
+          activeModalProduct.price,
+          activeModalProduct.img,
+          { color: modalSelectedColor, ...custom },
+          null,
+          activeModalProduct.id
+        );
+        closeProductDetailModal();
+        window.location.href = 'cart.html';
+      } finally {
+        modalCartActionInFlight = false;
+      }
     };
 
     // --- Cart System (js/shared/cart-core.js - shared storage/sync logic) ---
@@ -1852,8 +1874,8 @@
       );
 
       if (action === 'cart') {
-        alert(`✅ Custom Order Added to Cart!\n\nProduct: ${productName}\nQuantity: ${qty} pcs\nTotal: ${totalPrice}\nBranding Effect: ${studioState.effect.toUpperCase()}`);
         window.closeAIStudioModal();
+        showCartToast();
       } else if (action === 'buynow') {
         window.closeAIStudioModal();
         window.location.href = 'cart.html';

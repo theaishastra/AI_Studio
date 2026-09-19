@@ -11,6 +11,36 @@
 // lives here.
 (function (global) {
   const STORAGE_KEY = 'sai_studio_cart';
+  // Keys explicitly removed locally since the last confirmed server sync. The
+  // server-side cart PUT (CustomerAuth.syncCart) is fire-and-forget - if the
+  // customer navigates away (e.g. delete -> immediately go to checkout, or the
+  // request is just slow) before it lands, syncCartWithServer()'s next GET/merge
+  // reads the *old* server cart and, being a union merge, re-adds whatever this
+  // browser doesn't have locally - resurrecting the very item just deleted, both
+  // locally and back on the server. Recording the delete here means the merge
+  // can recognize "this is a deletion still in flight," not "another device
+  // added this," and skip re-adding it. Cleared once a push actually succeeds.
+  const REMOVED_KEY = 'sai_studio_cart_removed';
+
+  function getRemovedKeys() {
+    try {
+      return JSON.parse(localStorage.getItem(REMOVED_KEY)) || [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function addRemovedKey(key) {
+    const keys = getRemovedKeys();
+    if (!keys.includes(key)) {
+      keys.push(key);
+      localStorage.setItem(REMOVED_KEY, JSON.stringify(keys));
+    }
+  }
+
+  function clearRemovedKeys() {
+    localStorage.removeItem(REMOVED_KEY);
+  }
 
   function getCart() {
     try {
@@ -66,10 +96,14 @@
 
   // Union merge: an item only on one side is kept as-is; an item on both sides
   // keeps the higher quantity - avoids silently dropping whichever side has
-  // more without double-adding every time this runs.
+  // more without double-adding every time this runs. Items still pending
+  // deletion (see REMOVED_KEY above) are excluded from "only on server side"
+  // so an in-flight delete can't be resurrected by a stale server read.
   function mergeCarts(localCart, serverCart) {
+    const removed = getRemovedKeys();
     const merged = { ...localCart };
     Object.entries(serverCart).forEach(([key, item]) => {
+      if (removed.includes(key)) return;
       if (!merged[key]) merged[key] = item;
       else if (item.qty > merged[key].qty) merged[key] = { ...merged[key], qty: item.qty };
     });
@@ -78,11 +112,14 @@
 
   // Fire-and-forget push to the account's server-side cart. Guarded so pages
   // that haven't loaded js/shared/customer-api.js (or a guest visitor) just
-  // no-op instead of throwing.
+  // no-op instead of throwing. Clears the removed-keys tombstone only once this
+  // push actually lands - the cart it just sent already reflects every pending
+  // deletion, so a successful PUT means the server is caught up and future
+  // merges are safe again.
   function pushCartIfLoggedIn(cart) {
     if (typeof isCustomerLoggedIn !== 'function' || !isCustomerLoggedIn()) return;
     if (typeof CustomerAuth === 'undefined') return;
-    CustomerAuth.syncCart(cartToServerItems(cart || getCart())).catch(() => {});
+    CustomerAuth.syncCart(cartToServerItems(cart || getCart())).then(clearRemovedKeys).catch(() => {});
   }
 
   // Every mutation funnels through here so the server push happens uniformly -
@@ -117,7 +154,10 @@
     if (extra.customization) cart[key].customization = extra.customization;
     if (extra.requirement) cart[key].requirement = extra.requirement;
     cart[key].qty += delta;
-    if (cart[key].qty <= 0) delete cart[key];
+    if (cart[key].qty <= 0) {
+      delete cart[key];
+      addRemovedKey(key);
+    }
     saveCart(cart);
     return cart;
   }
@@ -125,6 +165,7 @@
   function removeItem(key) {
     const cart = getCart();
     delete cart[key];
+    addRemovedKey(key);
     saveCart(cart);
     return cart;
   }
