@@ -653,29 +653,30 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
   openModal(`
     <h2>${title}</h2>
     <div id="formMsg"></div>
+    ${media.length > 1 ? `<p style="color:var(--text-dim);font-size:12px;margin:0 0 6px;">Drag photos to reorder — the first one is used as the main/cover image.</p>` : ""}
     <div class="media-list" id="mediaList">
-      ${media.map(m => `
-        <div class="media-item">
+      ${media.map((m, i) => `
+        <div class="media-item${i === 0 ? " is-main" : ""}" draggable="true" data-id="${esc(m.id)}">
           <img src="${esc(mediaUrl(m.url))}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2290%22 height=%2290%22><rect width=%2290%22 height=%2290%22 fill=%22%23e8e0d8%22/></svg>'">
           <button title="Remove" onclick="removeMedia('${m.id}', this)">×</button>
           ${m.alt ? `<div class="cap">${esc(m.alt)}</div>` : ""}
         </div>`).join("") || `<div style="color:var(--text-dim);font-size:13px;">No photos yet.</div>`}
     </div>
     <form id="mediaUploadForm" style="margin-top:16px;">
-      <label>Upload photos <span class="form-hint">(up to 5 at once)</span></label>
+      <label>Upload photos <span class="form-hint">(up to 5 at once — uploads automatically as soon as you choose them, no extra button to click)</span></label>
       <input type="file" id="m_file" accept="image/*" multiple>
       <span id="mediaUploadStatus" style="color:var(--text-dim);font-size:12px;"></span>
     </form>
     <p style="color:var(--text-dim);font-size:12px;margin:12px 0 4px;">— or choose from the Media Library —</p>
     <button type="button" class="btn secondary" id="openLibraryPickerBtn">📁 Choose from Media Library</button>
     <div id="mediaLibraryPicker" style="display:none;margin-top:10px;"></div>
-    <p style="color:var(--text-dim);font-size:12px;margin:14px 0 4px;">— or add by URL —</p>
+    <p style="color:var(--text-dim);font-size:12px;margin:14px 0 4px;">— or paste an image link instead —</p>
     <form id="mediaForm">
-      <label>Image URL</label><input id="m_url" required placeholder="https://pub-xxxx.r2.dev/...">
+      <label>Image URL</label><input id="m_url" placeholder="https://pub-xxxx.r2.dev/...">
       <label>Caption ${kind === "portfolio" ? "(shown under the photo)" : "(optional)"}</label><input id="m_alt">
       <div class="modal-actions">
         <button type="button" class="btn secondary" onclick="closeModal()">Close</button>
-        <button type="submit" class="btn">Add Photo</button>
+        <button type="submit" class="btn">Add by URL</button>
       </div>
     </form>
   `);
@@ -722,12 +723,15 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
         // this same "Photos" dialog from scratch for each additional photo.
         const item = document.createElement("div");
         item.className = "media-item";
+        item.draggable = true;
+        item.dataset.id = (added && added.id) || "";
         item.innerHTML = `
           <img src="${esc(mediaUrl(uploaded.url))}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2290%22 height=%2290%22><rect width=%2290%22 height=%2290%22 fill=%22%23e8e0d8%22/></svg>'">
           <button title="Remove" onclick="removeMedia('${(added && added.id) || ""}', this)">×</button>
         `;
         listEl.appendChild(item);
         media.push({ id: added && added.id, url: uploaded.url, alt: uploaded.alt || "" });
+        refreshMainBadge(listEl);
       } catch (err) {
         failures.push(`${file.name}: ${err.message}`);
       }
@@ -745,9 +749,14 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
   });
   document.getElementById("mediaForm").addEventListener("submit", async (e) => {
     e.preventDefault();
+    const urlValue = document.getElementById("m_url").value.trim();
+    if (!urlValue) {
+      document.getElementById("formMsg").innerHTML = `<div class="msg error">Enter an image URL, or use "Choose Files" / the Media Library above instead.</div>`;
+      return;
+    }
     try {
       await addFn({
-        url: document.getElementById("m_url").value.trim(),
+        url: urlValue,
         alt: document.getElementById("m_alt").value.trim(),
         kind,
         sort: media.length,
@@ -758,6 +767,8 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
       document.getElementById("formMsg").innerHTML = `<div class="msg error">${esc(err.message)}</div>`;
     }
   });
+
+  initMediaDragReorder(document.getElementById("mediaList"));
 
   // ---- Choose from Media Library ----
   let libraryLoaded = false;
@@ -921,6 +932,71 @@ async function loadMediaLibraryPicker(picker, kind, media, addFn, afterChange, {
 async function removeMedia(id, btnEl) {
   try {
     await Api.deleteMedia(id);
+    const listEl = btnEl.closest(".media-list");
     btnEl.closest(".media-item").remove();
+    if (listEl) refreshMainBadge(listEl);
   } catch (err) { alert(err.message); }
+}
+
+// Keeps the "Main" badge on whichever photo is currently first in the grid -
+// called after every append/remove/drag-reorder since any of those can change
+// which photo is first.
+function refreshMainBadge(listEl) {
+  listEl.querySelectorAll(".media-item").forEach((el, i) => el.classList.toggle("is-main", i === 0));
+}
+
+// Native HTML5 drag-and-drop reordering for a Photos modal's thumbnail grid.
+// Uses event delegation on the container so it keeps working for photos
+// appended later in the same modal session (upload / media-library picks),
+// not just the ones present when the modal first opened. On drop, persists
+// the new order via Api.reorderMedia (sort = index) and keeps the closure's
+// `media` array in sync so subsequently-added photos get the right sort index.
+function initMediaDragReorder(listEl) {
+  if (!listEl) return;
+  let draggingEl = null;
+
+  listEl.addEventListener("dragstart", (e) => {
+    const item = e.target.closest(".media-item");
+    if (!item) return;
+    draggingEl = item;
+    item.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", item.dataset.id || "");
+  });
+
+  listEl.addEventListener("dragover", (e) => {
+    if (!draggingEl) return;
+    e.preventDefault();
+    let closest = null;
+    let closestDist = Infinity;
+    let after = false;
+    listEl.querySelectorAll(".media-item").forEach((child) => {
+      if (child === draggingEl) return;
+      const box = child.getBoundingClientRect();
+      const cx = box.left + box.width / 2;
+      const cy = box.top + box.height / 2;
+      const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closest = child;
+        after = e.clientX > cx;
+      }
+    });
+    if (!closest) return;
+    if (after) closest.after(draggingEl); else closest.before(draggingEl);
+  });
+
+  listEl.addEventListener("dragend", async () => {
+    if (!draggingEl) return;
+    draggingEl.classList.remove("dragging");
+    draggingEl = null;
+    refreshMainBadge(listEl);
+    const ids = Array.from(listEl.querySelectorAll(".media-item")).map(el => el.dataset.id).filter(Boolean);
+    if (!ids.length) return;
+    try {
+      await Api.reorderMedia(ids);
+    } catch (err) {
+      document.getElementById("formMsg").innerHTML = `<div class="msg error">Could not save the new photo order: ${esc(err.message)}</div>`;
+    }
+  });
 }

@@ -22,8 +22,8 @@ from ..schemas import (
     AddressChangeDecisionIn, AdminAddressChangeRequestOut, AdminCancellationRequestOut,
     ArrangeIn, BlockEmailIn, BookingOut, BookingStatusUpdate, CancellationDecisionIn, CategoryIn,
     CategoryOut, CouponIn, CouponOut, CustomerOut, HomepageLayoutIn, MediaIn, MediaLibraryOut,
-    MediaOut, OrderOut, OrderStatusUpdate, ProductIn, ProductOut, ProductPatch, SettingIn,
-    SettingOut, SitePageIn, SitePageOut, StaffIn, TrackingUpdateIn, UserOut,
+    MediaOut, MediaReorderIn, OrderOut, OrderStatusUpdate, ProductIn, ProductOut, ProductPatch,
+    SettingIn, SettingOut, SitePageIn, SitePageOut, StaffIn, TrackingUpdateIn, UserOut,
 )
 from ..security import hash_password
 from ..services.media import process_image
@@ -276,6 +276,25 @@ def delete_media(media_id: str, request: Request,
     db.commit()
     invalidate_catalog_cache()
     _invalidate_media_library_cache()
+
+
+@router.put("/media/reorder")
+def reorder_media(body: MediaReorderIn, request: Request,
+                  admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    valid_ids = {m.id for m in db.query(Media.id).filter(Media.id.in_(body.ids)).all()}
+    mappings = [
+        {"id": media_id, "sort": position}
+        for position, media_id in enumerate(body.ids)
+        if media_id in valid_ids
+    ]
+    if mappings:
+        db.bulk_update_mappings(Media, mappings)
+    count = len(mappings)
+    audit(db, admin, "reorder", "media", ",".join(body.ids[:1]) or "-", {"count": count}, request)
+    db.commit()
+    invalidate_catalog_cache()
+    _invalidate_media_library_cache()
+    return {"ok": True, "count": count}
 
 
 # ---------------------------------------------------------------- products

@@ -657,6 +657,10 @@ class ArrangeIn(BaseModel):
     ids: list[str]
 
 
+class MediaReorderIn(BaseModel):
+    ids: list[str]  # media ids in the desired display order (first = main image)
+
+
 # ---------------------------------------------------------------- settings
 
 class SettingIn(BaseModel):

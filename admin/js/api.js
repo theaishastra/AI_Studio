@@ -75,6 +75,7 @@ const Api = {
   addProductMedia: (id, data) => api(`/api/admin/products/${id}/media`, { method: "POST", body: JSON.stringify(data) }),
 
   deleteMedia: (id) => api(`/api/admin/media/${id}`, { method: "DELETE" }),
+  reorderMedia: (ids) => api("/api/admin/media/reorder", { method: "PUT", body: JSON.stringify({ ids }) }),
 
   coupons: () => api("/api/admin/coupons"),
   createCoupon: (data) => api("/api/admin/coupons", { method: "POST", body: JSON.stringify(data) }),
