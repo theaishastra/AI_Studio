@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import logging
 import secrets
 from datetime import datetime, timedelta, timezone
 
@@ -10,6 +11,7 @@ from .config import get_settings
 
 settings = get_settings()
 ALGORITHM = "HS256"
+logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -22,6 +24,7 @@ def verify_password(plain: str, hashed: str) -> bool:
     try:
         return pwd_context.verify(plain, hashed)
     except Exception:
+        logger.warning("verify_password failed to compare hash (corrupted/invalid hash format?)", exc_info=True)
         return False
 
 

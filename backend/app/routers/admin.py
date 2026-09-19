@@ -1,5 +1,6 @@
 import csv
 import io
+import logging
 import re
 import time
 from datetime import datetime, timedelta, timezone
@@ -35,6 +36,30 @@ from .catalog import invalidate_catalog_cache
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 settings = get_settings()
+logger = logging.getLogger(__name__)
+
+# Minimal sanity check for admin-driven order status changes - not a full
+# state machine, just enough to reject obviously-nonsensical backward moves
+# (e.g. "delivered" -> "created"). cancelled/refunded are deliberately left
+# out of this sequence since they can legitimately be reached from several
+# points in the flow (an order can be cancelled/refunded from most states).
+ORDER_STATUS_FLOW = ["created", "payment_pending", "cod_confirmed", "paid", "in_production", "shipped", "delivered"]
+
+
+def _validate_order_status_transition(current: str, new: str) -> None:
+    if current == new:
+        return
+    if current in ("cancelled", "refunded"):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Order is already {current} and its status cannot be changed further",
+        )
+    if current in ORDER_STATUS_FLOW and new in ORDER_STATUS_FLOW:
+        if ORDER_STATUS_FLOW.index(new) < ORDER_STATUS_FLOW.index(current):
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                f"Cannot move order status backward from '{current}' to '{new}'",
+            )
 
 ORDER_STATUS_TRACKING_TITLES = {
     "created": "Order placed",
@@ -518,6 +543,17 @@ def deactivate_staff(user_id: str, request: Request,
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Staff not found")
+    if user.role == "owner" and user.is_active:
+        other_active_owners = (
+            db.query(User)
+            .filter(User.role == "owner", User.is_active.is_(True), User.id != user.id)
+            .count()
+        )
+        if other_active_owners == 0:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                "Cannot deactivate the last active owner account",
+            )
     user.is_active = False
     audit(db, admin, "deactivate", "staff", user_id, {}, request)
     db.commit()
@@ -606,6 +642,7 @@ def update_order_status(order_id: str, body: OrderStatusUpdate, request: Request
     order = db.query(Order).options(*ORDER_ADMIN_LOAD).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Order not found")
+    _validate_order_status_transition(order.status, body.status)
     order.status = body.status
     db.add(OrderTrackingEvent(
         order_id=order.id, status=body.status,
@@ -1098,6 +1135,7 @@ def download_media(url: str, filename: str = "artwork",
         resp = httpx.get(url, timeout=30, follow_redirects=True)
         resp.raise_for_status()
     except Exception:
+        logger.warning("download_media failed to fetch %s", url, exc_info=True)
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Could not fetch the file")
 
     safe_name = _SAFE_FILENAME.sub("_", filename) or "artwork"

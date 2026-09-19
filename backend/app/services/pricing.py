@@ -9,6 +9,13 @@ def money(v) -> Decimal:
     return Decimal(str(v)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
+def to_paise(v) -> int:
+    """Converts a rupee amount to integer paise for Razorpay, staying in
+    Decimal arithmetic the whole way through (no float round-trip) so this
+    stays consistent with money()'s Decimal-based rounding."""
+    return int((money(v) * 100).to_integral_value(rounding=ROUND_HALF_UP))
+
+
 def validate_coupon(db: Session, code: str | None, subtotal: Decimal) -> tuple[Coupon | None, Decimal, str]:
     if not code:
         return None, Decimal("0"), ""

@@ -11,6 +11,7 @@ from ..models import Order, OrderTrackingEvent, Payment, Product, User, WebhookE
 from ..schemas import PaymentVerifyIn
 from ..security import verify_razorpay_signature, verify_webhook_signature
 from ..services.notifications import order_event
+from ..services.pricing import to_paise
 from ..services.razorpay_service import create_refund, mock_payment_signature
 
 router = APIRouter(prefix="/api/payments", tags=["payments"])
@@ -128,7 +129,7 @@ def refund_order(order_id: str, request: Request, admin: User = Depends(require_
     if not payment:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "No captured payment to refund")
 
-    refund = create_refund(payment.razorpay_payment_id, int(round(float(payment.amount) * 100)))
+    refund = create_refund(payment.razorpay_payment_id, to_paise(payment.amount))
     payment.status = "refunded"
     payment.refund_id = refund.get("id")
 

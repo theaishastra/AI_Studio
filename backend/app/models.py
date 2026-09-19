@@ -278,7 +278,7 @@ class WishlistItem(Base, TimestampMixin):
 
 
 ORDER_STATUSES = [
-    "created", "payment_pending", "paid", "in_production",
+    "created", "payment_pending", "cod_confirmed", "paid", "in_production",
     "shipped", "delivered", "cancelled", "refunded",
 ]
 

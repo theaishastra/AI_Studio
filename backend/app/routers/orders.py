@@ -18,7 +18,7 @@ from ..services.policy import (
     IMMEDIATE_CANCEL_STATUSES, REQUESTABLE_CANCEL_STATUSES,
     address_change_deadline, annotate_order, annotate_orders,
 )
-from ..services.pricing import money, price_cart
+from ..services.pricing import money, price_cart, to_paise
 from ..services.product_fields import validate_product_field_values
 from ..services.razorpay_service import create_rzp_order
 from ..services.storage import CUSTOM_UPLOAD_FIELDS, upload_data_uri
@@ -86,7 +86,7 @@ def _payment_init(order: Order, payment: Payment, user: User) -> PaymentInitOut:
         razorpay_order_id=payment.razorpay_order_id,
         razorpay_key_id=settings.razorpay_key_id,
         amount=float(payment.amount),
-        amount_paise=int(round(float(payment.amount) * 100)),
+        amount_paise=to_paise(payment.amount),
         mock=settings.razorpay_mock,
         description=f"Order {order.number}",
         prefill_contact=user.phone,
@@ -135,7 +135,7 @@ def checkout(body: CheckoutIn, user: User = Depends(get_current_user), db: Sessi
     # running them on a thread pool instead of one after another means checkout
     # latency is bounded by the slowest of them, not their sum.
     with ThreadPoolExecutor(max_workers=max(1, len(priced["lines"])) + 1) as executor:
-        rzp_future = executor.submit(create_rzp_order, int(round(float(priced["total"]) * 100)), receipt=number)
+        rzp_future = executor.submit(create_rzp_order, to_paise(priced["total"]), receipt=number)
         externalize_futures = [
             executor.submit(_externalize_customization, line.get("customization"), number)
             for line in priced["lines"]
@@ -249,7 +249,7 @@ def retry_payment(order_id: str, user: User = Depends(get_current_user), db: Ses
     if order.status != "payment_pending":
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Order is not awaiting payment")
 
-    rzp_order = create_rzp_order(int(round(float(order.total) * 100)), receipt=f"{order.number}-retry")
+    rzp_order = create_rzp_order(to_paise(order.total), receipt=f"{order.number}-retry")
     payment = Payment(order_id=order.id, razorpay_order_id=rzp_order["id"], amount=order.total)
     db.add(payment)
     db.commit()
