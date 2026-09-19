@@ -45,15 +45,16 @@
        (and its order) stays untouched since it also drives packages/folio/deep-links.
        This is a subject-based split (Photography vs Videography) used only to decide
        which section a category's card appears under. Computed live from each
-       category's group_label (set in the admin Categories form, "Equipment" ->
-       Videography, anything else -> Photography) instead of a fixed id list - a
-       previous fixed-list version meant every newly added category silently never
-       appeared in the sidebar/grid until someone edited this file by hand. */
+       category's group_label (a plain dropdown in the admin Categories form -
+       "Photography" or "Videography", anything else/unset falls back to
+       Photography) instead of a fixed id list - a previous fixed-list version
+       meant every newly added category silently never appeared in the
+       sidebar/grid until someone edited this file by hand. */
     function sidebarPhotographyIds() {
-      return CATEGORIES.filter(c => c.id !== "all" && c.group_label !== "Equipment").map(c => c.id);
+      return CATEGORIES.filter(c => c.id !== "all" && c.group_label !== "Videography").map(c => c.id);
     }
     function sidebarVideographyIds() {
-      return CATEGORIES.filter(c => c.id !== "all" && c.group_label === "Equipment").map(c => c.id);
+      return CATEGORIES.filter(c => c.id !== "all" && c.group_label === "Videography").map(c => c.id);
     }
 
     function renderSidebar() {

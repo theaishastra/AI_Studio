@@ -71,7 +71,7 @@ async function loadCatTable() {
             <td>${esc(c.icon || "")}</td>
             <td>${esc(c.name)}</td>
             <td>${esc(c.slug)}</td>
-            <td>${esc(c.group_label || "—")}</td>
+            <td>${CURRENT_PAGE_SLUG === "photography" ? (c.group_label === "Videography" ? "Videography" : "Photography") : "—"}</td>
             <td>${c.show_in_hero ? "✓" : ""}</td>
             <td><span class="badge ${c.is_active ? "on" : "off"}">${c.is_active ? "Active" : "Hidden"}</span></td>
             <td>${c.sort}</td>
@@ -91,6 +91,15 @@ async function loadCatTable() {
 function openCategoryForm(id) {
   const cat = id ? window._CATS_CACHE.find(c => c.id === id) : null;
   const page = PAGES_CACHE.find(p => p.slug === CURRENT_PAGE_SLUG);
+  // The Photography page's sidebar/"All Services" grid splits into two fixed
+  // sections - "Photography" and "Videography" - decided entirely by this
+  // field being the literal string "Videography" or not (see js/photography.js
+  // sidebarPhotographyIds/sidebarVideographyIds). A free-text box for that
+  // meant an admin could type anything - a typo, different capitalization,
+  // etc. - and the category would silently land in "Photography" instead
+  // with no error. No other page reads this field at all, so it only needs
+  // to exist, as a real choice, here.
+  const isPhotography = page.slug === "photography";
   openModal(`
     <h2>${cat ? "Edit" : "Add"} Category</h2>
     <p class="sub" style="color:var(--text-dim);font-size:12px;margin-top:0;">Page: ${esc(page.name)}</p>
@@ -107,7 +116,13 @@ function openCategoryForm(id) {
       <label>Hero tagline</label><input id="f_tagline" value="${esc(cat?.hero_tagline || "")}">
       <label>Portfolio section title</label><input id="f_folio_title" value="${esc(cat?.folio_title || "")}" placeholder='e.g. "Wedding Photography Portfolio"'>
       <div class="two-col">
-        <div><label>Sidebar group label</label><input id="f_group" value="${esc(cat?.group_label || "")}" placeholder="Functions / Equipment"></div>
+        ${isPhotography ? `
+        <div><label>Sidebar section</label>
+          <select id="f_group">
+            <option value="Photography" ${cat?.group_label !== "Videography" ? "selected" : ""}>Photography</option>
+            <option value="Videography" ${cat?.group_label === "Videography" ? "selected" : ""}>Videography</option>
+          </select>
+        </div>` : ""}
         <div><label>Sort order</label><input id="f_sort" type="number" value="${cat?.sort ?? 0}"></div>
       </div>
       <label class="inline"><input type="checkbox" id="f_hero" ${cat?.show_in_hero ? "checked" : ""}> Show in hero carousel</label>
@@ -130,7 +145,7 @@ function openCategoryForm(id) {
       hero_image_url: document.getElementById("f_hero_img").value.trim() || null,
       hero_tagline: document.getElementById("f_tagline").value.trim() || null,
       folio_title: document.getElementById("f_folio_title").value.trim() || null,
-      group_label: document.getElementById("f_group").value.trim() || null,
+      group_label: isPhotography ? document.getElementById("f_group").value : (cat?.group_label || null),
       sort: parseInt(document.getElementById("f_sort").value || "0", 10),
       show_in_hero: document.getElementById("f_hero").checked,
       is_active: document.getElementById("f_active").checked,
