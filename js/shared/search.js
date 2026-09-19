@@ -113,7 +113,12 @@
 
   var css =
     ".sk-search-suggest{position:absolute;top:calc(100% + 8px);left:0;right:0;background:#fff;border-radius:14px;"
-    + "box-shadow:0 16px 40px rgba(0,0,0,.14);border:1px solid #f1f1f1;overflow:hidden;z-index:200;display:none;max-height:360px;overflow-y:auto;}"
+    // 200 used to sit under several pages' sticky category-nav bars (up to
+    // z-index 1300+ - e.g. gifts.html's .category-menu-bar at 1005), so the
+    // dropdown rendered visibly behind the nav instead of over it. This is
+    // shared by every page's header search box, so it needs to clear the
+    // highest nav/header stacking context any of them use.
+    + "box-shadow:0 16px 40px rgba(0,0,0,.14);border:1px solid #f1f1f1;overflow:hidden;z-index:5000;display:none;max-height:360px;overflow-y:auto;}"
     + "\n.sk-search-suggest.open{display:block;}"
     + "\n.sk-search-row{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;text-decoration:none;color:inherit;}"
     + "\n.sk-search-row:hover,.sk-search-row.active{background:#f8f8f8;}"
