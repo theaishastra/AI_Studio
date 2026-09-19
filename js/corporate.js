@@ -587,6 +587,26 @@
           : 'Delivered in 2-3 business days across India. 30-day hassle-free replacement and quality warranty.';
       }
 
+      // Description/highlights shown here used to be static boilerplate baked
+      // into the HTML (same text for every product, regardless of what the
+      // admin typed) - now pulled from the actual product record so what the
+      // admin enters in Categories > Products is what customers see here.
+      const descTextEl = document.getElementById('modalDescriptionText');
+      const highlightsListEl = document.getElementById('modalHighlightsList');
+      if (descTextEl) {
+        descTextEl.textContent = (product && product.subtitle) || 'No description added for this product yet.';
+      }
+      if (highlightsListEl) {
+        const features = (product && product.features) || [];
+        highlightsListEl.innerHTML = '';
+        features.forEach(f => {
+          const li = document.createElement('li');
+          li.textContent = f;
+          highlightsListEl.appendChild(li);
+        });
+        highlightsListEl.style.display = features.length ? '' : 'none';
+      }
+
       const thumbsContainer = document.getElementById('modalThumbsContainer');
       if (thumbsContainer) {
         thumbsContainer.innerHTML = activeModalImages.map((tImg, idx) => `
@@ -1921,6 +1941,7 @@
               if (p.mrp) prod.oldPrice = p.mrp;
               prod.input_fields = p.input_fields || [];
               prod.delivery_days = p.delivery_days || null;
+              prod.features = p.feat || [];
               return prod;
             }),
           };
