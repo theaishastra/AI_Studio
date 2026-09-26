@@ -1,0 +1,164 @@
+========================================================================
+ REDEPLOYING CODE TO THE VM AFTER A GITHUB PUSH
+========================================================================
+
+This is the exact, tested command sequence to push new backend/admin
+code changes to the live VM. It's the same sequence used successfully
+on 2026-09-26.
+
+IMPORTANT: the VM does NOT "git pull" - there is no git repo on it at
+all. Deployment works by packaging backend/ and admin/ on YOUR machine
+(where the up-to-date git checkout lives) and copying that package
+straight to the VM over SSH. "Push to GitHub" and "update the VM" are
+two separate, independent steps - pushing to GitHub alone does NOT
+update the VM. Always do both:
+  1) git push (so the repo/history is up to date)
+  2) the steps below (so the running VM actually has the new code)
+
+Everywhere below, EC2_IP and PEM_PATH mean:
+  EC2_IP="54.160.240.144"
+  PEM_PATH="/c/Users/mohan/Downloads/AI_Studio.pem"
+(If the VM was ever stopped/started via the AWS Console, the IP may
+have changed - see VM_STOP_START_GUIDE.txt section C to get the new one
+before using the commands below.)
+
+
+------------------------------------------------------------------------
+ STEP-BY-STEP
+------------------------------------------------------------------------
+
+Run these from the project root (D:\Gen AI\Studio\studio-backed) in Git
+Bash, after your code changes are committed (a redeploy just needs the
+files on disk to be current - it doesn't require a commit, but keeping
+git and the VM in sync is the point of doing both).
+
+# 1) Package backend + admin (excludes venv/caches - keeps the archive small)
+cd "/d/Gen AI/Studio/studio-backed"
+tar -czf /tmp/studio-deploy.tar.gz \
+  --exclude='backend/venv' --exclude='backend/.venv' \
+  --exclude='__pycache__' --exclude='*.pyc' \
+  backend admin
+
+# 2) Upload it to the VM
+scp -i "$PEM_PATH" /tmp/studio-deploy.tar.gz ubuntu@$EC2_IP:/home/ubuntu/
+
+# 3) Extract it over the existing app directory (overwrites changed files,
+#    leaves backend/.env alone only if you excluded it above - by default
+#    it IS included/overwritten, see the warning below)
+ssh -i "$PEM_PATH" ubuntu@$EC2_IP "\
+  mkdir -p /home/ubuntu/app && \
+  tar -xzf /home/ubuntu/studio-deploy.tar.gz -C /home/ubuntu/app && \
+  rm /home/ubuntu/studio-deploy.tar.gz && \
+  echo extracted"
+
+# 4) Install any new/updated Python dependencies, then restart the service
+ssh -i "$PEM_PATH" ubuntu@$EC2_IP "\
+  cd /home/ubuntu/app/backend && \
+  ./venv/bin/pip install -r requirements.txt -q && \
+  sudo systemctl restart studio-backend && \
+  echo restarted"
+
+# 5) Clean up the local temp archive
+rm -f /tmp/studio-deploy.tar.gz
+
+# 6) Verify - allow 30-40s after "restarted" before /api/health responds
+#    (single-worker cold start opening the DB connection - normal, not a bug)
+curl http://$EC2_IP/api/health
+curl http://$EC2_IP/api/catalog/gifts | head -c 200
+curl -s -o /dev/null -w "tunnel: HTTP %{http_code}\n" \
+  https://<current-tunnel-subdomain>.trycloudflare.com/api/health
+#    (get the current tunnel URL with the command in the WARNINGS section
+#    below if you don't have it handy - it doesn't change on a normal
+#    redeploy, only if cloudflared-studio itself restarts/crashes/reboots)
+
+
+------------------------------------------------------------------------
+ WARNINGS / GOTCHAS
+------------------------------------------------------------------------
+
+* backend/.env gets overwritten every time. Step 1's tar includes
+  backend/.env because it lives on disk (it's gitignored, never in git
+  history). This is normally harmless IF your local .env and the VM's
+  .env already match - but if you've been testing with different
+  Razorpay keys, a different DATABASE_URL, RAZORPAY_MOCK toggled, etc.
+  locally, this WILL push those values live. Before step 2, diff them:
+    ssh -i "$PEM_PATH" ubuntu@$EC2_IP "cat /home/ubuntu/app/backend/.env" > /tmp/vm.env
+    diff backend/.env /tmp/vm.env
+    rm /tmp/vm.env
+  If they differ and you don't want to push the difference, exclude it:
+    tar -czf /tmp/studio-deploy.tar.gz --exclude='backend/.env' \
+      --exclude='backend/venv' --exclude='backend/.venv' \
+      --exclude='__pycache__' --exclude='*.pyc' backend admin
+
+* Do NOT add --workers 2 (or more) anywhere in the systemd service. A
+  multi-worker setup hangs forever at "Waiting for application startup"
+  on this instance size (DB pool fork-safety issue). Single worker only.
+
+* The Cloudflare tunnel URL (https://...trycloudflare.com) is NOT tied
+  to a redeploy - restarting studio-backend (steps above) does NOT
+  restart cloudflared-studio, so the URL stays the same across a normal
+  redeploy. It only changes if cloudflared-studio itself restarts
+  (crash, VM reboot, manual restart of that specific service). Get the
+  current URL any time with:
+    ssh -i "$PEM_PATH" ubuntu@$EC2_IP "grep trycloudflare /home/ubuntu/cloudflared.log | tail -1"
+  If it ever changes, update window.SAI_API_BASE in
+  js/shared/api-config.js locally, commit, and push so GitHub Pages
+  picks up the new URL.
+
+* CORS: the VM's backend/.env CORS_ORIGINS must list every origin that
+  calls the API (this includes https://theaishastra.github.io for the
+  live site, plus your local dev ports). If you add a new frontend
+  origin, add it there too, then repeat steps 2-4 above (or just edit
+  backend/.env on the VM directly with nano and restart the service -
+  no need to re-package/upload for an env-only change):
+    ssh -i "$PEM_PATH" ubuntu@$EC2_IP "nano /home/ubuntu/app/backend/.env"
+    ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo systemctl restart studio-backend"
+
+
+------------------------------------------------------------------------
+ CHECKING LOGS / STATUS
+------------------------------------------------------------------------
+
+# Set these once per terminal session
+EC2_IP="54.160.240.144"
+PEM_PATH="/c/Users/mohan/Downloads/AI_Studio.pem"
+
+# Backend app logs, live (Ctrl+C to stop watching)
+ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo journalctl -u studio-backend -f"
+
+# Backend service status (is it running right now?)
+ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo systemctl status studio-backend --no-pager"
+
+# Cloudflare tunnel status + current URL
+ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo systemctl status cloudflared-studio --no-pager"
+ssh -i "$PEM_PATH" ubuntu@$EC2_IP "grep trycloudflare /home/ubuntu/cloudflared.log | tail -1"
+
+# Nginx access / error logs, live
+ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo tail -f /var/log/nginx/access.log"
+ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo tail -f /var/log/nginx/error.log"
+
+
+------------------------------------------------------------------------
+ FULL COPY-PASTE BLOCK (all steps in one go)
+------------------------------------------------------------------------
+
+EC2_IP="54.160.240.144"
+PEM_PATH="/c/Users/mohan/Downloads/AI_Studio.pem"
+cd "/d/Gen AI/Studio/studio-backed"
+tar -czf /tmp/studio-deploy.tar.gz \
+  --exclude='backend/venv' --exclude='backend/.venv' \
+  --exclude='__pycache__' --exclude='*.pyc' \
+  backend admin
+scp -i "$PEM_PATH" /tmp/studio-deploy.tar.gz ubuntu@$EC2_IP:/home/ubuntu/
+ssh -i "$PEM_PATH" ubuntu@$EC2_IP "\
+  mkdir -p /home/ubuntu/app && \
+  tar -xzf /home/ubuntu/studio-deploy.tar.gz -C /home/ubuntu/app && \
+  rm /home/ubuntu/studio-deploy.tar.gz && \
+  cd /home/ubuntu/app/backend && \
+  ./venv/bin/pip install -r requirements.txt -q && \
+  sudo systemctl restart studio-backend && \
+  echo restarted"
+rm -f /tmp/studio-deploy.tar.gz
+sleep 5
+until curl -s -f http://$EC2_IP/api/health >/dev/null 2>&1; do sleep 3; done
+curl http://$EC2_IP/api/health
