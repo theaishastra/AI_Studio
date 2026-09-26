@@ -19,13 +19,17 @@ async function renderCustomers() {
   await loadCustomers();
 }
 
-async function loadCustomers(q) {
+async function loadCustomers(q, page = 1) {
   const wrap = document.getElementById("customersWrap");
-  const res = await Api.customers(q);
+  const res = await Api.customers(q, page);
+  wrap._lastQuery = q;
+  wrap._lastPage = res.page || page;
   if (!res.items.length) {
     wrap.innerHTML = `<div class="empty-state">No customers ${q ? "match that search" : "yet"}.</div>`;
     return;
   }
+  const pageSize = res.page_size || res.items.length;
+  const totalPages = Math.max(1, Math.ceil(res.total / pageSize));
   wrap.innerHTML = `
     <table>
       <thead>
@@ -57,11 +61,21 @@ async function loadCustomers(q) {
           </tr>`).join("")}
       </tbody>
     </table>
-    <p style="color:var(--text-dim);font-size:12px;margin-top:8px;">
-      ${res.total} total — rows marked "no signup" requested a login OTP but never completed signup.
-    </p>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+      <p style="color:var(--text-dim);font-size:12px;">
+        ${res.total} total — rows marked "no signup" requested a login OTP but never completed signup.
+      </p>
+      ${totalPages > 1 ? `
+        <div class="pagination" style="display:flex;align-items:center;gap:8px;">
+          <button class="btn secondary" id="customersPrevPage" ${res.page <= 1 ? "disabled" : ""}>Prev</button>
+          <span style="font-size:12px;color:var(--text-dim);">Page ${res.page} of ${totalPages}</span>
+          <button class="btn secondary" id="customersNextPage" ${res.page >= totalPages ? "disabled" : ""}>Next</button>
+        </div>
+      ` : ""}
+    </div>
   `;
-  wrap._lastQuery = q;
+  document.getElementById("customersPrevPage")?.addEventListener("click", () => loadCustomers(q, res.page - 1));
+  document.getElementById("customersNextPage")?.addEventListener("click", () => loadCustomers(q, res.page + 1));
   // Row actions are wired via data-* attributes + a delegated listener, not inline
   // onclick="fn('${email}')" strings — an email is untrusted (submitted through the
   // public, unauthenticated OTP-request endpoint) and esc() only makes it safe to sit
@@ -69,47 +83,52 @@ async function loadCustomers(q) {
   wrap.querySelectorAll("button[data-action]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const { action, email, id, orders } = btn.dataset;
-      if (action === "unblock") unblockCustomerEmail(email);
-      else if (action === "block") blockCustomerEmail(email);
-      else if (action === "delete") removeCustomer(id, email, parseInt(orders, 10));
-      else if (action === "remove-otp") removeOtpActivity(email);
+      if (action === "unblock") unblockCustomerEmail(email, btn);
+      else if (action === "block") blockCustomerEmail(email, btn);
+      else if (action === "delete") removeCustomer(id, email, parseInt(orders, 10), btn);
+      else if (action === "remove-otp") removeOtpActivity(email, btn);
     });
   });
 }
 
-async function removeCustomer(id, email, orderCount) {
+function reloadCustomers() {
+  const wrap = document.getElementById("customersWrap");
+  return loadCustomers(wrap?._lastQuery, wrap?._lastPage || 1);
+}
+
+async function removeCustomer(id, email, orderCount, btn) {
   const warning = orderCount > 0
     ? `Permanently delete ${email}? This also erases their ${orderCount} order${orderCount === 1 ? "" : "s"}, payments, addresses, cart/wishlist, and reviews. This cannot be undone.`
     : `Permanently delete ${email}? This also erases their addresses, cart/wishlist, and reviews. This cannot be undone.`;
   if (!confirm(warning)) return;
   try {
-    await Api.deleteCustomer(id);
-    loadCustomers(document.getElementById("customersWrap")._lastQuery);
+    await withBusy(btn, "Deleting…", () => Api.deleteCustomer(id));
+    reloadCustomers();
   } catch (err) { alert(err.message); }
 }
 
-async function blockCustomerEmail(email) {
+async function blockCustomerEmail(email, btn) {
   const reason = prompt(`Block ${email} from logging in or requesting OTPs?\n\nOptional reason (shown in the audit log):`);
   if (reason === null) return; // cancelled
   try {
-    await Api.blockEmail(email, reason);
-    loadCustomers(document.getElementById("customersWrap")._lastQuery);
+    await withBusy(btn, "Blocking…", () => Api.blockEmail(email, reason));
+    reloadCustomers();
   } catch (err) { alert(err.message); }
 }
 
-async function removeOtpActivity(email) {
+async function removeOtpActivity(email, btn) {
   if (!confirm(`Remove ${email}'s OTP request history? It never completed signup - this just clears the login-activity noise, it's not blocked from trying again.`)) return;
   try {
-    await Api.clearOtpActivity(email);
-    loadCustomers(document.getElementById("customersWrap")._lastQuery);
+    await withBusy(btn, "Removing…", () => Api.clearOtpActivity(email));
+    reloadCustomers();
   } catch (err) { alert(err.message); }
 }
 
-async function unblockCustomerEmail(email) {
+async function unblockCustomerEmail(email, btn) {
   if (!confirm(`Unblock ${email}? They'll be able to log in and request OTPs again.`)) return;
   try {
-    await Api.unblockEmail(email);
-    loadCustomers(document.getElementById("customersWrap")._lastQuery);
+    await withBusy(btn, "Unblocking…", () => Api.unblockEmail(email));
+    reloadCustomers();
   } catch (err) { alert(err.message); }
 }
 
@@ -132,13 +151,14 @@ function openBlockEmailForm() {
   `);
   document.getElementById("blockEmailForm").addEventListener("submit", async (e) => {
     e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
     try {
-      await Api.blockEmail(
+      await withBusy(btn, "Blocking…", () => Api.blockEmail(
         document.getElementById("be_email").value.trim(),
         document.getElementById("be_reason").value.trim(),
-      );
+      ));
       closeModal();
-      loadCustomers(document.getElementById("customersWrap")?._lastQuery);
+      reloadCustomers();
     } catch (err) {
       document.getElementById("formMsg").innerHTML = `<div class="msg error">${esc(err.message)}</div>`;
     }

@@ -1011,6 +1011,7 @@ body {
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;
+  background: #F3ECE4;
 }
 
 .pkg-badge {
@@ -1613,6 +1614,7 @@ body {
   aspect-ratio: 1 / 1;
   object-fit: cover;
   scroll-snap-align: start;
+  background: #F3ECE4;
 }
 
 .preview-dots {
@@ -1682,6 +1684,7 @@ body {
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;
+  background: #F3ECE4;
   border-radius: 6px;
   border: 2px solid transparent;
   cursor: pointer;

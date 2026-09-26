@@ -36,4 +36,4 @@ def booking_event(db: Session, booking, event: str):
         "cancelled": "Booking cancelled",
     }
     title = titles.get(event, "Booking update")
-    notify(db, None, title, f"{booking.customer_name} — {event}")
+    notify(db, booking.user_id, title, f"{booking.customer_name} — {event}")

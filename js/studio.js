@@ -405,7 +405,7 @@ function renderContent() {
     return `
     <div class="pkg-card">
       <div class="pkg-image-wrap" onclick="openProductPreview(${idx})">
-        <img class="pkg-image" src="${cldOpt(pkg.img)}" alt="${pkg.name}" loading="lazy">
+        <img class="pkg-image" src="${cldOpt(pkg.img)}" alt="${pkg.name}" loading="lazy" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
         ${pkg.tag ? `<span class="pkg-badge">${escapeHtml(pkg.tag)}</span>` : ''}
         ${pkg.badge ? `<span class="pkg-ribbon pkg-ribbon-${pkg.badge.toLowerCase()}">${pkg.badge}</span>` : ''}
         <button type="button" class="pkg-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
@@ -427,7 +427,13 @@ function renderContent() {
     </div>
   `;
   }).join('');
-  document.getElementById('packagesGrid').innerHTML = packagesHTML;
+  const packagesGridEl = document.getElementById('packagesGrid');
+  packagesGridEl.innerHTML = packagesHTML;
+  if (window.SkLoading) {
+    packagesGridEl.querySelectorAll('.pkg-image-wrap img').forEach(img => {
+      window.SkLoading.wireImage(img, { wrap: img.closest('.pkg-image-wrap') });
+    });
+  }
 }
 
 function orderNowFromCard(idx) {
@@ -492,7 +498,7 @@ function openProductPreview(idx, opts = {}) {
 
   const galleryEl = document.getElementById('previewGallery');
   galleryEl.innerHTML = images.map((img, i) => `
-    <img src="${cldOpt(img)}" class="preview-slide" alt="${pkg.name} view ${i + 1}" loading="${i === 0 ? 'eager' : 'lazy'}">
+    <img src="${cldOpt(img)}" class="preview-slide" alt="${pkg.name} view ${i + 1}" loading="${i === 0 ? 'eager' : 'lazy'}" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
   `).join('');
 
   document.getElementById('previewDots').innerHTML = images.map((img, i) => `
@@ -500,9 +506,14 @@ function openProductPreview(idx, opts = {}) {
   `).join('');
   document.getElementById('previewDots').style.display = images.length > 1 ? 'flex' : 'none';
 
-  document.getElementById('previewThumbRail').innerHTML = images.map((img, i) => `
-    <img src="${cldOpt(img)}" class="preview-thumb ${i === 0 ? 'active' : ''}" onclick="scrollPreviewTo(${i})" alt="${pkg.name} thumbnail ${i + 1}" loading="${i === 0 ? 'eager' : 'lazy'}">
+  const thumbRailEl = document.getElementById('previewThumbRail');
+  thumbRailEl.innerHTML = images.map((img, i) => `
+    <img src="${cldOpt(img)}" class="preview-thumb ${i === 0 ? 'active' : ''}" onclick="scrollPreviewTo(${i})" alt="${pkg.name} thumbnail ${i + 1}" loading="${i === 0 ? 'eager' : 'lazy'}" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
   `).join('');
+  if (window.SkLoading) {
+    galleryEl.querySelectorAll('.preview-slide').forEach(img => window.SkLoading.wireImage(img));
+    thumbRailEl.querySelectorAll('.preview-thumb').forEach(img => window.SkLoading.wireImage(img));
+  }
 
   galleryEl.scrollLeft = 0;
   galleryEl.onscroll = handlePreviewGalleryScroll;
@@ -605,8 +616,25 @@ function handlePreviewPurposeChange(select) {
 }
 
 function handlePreviewPhotoUpload(input) {
-  activePreviewPhotoFile = input.files && input.files[0] ? input.files[0] : null;
-  document.getElementById('previewUploadFilename').textContent = activePreviewPhotoFile ? activePreviewPhotoFile.name : '';
+  const file = input.files && input.files[0] ? input.files[0] : null;
+  const filenameEl = document.getElementById('previewUploadFilename');
+  if (file) {
+    const isImage = file.type.startsWith('image/') || /\.(jpe?g|png|webp|jfif|avif|bmp|tiff?)$/i.test(file.name);
+    if (!isImage) {
+      activePreviewPhotoFile = null;
+      input.value = '';
+      if (filenameEl) filenameEl.textContent = 'Please choose a JPG, PNG or WebP image.';
+      return;
+    }
+    if (window.ProductFields && file.size > ProductFields.MAX_UPLOAD_BYTES) {
+      activePreviewPhotoFile = null;
+      input.value = '';
+      if (filenameEl) filenameEl.textContent = 'That image is larger than 2 MB - please choose a smaller photo.';
+      return;
+    }
+  }
+  activePreviewPhotoFile = file;
+  if (filenameEl) filenameEl.textContent = file ? file.name : '';
   if (activePreviewPhotoFile) {
     document.getElementById('previewUploadGroup').classList.remove('field-error');
   }
@@ -726,12 +754,11 @@ function readActivePreviewPhoto() {
   if (!activePreviewPkg || !activePreviewPkg.requiresPhotoUpload || !activePreviewPhotoFile) {
     return Promise.resolve(null);
   }
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => resolve(null);
-    reader.readAsDataURL(activePreviewPhotoFile);
-  });
+  // Shared with the admin-configured "Customer Input Fields" upload type
+  // (js/shared/product-fields.js) - auto-resizes large photos before they're
+  // ever turned into a base64 string, instead of storing a phone photo's raw
+  // multi-MB bytes straight into localStorage (see CartCore.saveCart()).
+  return ProductFields.fileToDataUri(activePreviewPhotoFile);
 }
 
 // Returns { fields: {fieldId: value}, fieldLabels: {fieldId: label} } so the
@@ -759,7 +786,13 @@ async function previewAddToCart() {
   if (!activePreviewPkg) return;
   if (!validatePreviewOptions()) return;
   const price = currentPreviewPrice();
-  const photoData = await readActivePreviewPhoto();
+  let photoData;
+  try {
+    photoData = await readActivePreviewPhoto();
+  } catch {
+    alert('That photo could not be processed - please choose a different image.');
+    return;
+  }
   const custom = await collectPreviewCustomFields();
   const customization = (photoData || custom) ? { ...(photoData ? { photoData } : {}), ...(custom || {}) } : null;
   const requirement = activePreviewPkg.requiresPhotoUpload
@@ -789,7 +822,13 @@ async function previewBuyNow() {
   if (!activePreviewPkg) return;
   if (!validatePreviewOptions()) return;
   const price = currentPreviewPrice();
-  const photoData = await readActivePreviewPhoto();
+  let photoData;
+  try {
+    photoData = await readActivePreviewPhoto();
+  } catch {
+    alert('That photo could not be processed - please choose a different image.');
+    return;
+  }
   const custom = await collectPreviewCustomFields();
   const customization = (photoData || custom) ? { ...(photoData ? { photoData } : {}), ...(custom || {}) } : null;
   const requirement = activePreviewPkg.requiresPhotoUpload
@@ -934,7 +973,7 @@ function renderPriceDetails(suffix) {
 function cartItemRowHTML(item, withActions) {
   return `
     <div class="checkout-cart-item">
-      <img src="${cldOpt(item.img)}" alt="${item.name}" class="checkout-item-img" loading="lazy">
+      <img src="${cldOpt(item.img)}" alt="${item.name}" class="checkout-item-img" loading="lazy" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
       <div class="checkout-item-info">
         <p class="checkout-item-name">${item.name}</p>
         <p class="checkout-item-price">${item.price}</p>
@@ -1107,7 +1146,26 @@ async function loadStudioCatalog() {
   categoriesData = built;
 }
 
+function renderPackagesGridSkeleton() {
+  const grid = document.getElementById('packagesGrid');
+  if (!grid) return;
+  // The catalog fetch below is the only thing that fills this grid - without
+  // something here in the meantime, the whole "Select Option" section is a
+  // blank box for however long that request takes, which reads as broken
+  // rather than loading.
+  grid.innerHTML = Array.from({ length: 6 }).map(() => `
+    <div class="pkg-card">
+      <div class="pkg-image-wrap sk-img-skel" style="aspect-ratio:1/1;"></div>
+      <div class="pkg-body">
+        <div class="sk-img-skel" style="height:14px;border-radius:4px;margin-bottom:8px;"></div>
+        <div class="sk-img-skel" style="height:14px;width:60%;border-radius:4px;"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
+  renderPackagesGridSkeleton();
   try {
     await loadStudioCatalog();
   } catch (err) {

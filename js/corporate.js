@@ -186,7 +186,7 @@
           return `
             <div class="pkg-card fnp-product-card" onclick="orderNowDirect('${cleanName}', '${p.price}', '${p.img}', '${p.id || ''}')">
               <div class="p-thumb">
-                <img src="${cldOpt(p.img)}" alt="${p.name}" loading="lazy">
+                <img src="${cldOpt(p.img)}" alt="${p.name}" loading="lazy" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
                 ${p.oldPrice ? `<span class="p-discount-badge">${Math.round((1 - parsePrice(p.price) / parsePrice(p.oldPrice)) * 100)}% off</span>` : ''}
                 <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -210,6 +210,9 @@
             </div>
           `;
         }).join('');
+        if (window.SkLoading) {
+          packagesGridEl.querySelectorAll('.p-thumb img').forEach(img => window.SkLoading.wireImage(img, { wrap: img.closest('.p-thumb') }));
+        }
       }
 
       if (e.key === 'Enter') {
@@ -491,7 +494,12 @@
         </div>
       `;
       }).join('');
-      if (packagesGridEl) packagesGridEl.innerHTML = productsHTML;
+      if (packagesGridEl) {
+        packagesGridEl.innerHTML = productsHTML;
+        if (window.SkLoading) {
+          packagesGridEl.querySelectorAll('.p-thumb img').forEach(img => window.SkLoading.wireImage(img, { wrap: img.closest('.p-thumb') }));
+        }
+      }
     };
 
     // FNP-style "Choose Delivery Preference" pincode check - purely a
@@ -555,7 +563,43 @@
       if (titleEl) titleEl.textContent = name;
       if (priceEl) priceEl.textContent = price;
       if (breadcrumbNameEl) breadcrumbNameEl.textContent = name;
-      if (mainImgEl) mainImgEl.src = cldOpt(activeModalImages[0] || img);
+
+      // product.stock only means something for a real, database-backed physical
+      // product - a card without a resolvable productId, or one that never set
+      // a stock count, leaves the modal's static "In stock" badge as-is.
+      const stockBadgeEl = document.getElementById('modalStockBadge');
+      if (stockBadgeEl) {
+        if (product && product.type === 'product' && product.stock !== null && product.stock !== undefined) {
+          const stock = product.stock;
+          const outOfStock = stock <= 0;
+          stockBadgeEl.textContent = outOfStock ? 'Out of stock' : (stock <= 5 ? `Only ${stock} left` : 'In stock');
+          stockBadgeEl.classList.toggle('out-of-stock', outOfStock);
+          stockBadgeEl.classList.toggle('low-stock', !outOfStock && stock <= 5);
+          [document.getElementById('modalAddCartBtn'), document.getElementById('modalBuyNowBtn')].forEach(btn => {
+            if (!btn) return;
+            btn.disabled = outOfStock;
+            btn.classList.toggle('btn-disabled', outOfStock);
+          });
+        } else {
+          stockBadgeEl.textContent = 'In stock';
+          stockBadgeEl.classList.remove('out-of-stock', 'low-stock');
+          [document.getElementById('modalAddCartBtn'), document.getElementById('modalBuyNowBtn')].forEach(btn => {
+            if (!btn) return;
+            btn.disabled = false;
+            btn.classList.remove('btn-disabled');
+          });
+        }
+      }
+      if (mainImgEl) {
+        // Same reused <img> element across every product opened from this modal -
+        // wireImage() only hooks up once per element (data-sk-img-wired), so that
+        // has to be cleared on every open or products after the first never fade in.
+        delete mainImgEl.dataset.skImgWired;
+        mainImgEl.classList.remove('sk-img-loaded');
+        mainImgEl.src = cldOpt(activeModalImages[0] || img);
+        mainImgEl.onerror = function () { this.onerror = null; this.src = (window.SkLoading && window.SkLoading.PLACEHOLDER_IMG) || ''; };
+        if (window.SkLoading) window.SkLoading.wireImage(mainImgEl, { wrap: mainImgEl.closest('.modal-gallery-main') });
+      }
       if (qtyNumEl) qtyNumEl.textContent = '1';
       if (productCodeEl) productCodeEl.textContent = productId ? `EXCORP${productId}` : '';
       if (pincodeInputEl) pincodeInputEl.value = '';
@@ -594,9 +638,12 @@
       if (thumbsContainer) {
         thumbsContainer.innerHTML = activeModalImages.map((tImg, idx) => `
           <button class="thumb-btn ${idx === 0 ? 'active' : ''}" onclick="setModalMainImg(${idx})">
-            <img src="${cldOpt(tImg)}" alt="Thumb ${idx + 1}" loading="${idx === 0 ? 'eager' : 'lazy'}">
+            <img src="${cldOpt(tImg)}" alt="Thumb ${idx + 1}" loading="${idx === 0 ? 'eager' : 'lazy'}" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
           </button>
         `).join('');
+        if (window.SkLoading) {
+          thumbsContainer.querySelectorAll('img').forEach(t => window.SkLoading.wireImage(t));
+        }
       }
 
       switchModalTab('description');
@@ -661,7 +708,10 @@
       currentModalImgIndex = index;
       const mainImgEl = document.getElementById('modalMainImg');
       if (mainImgEl && activeModalImages[index]) {
+        delete mainImgEl.dataset.skImgWired;
+        mainImgEl.classList.remove('sk-img-loaded');
         mainImgEl.src = cldOpt(activeModalImages[index]);
+        if (window.SkLoading) window.SkLoading.wireImage(mainImgEl, { wrap: mainImgEl.closest('.modal-gallery-main') });
       }
       document.querySelectorAll('.thumb-btn').forEach((btn, idx) => {
         btn.classList.toggle('active', idx === index);
@@ -891,7 +941,7 @@
             const cleanItemName = item.name.replace(/'/g, "\\'");
             return `
               <div class="cart-drawer-item">
-                <img class="cart-drawer-item-img" src="${cldOpt(item.img)}" alt="${item.name}" loading="lazy">
+                <img class="cart-drawer-item-img" src="${cldOpt(item.img)}" alt="${item.name}" loading="lazy" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
                 <div class="cart-drawer-item-info">
                   <h5>${item.name}</h5>
                   <p>${item.price} each</p>
@@ -1301,17 +1351,45 @@
       const file = e.target.files[0];
       if (!file) return;
 
-      // Show Scanning UI State
       const scanTag = document.getElementById('customProductScanTag');
       const errTag = document.getElementById('customProductErrorTag');
       const infoTag = document.getElementById('customProductInfo');
+      const errMsg = document.getElementById('customProductErrorMsg');
+
+      const isImage = file.type.startsWith('image/') || /\.(jpe?g|png|webp|jfif|avif|bmp|gif)$/i.test(file.name);
+      if (!isImage) {
+        if (errMsg) errMsg.textContent = '❌ Please choose an image file (JPG, PNG or WebP).';
+        if (errTag) errTag.style.display = 'flex';
+        e.target.value = '';
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        if (errMsg) errMsg.textContent = '❌ That image is larger than 10 MB - please choose a smaller photo.';
+        if (errTag) errTag.style.display = 'flex';
+        e.target.value = '';
+        return;
+      }
+
+      // Show Scanning UI State
       if (scanTag) scanTag.style.display = 'flex';
       if (errTag) errTag.style.display = 'none';
       if (infoTag) infoTag.style.display = 'none';
 
       const reader = new FileReader();
+      reader.onerror = function () {
+        if (scanTag) scanTag.style.display = 'none';
+        if (errMsg) errMsg.textContent = '❌ That file could not be read - please try a different image.';
+        if (errTag) errTag.style.display = 'flex';
+        e.target.value = '';
+      };
       reader.onload = function (evt) {
         const img = new Image();
+        img.onerror = function () {
+          if (scanTag) scanTag.style.display = 'none';
+          if (errMsg) errMsg.textContent = '❌ That file is not a valid image - please choose a different photo.';
+          if (errTag) errTag.style.display = 'flex';
+          e.target.value = '';
+        };
         img.onload = function () {
           if (scanTag) scanTag.style.display = 'none';
 
@@ -1442,9 +1520,30 @@
       const file = e.target.files[0];
       if (!file) return;
 
+      const statusSpan = document.getElementById('studioLogoStatus');
+      const isImage = file.type.startsWith('image/') || /\.(jpe?g|png|webp|jfif|avif|bmp|gif)$/i.test(file.name);
+      if (!isImage) {
+        if (statusSpan) statusSpan.textContent = '❌ Please choose an image file (JPG, PNG or WebP).';
+        e.target.value = '';
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        if (statusSpan) statusSpan.textContent = '❌ That image is larger than 10 MB - please choose a smaller file.';
+        e.target.value = '';
+        return;
+      }
+
       const reader = new FileReader();
+      reader.onerror = function () {
+        if (statusSpan) statusSpan.textContent = '❌ That file could not be read - please try a different image.';
+        e.target.value = '';
+      };
       reader.onload = function (evt) {
         const rawImg = new Image();
+        rawImg.onerror = function () {
+          if (statusSpan) statusSpan.textContent = '❌ That file is not a valid image - please choose a different logo.';
+          e.target.value = '';
+        };
         rawImg.onload = function () {
           // Run AI Auto-Background Removal & Auto-Centering
           removeLogoBackground(rawImg, function (cleanLogoImg) {
@@ -1900,6 +1999,53 @@
       });
     }
 
+    // The 9 hand-built .slide elements in #heroRailTrack (kits/sets/trophies/...)
+    // are static markup, not read from the database - an admin toggling a
+    // *different* category's "Show in hero carousel" checkbox (Categories >
+    // edit > Hero banner) had no way to appear here. GET /api/catalog/corporate
+    // already computes exactly which categories qualify (show_in_hero=true and
+    // a hero image set) as `data.hero` - this appends one slide per such
+    // category that isn't already one of the static ones, so a newly-flagged
+    // category actually shows up instead of silently doing nothing.
+    function syncDynamicHeroSlides(heroList) {
+      const track = document.getElementById('heroRailTrack');
+      if (!track || !Array.isArray(heroList) || !heroList.length) return;
+
+      // Re-syncing (e.g. a future re-fetch) shouldn't pile up duplicates.
+      track.querySelectorAll('.hero-slide-dynamic').forEach(el => el.remove());
+
+      const existingKeys = new Set();
+      track.querySelectorAll('.slide[onclick]').forEach(el => {
+        const m = /switchCategory\('([^']+)'\)/.exec(el.getAttribute('onclick') || '');
+        if (m) existingKeys.add(m[1]);
+      });
+
+      const escHero = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+      const html = heroList
+        .filter(h => h.id && h.img && !existingKeys.has(h.id))
+        .map(h => `
+          <div class="slide category-hero-slide hero-slide-dynamic" onclick="switchCategory('${escHero(h.id)}')" style="cursor:pointer;" title="${escHero(h.title)}">
+            <img loading="lazy" src="${escHero(h.img)}" alt="${escHero(h.title)}" class="bg">
+            <div class="s-body" style="background:linear-gradient(0deg, rgba(0,0,0,.6), rgba(0,0,0,.2) 55%, transparent 80%);">
+              ${h.tag ? `<span class="s-tag">${escHero(h.tag)}</span>` : ''}
+              <h1 class="s-title">${escHero(h.title)}</h1>
+              <a href="#packagesGrid" onclick="switchCategory('${escHero(h.id)}')" class="btn btn-gold">
+                <span>EXPLORE</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+              </a>
+            </div>
+          </div>`)
+        .join('');
+      if (!html) return;
+
+      track.insertAdjacentHTML('beforeend', html);
+      // The carousel engine recomputes slide count from the live DOM on every
+      // call, so just re-triggering it at the current position picks up the
+      // newly-added slide(s) without disturbing whichever slide is showing.
+      if (typeof showHeroSlide === 'function') showHeroSlide(currentHeroSlide, true);
+    }
+
     // --- Fetch Backend Products ---
     // Categories/products for the sidebar and per-category views come from the
     // database via GET /api/catalog/corporate. Field mapping: category name/
@@ -1938,11 +2084,14 @@
               prod.input_fields = p.input_fields || [];
               prod.delivery_days = p.delivery_days || null;
               prod.features = p.feat || [];
+              prod.type = p.type || null;
+              prod.stock = p.stock ?? null;
               return prod;
             }),
           };
         });
         categoriesData = built;
+        syncDynamicHeroSlides(data.hero || []);
       } catch (e) {
         console.error("Could not load corporate catalog from backend.", e);
         const sidebar = document.getElementById('desktopSidebar');

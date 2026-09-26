@@ -73,7 +73,7 @@
       }
 
       const btn = document.getElementById('acctSendOtpBtn');
-      btn.disabled = true;
+      if (window.SkLoading) window.SkLoading.button(btn, true); else btn.disabled = true;
       try {
         await CustomerAuth.requestOtp(email);
         acctLoginEmail = email;
@@ -85,7 +85,7 @@
         msgEl.textContent = err.message || 'Could not send the OTP. Please try again.';
         msgEl.style.display = 'block';
       } finally {
-        btn.disabled = false;
+        if (window.SkLoading) window.SkLoading.button(btn, false); else btn.disabled = false;
       }
     }
 
@@ -101,7 +101,7 @@
       }
 
       const btn = document.getElementById('acctVerifyOtpBtn');
-      btn.disabled = true;
+      if (window.SkLoading) window.SkLoading.button(btn, true); else btn.disabled = true;
       try {
         await CustomerAuth.verifyOtp(acctLoginEmail, code);
         window.SaiAuthNav?.refresh();
@@ -110,7 +110,7 @@
         msgEl.textContent = err.message || 'That code didn’t work. Please try again.';
         msgEl.style.display = 'block';
       } finally {
-        btn.disabled = false;
+        if (window.SkLoading) window.SkLoading.button(btn, false); else btn.disabled = false;
       }
     }
 
@@ -235,8 +235,8 @@
           <div class="acct-address-text">${escapeAcctHTML(addr.line1)}${addr.line2 ? ', ' + escapeAcctHTML(addr.line2) : ''}, ${escapeAcctHTML(addr.city)}, ${escapeAcctHTML(addr.state)} - ${escapeAcctHTML(addr.pincode)}</div>
           <div class="acct-address-actions">
             <button onclick="editAcctAddress('${addr.id}')">Edit</button>
-            ${!addr.is_default ? `<button onclick="makeAcctAddressDefault('${addr.id}')">Set Default</button>` : ''}
-            <button class="acct-danger" onclick="deleteAcctAddress('${addr.id}')">Delete</button>
+            ${!addr.is_default ? `<button onclick="makeAcctAddressDefault('${addr.id}', this)">Set Default</button>` : ''}
+            <button class="acct-danger" onclick="deleteAcctAddress('${addr.id}', this)">Delete</button>
           </div>
         </div>`;
     }
@@ -316,23 +316,27 @@
       }
     }
 
-    async function makeAcctAddressDefault(id) {
+    async function makeAcctAddressDefault(id, btn) {
       const addr = acctAddresses.find(a => a.id === id);
       if (!addr) return;
+      if (window.SkLoading) window.SkLoading.button(btn, true);
       try {
         await CustomerAuth.updateAddress(id, { ...addr, is_default: true });
         await loadAcctAddresses();
       } catch (err) {
+        if (window.SkLoading) window.SkLoading.button(btn, false);
         alert(err.message || 'Could not update this address.');
       }
     }
 
-    async function deleteAcctAddress(id) {
+    async function deleteAcctAddress(id, btn) {
       if (!confirm('Remove this saved address?')) return;
+      if (window.SkLoading) window.SkLoading.button(btn, true);
       try {
         await CustomerAuth.deleteAddress(id);
         await loadAcctAddresses();
       } catch (err) {
+        if (window.SkLoading) window.SkLoading.button(btn, false);
         alert(err.message || 'Could not delete this address.');
       }
     }

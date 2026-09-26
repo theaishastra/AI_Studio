@@ -694,6 +694,11 @@
       margin-bottom: 4px;
     }
 
+    .cart-form-msg.is-info {
+      background: rgba(37, 99, 235, 0.08);
+      color: #2563EB;
+    }
+
     .cart-login-sub {
       font-size: 13px;
       color: var(--gray-500);
@@ -1027,6 +1032,53 @@
       border-bottom: 1px solid var(--border);
     }
 
+    /* Whole-card collapse toggle - with several orders, showing every item/
+       address/payment/tracking panel of every order at once turned this page
+       into a very long scroll. Only the head row (number/date/status) stays
+       visible when collapsed; clicking it expands the rest. */
+    .order-card-head-toggle {
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0 0 14px;
+      margin: 0 0 14px;
+      width: 100%;
+      text-align: left;
+      font: inherit;
+      color: inherit;
+      -webkit-appearance: none;
+      appearance: none;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .order-card.is-collapsed .order-card-head-toggle {
+      padding-bottom: 0;
+      margin-bottom: 0;
+      border-bottom: none;
+    }
+
+    .order-card-chevron {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      color: var(--gray-500);
+      transition: transform 0.2s ease;
+    }
+
+    .order-card.is-collapsed .order-card-chevron {
+      transform: rotate(-90deg);
+    }
+
+    .order-card-head-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
     .order-number {
       display: block;
       font-size: 15px;
@@ -1223,6 +1275,16 @@
       gap: 4px;
       margin: 0;
       flex-shrink: 0;
+    }
+
+    /* Holds every uploaded photo for a multi-photo upload field - see the
+       matching .cart-item-custom-photo-row comment in cart.js. */
+    .order-custom-photo-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      justify-content: center;
+      max-width: 136px;
     }
 
     .order-custom-photo {
@@ -1881,6 +1943,17 @@
       align-items: center;
       gap: 3px;
       flex-shrink: 0;
+    }
+
+    /* Holds every uploaded photo for a multi-photo upload field - previously
+       only the first was ever rendered here, silently hiding the rest even
+       though all of them were saved and would still reach the order. */
+    .cart-item-custom-photo-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      justify-content: center;
+      max-width: 122px;
     }
 
     .cart-item-custom-photo {

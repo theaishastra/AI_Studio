@@ -422,7 +422,7 @@
       <div class="modal-inner-grid">
         <div class="modal-media-col">
           <div class="modal-main-img-box">
-            <img loading="lazy" id="modalImg" src="" alt="Product preview">
+            <img id="modalImg" src="" alt="Product preview">
           </div>
         </div>
         <div class="modal-details-col">
@@ -431,11 +431,6 @@
             <span class="card-badge-top" id="modalTagBadge">Popular</span>
           </div>
           <h2 class="modal-title" id="modalTitle">Product Title</h2>
-          <div class="card-rating-wrap" style="margin-bottom: 10px;">
-            <span class="star-icon">★</span>
-            <span id="modalRating">4.9</span>
-            <span class="review-count" id="modalReviewCount">(142 reviews)</span>
-          </div>
           <div class="modal-price-row">
             <span class="modal-price-current" id="modalPrice">₹599</span>
             <span class="modal-price-orig" id="modalOrigPrice">₹899</span>
@@ -733,6 +728,7 @@
   </footer>
 
   <!-- ─── Interactive Catalog JavaScript ─── -->
+  <script src="js/shared/loading-ui.js"></script>
   <script src="js/shared/api-config.js"></script>
   <script src="js/shared/customer-api.js"></script>
   <script src="js/shared/thumb-map.js"></script>

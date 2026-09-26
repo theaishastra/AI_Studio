@@ -85,8 +85,9 @@ async function renderSettings() {
         else value[f.name] = el.value;
       });
       const msg = form.querySelector(".save-msg");
+      const btn = form.querySelector('button[type="submit"]');
       try {
-        await Api.setSetting(panel.key, value);
+        await withBusy(btn, "Saving…", () => Api.setSetting(panel.key, value));
         msg.textContent = "Saved.";
         if (panel.key === "branding") applyBrandTheme();
         setTimeout(() => (msg.textContent = ""), 2000);

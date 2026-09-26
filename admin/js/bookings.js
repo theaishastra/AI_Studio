@@ -91,7 +91,7 @@ function bkAddons(details) {
 async function renderBookings() {
   const view = document.getElementById("view");
   view.innerHTML = `
-    <header class="page-head"><h1>Bookings</h1><button type="button" class="btn secondary" onclick="downloadCsvReport('/api/admin/reports/bookings.csv', 'bookings.csv')">Export CSV</button></header>
+    <header class="page-head"><h1>Bookings</h1><button type="button" class="btn secondary" onclick="downloadCsvReport('/api/admin/reports/bookings.csv', 'bookings.csv', this)">Export CSV</button></header>
     <div id="bookingsWrap">${LOADING}</div>
   `;
   const bookings = await Api.bookings();
@@ -128,7 +128,7 @@ async function renderBookings() {
             <td class="bkr-venue" title="${esc(venue)}">${esc(venue)}</td>
             <td>${esc(details.price || "—")}</td>
             <td>${fmtINR(b.advance_paid)}</td>
-            <td><select onchange="updateBookingStatus('${b.id}', this.value)">
+            <td><select onchange="updateBookingStatus('${b.id}', this.value, this)">
               ${BOOKING_STATUSES.map(s => `<option value="${s}" ${s === b.status ? "selected" : ""}>${s.replace("_", " ")}</option>`).join("")}
             </select></td>
             <td>${fmtIST(b.created_at)}</td>
@@ -140,9 +140,11 @@ async function renderBookings() {
   `;
 }
 
-async function updateBookingStatus(id, status) {
+async function updateBookingStatus(id, status, selectEl) {
+  if (selectEl) selectEl.disabled = true;
   try { await Api.updateBookingStatus(id, status); }
   catch (err) { alert(err.message); renderBookings(); }
+  finally { if (selectEl) selectEl.disabled = false; }
 }
 
 /* ---------------------------------------------------------------- detail modal */

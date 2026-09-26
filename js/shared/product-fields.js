@@ -244,5 +244,13 @@
     return errors;
   }
 
-  global.ProductFields = { renderProductFields, collectProductFields, validateProductFields, getSelectedPrice };
+  global.ProductFields = {
+    renderProductFields, collectProductFields, validateProductFields, getSelectedPrice,
+    // Exposed for the older, non-input_fields upload flows (studio.js's
+    // requiresPhotoUpload, corporate.js's logo/photo uploads) so they can
+    // reuse the same size cap + auto-resize instead of reading a raw file
+    // straight to base64 (which has no ceiling and can blow past
+    // localStorage's quota on an unresized phone photo).
+    fileToDataUri, MAX_UPLOAD_BYTES,
+  };
 })(window);

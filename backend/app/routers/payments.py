@@ -10,7 +10,8 @@ from ..deps import audit, get_current_user, require_owner
 from ..models import Order, OrderTrackingEvent, Payment, Product, User, WebhookEvent
 from ..schemas import PaymentVerifyIn
 from ..security import verify_razorpay_signature, verify_webhook_signature
-from ..services.notifications import order_event
+from ..services.inventory import restock
+from ..services.notifications import notify, order_event
 from ..services.pricing import to_paise
 from ..services.razorpay_service import create_refund, mock_payment_signature
 
@@ -25,17 +26,38 @@ def _mark_paid(db: Session, payment: Payment, razorpay_payment_id: str, signatur
     payment.razorpay_payment_id = razorpay_payment_id
     payment.signature = signature
 
-    order = db.get(Order, payment.order_id)
+    # Locks the row for this transaction - closes the narrow window where
+    # orders.py's expire_stale_reservations() sweep could otherwise expire/restock
+    # this exact order at the same instant its payment is being confirmed.
+    order = db.get(Order, payment.order_id, with_for_update=True)
     if order.status in ("created", "payment_pending"):
         order.status = "paid"
-        product_ids = [item.product_id for item in order.items if item.product_id]
-        products = {p.id: p for p in db.query(Product).filter(Product.id.in_(product_ids)).all()} if product_ids else {}
-        for item in order.items:
-            product = products.get(item.product_id)
-            if product and product.type == "product" and product.stock is not None:
-                product.stock = max(0, product.stock - item.qty)
+        # Stock is no longer touched here - checkout() now reserves it atomically
+        # (see services/inventory.py, orders.py's checkout()) at order-creation
+        # time, not at payment-confirmation time. By the time a payment for this
+        # order is being confirmed, its stock was already decremented; doing it
+        # again here would double-decrement every paid order.
         db.add(OrderTrackingEvent(order_id=order.id, status="paid", title="Payment received"))
         order_event(db, order, "paid")
+    else:
+        # The order moved on (most likely cancelled by the customer) before this
+        # payment confirmation arrived (a race between checkout and a delayed
+        # Razorpay webhook/verify/mock-pay call). Real money has still been
+        # captured above - silently dropping that here would leave an order
+        # showing e.g. "cancelled" while the customer was actually charged, with
+        # no stock adjusted and nobody ever told a manual refund is owed.
+        db.add(OrderTrackingEvent(
+            order_id=order.id, status=order.status,
+            title="Payment received after order status changed",
+            description=(
+                f"Razorpay confirmed payment {razorpay_payment_id}, but the order had "
+                f"already moved to '{order.status}' - needs manual review for a refund."
+            ),
+        ))
+        notify(db, order.user_id, "Payment received on a changed order",
+               f"We received your payment for order {order.number}, but its status had "
+               f"already changed to '{order.status}'. Our team will review this and "
+               "contact you if a refund is needed.")
 
 
 @router.post("/verify")
@@ -134,12 +156,18 @@ def refund_order(order_id: str, request: Request, admin: User = Depends(require_
     payment.refund_id = refund.get("id")
 
     if order.status in ("paid", "in_production", "cancelled"):
-        product_ids = [item.product_id for item in order.items if item.product_id]
+        # Only restock items still "active" - an order.status == "cancelled" here
+        # means one or more items may have already been individually restocked
+        # by an earlier per-item or whole-order cancellation; crediting them
+        # again would inflate stock above the true on-hand count.
+        active_items = [item for item in order.items if item.status == "active"]
+        product_ids = [item.product_id for item in active_items if item.product_id]
         products = {p.id: p for p in db.query(Product).filter(Product.id.in_(product_ids)).all()} if product_ids else {}
-        for item in order.items:
+        for item in active_items:
             product = products.get(item.product_id)
             if product and product.type == "product" and product.stock is not None:
-                product.stock += item.qty
+                restock(db, product.id, item.qty)
+            item.status = "cancelled"
     order.status = "refunded"
 
     db.add(OrderTrackingEvent(order_id=order.id, status="refunded", title="Order refunded"))

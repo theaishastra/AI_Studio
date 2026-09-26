@@ -340,7 +340,12 @@ class OrderItem(Base):
     notes: Mapped[str] = mapped_column(Text, default="")
     # active | cancel_requested | cancelled - lets one line item in a multi-item
     # order be cancelled independently of the rest (see OrderCancellationRequest
-    # .order_item_id). Whole-order cancellation still just flips Order.status.
+    # .order_item_id). A whole-order cancellation approval that restocks (i.e. the
+    # order had already been paid) also flips every "active" item to "cancelled" -
+    # required so a later refund on the same order doesn't restock those units
+    # a second time (see decide_cancellation_request/refund_order's shared
+    # item.status == "active" restock guard). A whole-order cancel *before*
+    # payment (nothing to restock yet) leaves items "active".
     status: Mapped[str] = mapped_column(String(20), default="active")
 
     order: Mapped["Order"] = relationship(back_populates="items")

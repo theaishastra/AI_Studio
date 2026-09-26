@@ -24,14 +24,14 @@ async function loadReviews() {
             <td>${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</td>
             <td>${esc(r.comment || "—")}</td>
             <td><span class="badge ${r.is_approved ? "on" : "off"}">${r.is_approved ? "Approved" : "Hidden"}</span></td>
-            <td class="actions"><button class="btn secondary" onclick="toggleReview('${r.id}')">${r.is_approved ? "Hide" : "Approve"}</button></td>
+            <td class="actions"><button class="btn secondary" onclick="toggleReview('${r.id}', this)">${r.is_approved ? "Hide" : "Approve"}</button></td>
           </tr>`).join("")}
       </tbody>
     </table>
   `;
 }
 
-async function toggleReview(id) {
-  try { await Api.toggleReview(id); loadReviews(); }
+async function toggleReview(id, btn) {
+  try { await withBusy(btn, "…", () => Api.toggleReview(id)); loadReviews(); }
   catch (err) { alert(err.message); }
 }

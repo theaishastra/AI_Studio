@@ -7687,6 +7687,22 @@ body.gifts-module-route .stock-badge {
   margin-bottom: 18px;
 }
 
+body.gifts-module-route .stock-badge.low-stock {
+  background: #FEF3C7;
+  color: #B45309;
+}
+
+body.gifts-module-route .stock-badge.out-of-stock {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+
+body.gifts-module-route .btn-disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 body.gifts-module-route .gallery-zoom-hint {
   position: absolute;
   left: 50%;

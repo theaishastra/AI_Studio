@@ -27,7 +27,7 @@ async function renderDashboard() {
 
 // ==================================================================== categories
 
-async function renderCategories() {
+async function renderCategories(params) {
   const view = document.getElementById("view");
   const pages = await Api.pages();
   PAGES_CACHE = pages;
@@ -36,7 +36,12 @@ async function renderCategories() {
       <div class="empty-state">No site pages available.</div>`;
     return;
   }
-  if (!CURRENT_PAGE_SLUG || !pages.some(p => p.slug === CURRENT_PAGE_SLUG)) CURRENT_PAGE_SLUG = pages[0].slug;
+  // Lets a link elsewhere in the admin (e.g. the Media Library's "used in" list on
+  // a non-deletable image) jump straight to the right page's category list instead
+  // of landing on whichever page this tab happened to be on last.
+  const pageParam = params?.get ? params.get("page") : null;
+  if (pageParam && pages.some(p => p.slug === pageParam)) CURRENT_PAGE_SLUG = pageParam;
+  else if (!CURRENT_PAGE_SLUG || !pages.some(p => p.slug === CURRENT_PAGE_SLUG)) CURRENT_PAGE_SLUG = pages[0].slug;
 
   view.innerHTML = `
     <header class="page-head">
@@ -80,7 +85,7 @@ async function loadCatTable() {
               <button class="btn secondary" onclick="openCategoryMedia('${c.id}')">Photos</button>
               <button class="btn secondary" onclick="location.hash='#/products?cat=${c.id}'">Packages</button>
               <button class="btn secondary" onclick="location.hash='#/arrange?cat=${c.id}'">Arrange</button>
-              <button class="btn danger" onclick="removeCategory('${c.id}')">Delete</button>
+              <button class="btn danger" onclick="removeCategory('${c.id}', this)">Delete</button>
             </td>
           </tr>`).join("")}
       </tbody>
@@ -105,16 +110,42 @@ function openCategoryForm(id) {
     <p class="sub" style="color:var(--text-dim);font-size:12px;margin-top:0;">Page: ${esc(page.name)}</p>
     <div id="formMsg"></div>
     <form id="catForm">
+      <div class="form-section-title">Basic info</div>
       <div class="two-col">
-        <div><label>Slug (unique on this page)</label><input id="f_slug" value="${esc(cat?.slug || "")}" required></div>
+        <div><label>Slug</label><input id="f_slug" value="${esc(cat?.slug || "")}" required>
+          <div class="form-hint">Must be unique within the "${esc(page.name)}" page. Used in the site URL, e.g. <code>?category=${esc(cat?.slug || "your-slug")}</code>.</div>
+        </div>
         <div><label>Icon (emoji)</label><input id="f_icon" value="${esc(cat?.icon || "")}"></div>
       </div>
       <label>Name</label><input id="f_name" value="${esc(cat?.name || "")}" required>
       <label>Description</label><textarea id="f_description" rows="2">${esc(cat?.description || "")}</textarea>
-      <label>Thumbnail image URL (sidebar / "All Services" card)</label><input id="f_thumb" value="${esc(cat?.thumb_image_url || "")}">
-      <label>Hero banner image URL</label><input id="f_hero_img" value="${esc(cat?.hero_image_url || "")}">
+
+      <div class="form-section-title">Sidebar &amp; "All Services" card</div>
+      <div class="form-hint" style="margin-bottom:8px;">This image is the small thumbnail shown in the page sidebar and on the "All Services" overview grid. It is NOT the hero carousel banner below.</div>
+      <div class="img-field-row">
+        <div class="img-field-col">
+          <label>Thumbnail image URL</label>
+          <input id="f_thumb" value="${esc(cat?.thumb_image_url || "")}">
+        </div>
+        <img id="f_thumb_preview" class="field-img-preview" src="${esc(cat?.thumb_image_url || "")}" alt="" onerror="this.classList.add('empty');this.removeAttribute('src')">
+      </div>
+
+      <div class="form-section-title">Homepage hero carousel</div>
+      <label class="inline" style="margin-top:0;"><input type="checkbox" id="f_hero" ${cat?.show_in_hero ? "checked" : ""}> Show this category as a slide in the homepage hero carousel</label>
+      <div class="form-hint" style="margin-bottom:8px;">These two fields only matter if the checkbox above is on — they control the full-width banner slide, not the sidebar thumbnail.</div>
+      <div class="img-field-row">
+        <div class="img-field-col">
+          <label>Hero banner image URL</label>
+          <input id="f_hero_img" value="${esc(cat?.hero_image_url || "")}">
+        </div>
+        <img id="f_hero_preview" class="field-img-preview" src="${esc(cat?.hero_image_url || "")}" alt="" onerror="this.classList.add('empty');this.removeAttribute('src')">
+      </div>
       <label>Hero tagline</label><input id="f_tagline" value="${esc(cat?.hero_tagline || "")}">
+
+      <div class="form-section-title">Portfolio</div>
       <label>Portfolio section title</label><input id="f_folio_title" value="${esc(cat?.folio_title || "")}" placeholder='e.g. "Wedding Photography Portfolio"'>
+
+      <div class="form-section-title">Display settings</div>
       <div class="two-col">
         ${isPhotography ? `
         <div><label>Sidebar section</label>
@@ -125,7 +156,6 @@ function openCategoryForm(id) {
         </div>` : ""}
         <div><label>Sort order</label><input id="f_sort" type="number" value="${cat?.sort ?? 0}"></div>
       </div>
-      <label class="inline"><input type="checkbox" id="f_hero" ${cat?.show_in_hero ? "checked" : ""}> Show in hero carousel</label>
       <label class="inline"><input type="checkbox" id="f_active" ${!cat || cat.is_active ? "checked" : ""}> Active (visible on site)</label>
       <div class="modal-actions">
         <button type="button" class="btn secondary" onclick="closeModal()">Cancel</button>
@@ -133,8 +163,19 @@ function openCategoryForm(id) {
       </div>
     </form>
   `);
+  document.getElementById("f_thumb").addEventListener("input", (e) => {
+    const img = document.getElementById("f_thumb_preview");
+    img.classList.remove("empty");
+    img.src = e.target.value.trim();
+  });
+  document.getElementById("f_hero_img").addEventListener("input", (e) => {
+    const img = document.getElementById("f_hero_preview");
+    img.classList.remove("empty");
+    img.src = e.target.value.trim();
+  });
   document.getElementById("catForm").addEventListener("submit", async (e) => {
     e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
     const data = {
       page_id: page.id,
       slug: document.getElementById("f_slug").value.trim(),
@@ -151,8 +192,8 @@ function openCategoryForm(id) {
       is_active: document.getElementById("f_active").checked,
     };
     try {
-      if (cat) await Api.updateCategory(cat.id, data);
-      else await Api.createCategory(data);
+      await withBusy(btn, cat ? "Saving…" : "Creating…", () =>
+        cat ? Api.updateCategory(cat.id, data) : Api.createCategory(data));
       closeModal();
       loadCatTable();
     } catch (err) {
@@ -161,10 +202,10 @@ function openCategoryForm(id) {
   });
 }
 
-async function removeCategory(id) {
+async function removeCategory(id, btn) {
   const cat = window._CATS_CACHE.find(c => c.id === id);
   if (!confirm(`Delete category "${cat?.name}"? This also deletes its packages and photos.`)) return;
-  try { await Api.deleteCategory(id); loadCatTable(); }
+  try { await withBusy(btn, "Deleting…", () => Api.deleteCategory(id)); loadCatTable(); }
   catch (err) { alert(err.message); }
 }
 
@@ -242,7 +283,7 @@ async function loadProdTable() {
             <td class="actions">
               <button class="btn secondary" onclick="openProductForm('${p.id}')">Edit</button>
               <button class="btn secondary" onclick="openProductMedia('${p.id}')">Photos</button>
-              <button class="btn danger" onclick="removeProduct('${p.id}')">Delete</button>
+              <button class="btn danger" onclick="removeProduct('${p.id}', this)">Delete</button>
             </td>
           </tr>`).join("")}
       </tbody>
@@ -265,6 +306,12 @@ function slugify(s) {
 function openProductForm(id) {
   const p = id ? window._PRODUCTS_CACHE.find(x => x.id === id) : null;
   const cat = window._ALL_CATS.find(c => c.id === CURRENT_CATEGORY_ID);
+  // Gifts/Corporate/Studio are entirely physical goods (ship to the customer,
+  // track stock) - only Photography is booking-based. Defaulting a brand-new
+  // product's Type to match its page means the Stock/Delivery days/Address-
+  // change fields just below are visible right away instead of the admin
+  // having to know to flip this dropdown first.
+  const defaultType = cat.pageSlug === "photography" ? "service" : "product";
   openModal(`
     <h2>${p ? "Edit" : "Add"} Product / Package</h2>
     <p style="color:var(--text-dim);font-size:12px;margin-top:0;">Category: ${esc(cat.pageName)} — ${esc(cat.name)}</p>
@@ -275,8 +322,8 @@ function openProductForm(id) {
         <div><label>Tier (Standard / Premium / Platinum, or blank)</label><input id="f_tier" value="${esc(p?.tier || "")}"></div>
         <div><label>Type</label>
           <select id="f_type">
-            <option value="service" ${!p || p.type === "service" ? "selected" : ""}>Service (booking)</option>
-            <option value="product" ${p?.type === "product" ? "selected" : ""}>Product (physical, ships to customer)</option>
+            <option value="service" ${(p ? p.type === "service" : defaultType === "service") ? "selected" : ""}>Service (booking)</option>
+            <option value="product" ${(p ? p.type === "product" : defaultType === "product") ? "selected" : ""}>Product (physical, ships to customer)</option>
           </select>
         </div>
       </div>
@@ -610,8 +657,9 @@ function openProductForm(id) {
       input_fields,
     };
     try {
-      if (p) await Api.updateProduct(p.id, data);
-      else await Api.createProduct({ ...data, media: [] });
+      const btn = e.target.querySelector('button[type="submit"]');
+      await withBusy(btn, p ? "Saving…" : "Creating…", () =>
+        p ? Api.updateProduct(p.id, data) : Api.createProduct({ ...data, media: [] }));
       closeModal();
       loadProdTable();
     } catch (err) {
@@ -620,10 +668,10 @@ function openProductForm(id) {
   });
 }
 
-async function removeProduct(id) {
+async function removeProduct(id, btn) {
   const p = window._PRODUCTS_CACHE.find(x => x.id === id);
   if (!confirm(`Delete "${p?.title}"?`)) return;
-  try { await Api.deleteProduct(id); loadProdTable(); }
+  try { await withBusy(btn, "Deleting…", () => Api.deleteProduct(id)); loadProdTable(); }
   catch (err) { alert(err.message); }
 }
 
@@ -650,9 +698,23 @@ function openProductMedia(id) {
 // ==================================================================== shared media modal
 
 function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange, categoryId, pageId, pageSlug, categorySlug }) {
+  // MAX_MEDIA_PER_ENTITY must match backend/app/routers/admin.py's
+  // MAX_MEDIA_PER_ENTITY - this is only a UX nicety (blocking/trimming
+  // selections before they hit the network); the backend is what actually
+  // enforces the cap, since this modal has three independent add paths
+  // (upload, library picker, add-by-URL) that all need to agree on the count.
+  const MAX_MEDIA_PER_ENTITY = 5;
+  const mediaCountNow = () => document.getElementById("mediaList").querySelectorAll(".media-item").length;
+  const remainingSlots = () => Math.max(0, MAX_MEDIA_PER_ENTITY - mediaCountNow());
+  const updateCountLabel = () => {
+    const label = document.getElementById("mediaCountLabel");
+    if (label) label.textContent = `${mediaCountNow()} of ${MAX_MEDIA_PER_ENTITY} photos used`;
+  };
+
   openModal(`
     <h2>${title}</h2>
     <div id="formMsg"></div>
+    <p id="mediaCountLabel" style="color:var(--text-dim);font-size:12px;margin:0 0 6px;">${media.length} of ${MAX_MEDIA_PER_ENTITY} photos used</p>
     ${media.length > 1 ? `<p style="color:var(--text-dim);font-size:12px;margin:0 0 6px;">Drag photos to reorder — the first one is used as the main/cover image.</p>` : ""}
     <div class="media-list" id="mediaList">
       ${media.map((m, i) => `
@@ -663,34 +725,57 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
         </div>`).join("") || `<div style="color:var(--text-dim);font-size:13px;">No photos yet.</div>`}
     </div>
     <form id="mediaUploadForm" style="margin-top:16px;">
-      <label>Upload photos <span class="form-hint">(up to 5 at once — uploads automatically as soon as you choose them, no extra button to click)</span></label>
+      <label>Upload photos <span class="form-hint">(up to 5 total per product/category — choose your files, then click Upload)</span></label>
       <input type="file" id="m_file" accept="image/*" multiple>
+      <div id="m_fileChosenList" style="color:var(--text-dim);font-size:12px;margin:6px 0;"></div>
+      <button type="button" class="btn" id="m_fileUploadBtn" disabled>Upload</button>
       <span id="mediaUploadStatus" style="color:var(--text-dim);font-size:12px;"></span>
     </form>
     <p style="color:var(--text-dim);font-size:12px;margin:12px 0 4px;">— or choose from the Media Library —</p>
     <button type="button" class="btn secondary" id="openLibraryPickerBtn">📁 Choose from Media Library</button>
     <div id="mediaLibraryPicker" style="display:none;margin-top:10px;"></div>
-    <p style="color:var(--text-dim);font-size:12px;margin:14px 0 4px;">— or paste an image link instead —</p>
+    <p style="color:var(--text-dim);font-size:12px;margin:14px 0 4px;">— or paste image link(s) instead —</p>
     <form id="mediaForm">
-      <label>Image URL</label><input id="m_url" placeholder="https://pub-xxxx.r2.dev/...">
-      <label>Caption ${kind === "portfolio" ? "(shown under the photo)" : "(optional)"}</label><input id="m_alt">
+      <label>Image URL(s) <span class="form-hint">(paste one, or several separated by commas)</span></label><input id="m_url" placeholder="https://pub-xxxx.r2.dev/one.jpg, https://pub-xxxx.r2.dev/two.jpg">
+      <label>Caption ${kind === "portfolio" ? "(shown under the photo)" : "(optional)"} <span class="form-hint">${kind === "portfolio" ? "" : "— applied to every URL above if you pasted more than one"}</span></label><input id="m_alt">
       <div class="modal-actions">
         <button type="button" class="btn secondary" onclick="closeModal()">Close</button>
         <button type="submit" class="btn">Add by URL</button>
       </div>
     </form>
   `);
-  const MAX_UPLOAD_FILES = 5;
-  document.getElementById("m_file").addEventListener("change", async (e) => {
+  let chosenFiles = [];
+  const fileInput = document.getElementById("m_file");
+  const fileUploadBtn = document.getElementById("m_fileUploadBtn");
+  const fileChosenList = document.getElementById("m_fileChosenList");
+
+  fileInput.addEventListener("change", (e) => {
+    const formMsg = document.getElementById("formMsg");
+    formMsg.innerHTML = "";
     let files = Array.from(e.target.files || []);
+    const remaining = remainingSlots();
+    if (remaining <= 0) {
+      formMsg.innerHTML = `<div class="msg error">This already has the maximum of ${MAX_MEDIA_PER_ENTITY} photos - remove one before adding more.</div>`;
+      e.target.value = "";
+      files = [];
+    } else if (files.length > remaining) {
+      formMsg.innerHTML = `<div class="msg error">You picked ${files.length} photos, but only ${remaining} slot${remaining === 1 ? "" : "s"} left (max ${MAX_MEDIA_PER_ENTITY} total) - only the first ${remaining} will be uploaded.</div>`;
+      files = files.slice(0, remaining);
+    }
+    chosenFiles = files;
+    fileChosenList.textContent = files.length
+      ? `${files.length} photo${files.length === 1 ? "" : "s"} chosen: ${files.map(f => f.name).join(", ")}`
+      : "";
+    fileUploadBtn.disabled = files.length === 0;
+  });
+
+  fileUploadBtn.addEventListener("click", async () => {
+    const files = chosenFiles;
     if (!files.length) return;
     const status = document.getElementById("mediaUploadStatus");
     const formMsg = document.getElementById("formMsg");
     formMsg.innerHTML = "";
-    if (files.length > MAX_UPLOAD_FILES) {
-      formMsg.innerHTML = `<div class="msg error">You picked ${files.length} photos - only the first ${MAX_UPLOAD_FILES} will be uploaded.</div>`;
-      files = files.slice(0, MAX_UPLOAD_FILES);
-    }
+    fileUploadBtn.disabled = true;
 
     const listEl = document.getElementById("mediaList");
     const emptyState = listEl.querySelector(":scope > div:only-child");
@@ -732,13 +817,17 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
         listEl.appendChild(item);
         media.push({ id: added && added.id, url: uploaded.url, alt: uploaded.alt || "" });
         refreshMainBadge(listEl);
+        updateCountLabel();
       } catch (err) {
         failures.push(`${file.name}: ${err.message}`);
       }
     }
 
     status.textContent = "";
-    e.target.value = "";
+    fileInput.value = "";
+    chosenFiles = [];
+    fileChosenList.textContent = "";
+    fileUploadBtn.disabled = true;
     if (failures.length) {
       formMsg.innerHTML = `<div class="msg error">${failures.length} of ${files.length} photo(s) failed to upload:<br>${failures.map(esc).join("<br>")}</div>`;
     }
@@ -749,23 +838,41 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
   });
   document.getElementById("mediaForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const urlValue = document.getElementById("m_url").value.trim();
-    if (!urlValue) {
-      document.getElementById("formMsg").innerHTML = `<div class="msg error">Enter an image URL, or use "Choose Files" / the Media Library above instead.</div>`;
+    const formMsg = document.getElementById("formMsg");
+    formMsg.innerHTML = "";
+    let urls = document.getElementById("m_url").value.split(",").map(u => u.trim()).filter(Boolean);
+    if (!urls.length) {
+      formMsg.innerHTML = `<div class="msg error">Enter an image URL, or use "Choose Files" / the Media Library above instead.</div>`;
       return;
     }
-    try {
-      await addFn({
-        url: urlValue,
-        alt: document.getElementById("m_alt").value.trim(),
-        kind,
-        sort: media.length,
-      });
-      closeModal();
-      afterChange();
-    } catch (err) {
-      document.getElementById("formMsg").innerHTML = `<div class="msg error">${esc(err.message)}</div>`;
+    const remaining = remainingSlots();
+    if (remaining <= 0) {
+      formMsg.innerHTML = `<div class="msg error">This already has the maximum of ${MAX_MEDIA_PER_ENTITY} photos - remove one before adding more.</div>`;
+      return;
     }
+    if (urls.length > remaining) {
+      formMsg.innerHTML = `<div class="msg error">You pasted ${urls.length} links, but only ${remaining} slot${remaining === 1 ? "" : "s"} left (max ${MAX_MEDIA_PER_ENTITY} total) - only the first ${remaining} will be added.</div>`;
+      urls = urls.slice(0, remaining);
+    }
+    const alt = document.getElementById("m_alt").value.trim();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const failures = [];
+    await withBusy(btn, "Adding…", async () => {
+      for (let i = 0; i < urls.length; i++) {
+        try {
+          await addFn({ url: urls[i], alt, kind, sort: media.length + i });
+        } catch (err) {
+          failures.push(`${urls[i]}: ${err.message}`);
+        }
+      }
+    });
+    if (failures.length) {
+      formMsg.innerHTML = `<div class="msg error">${failures.length} of ${urls.length} link(s) failed to add:<br>${failures.map(esc).join("<br>")}</div>`;
+      afterChange();
+      return;
+    }
+    closeModal();
+    afterChange();
   });
 
   initMediaDragReorder(document.getElementById("mediaList"));
@@ -778,7 +885,7 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
     picker.style.display = opening ? "block" : "none";
     if (opening && !libraryLoaded) {
       libraryLoaded = true;
-      await loadMediaLibraryPicker(picker, kind, media, addFn, afterChange, { categoryId, pageId });
+      await loadMediaLibraryPicker(picker, kind, media, addFn, afterChange, { categoryId, pageId, MAX_MEDIA_PER_ENTITY, remainingSlots });
     }
   });
 }
@@ -797,7 +904,7 @@ function _mediaPickerScopes({ categoryId, pageId }) {
   return scopes;
 }
 
-async function loadMediaLibraryPicker(picker, kind, media, addFn, afterChange, { categoryId, pageId } = {}) {
+async function loadMediaLibraryPicker(picker, kind, media, addFn, afterChange, { categoryId, pageId, MAX_MEDIA_PER_ENTITY, remainingSlots } = {}) {
   const scopes = _mediaPickerScopes({ categoryId, pageId });
   let activeScope = scopes[0].key;
   const cache = {}; // scope key -> fetched items, so switching tabs back and forth doesn't re-fetch
@@ -874,8 +981,17 @@ async function loadMediaLibraryPicker(picker, kind, media, addFn, afterChange, {
         // instead of reopening the picker per image.
         tile.addEventListener("click", () => {
           const id = tile.dataset.id;
-          if (selectedIds.has(id)) selectedIds.delete(id);
-          else selectedIds.add(id);
+          if (selectedIds.has(id)) {
+            selectedIds.delete(id);
+          } else {
+            if (selectedIds.size >= remainingSlots()) {
+              document.getElementById("formMsg").innerHTML =
+                `<div class="msg error">Only ${remainingSlots()} slot${remainingSlots() === 1 ? "" : "s"} left (max ${MAX_MEDIA_PER_ENTITY} total) - deselect one first.</div>`;
+              return;
+            }
+            document.getElementById("formMsg").innerHTML = "";
+            selectedIds.add(id);
+          }
           renderGrid(document.getElementById("libraryPickerSearch").value);
           updateActionBar();
         });
@@ -886,8 +1002,9 @@ async function loadMediaLibraryPicker(picker, kind, media, addFn, afterChange, {
     document.getElementById("libraryPickerSearch").addEventListener("input", (e) => renderGrid(e.target.value));
 
     addBtn.addEventListener("click", async () => {
-      const chosen = items.filter(m => selectedIds.has(m.id));
+      let chosen = items.filter(m => selectedIds.has(m.id));
       if (!chosen.length) return;
+      chosen = chosen.slice(0, remainingSlots());
       addBtn.disabled = true;
       addBtn.textContent = "Adding…";
       const failures = [];
@@ -932,7 +1049,7 @@ async function loadMediaLibraryPicker(picker, kind, media, addFn, afterChange, {
 async function removeMedia(id, btnEl) {
   if (!confirm("Delete this photo?")) return;
   try {
-    await Api.deleteMedia(id);
+    await withBusy(btnEl, "×", () => Api.deleteMedia(id));
     const listEl = btnEl.closest(".media-list");
     btnEl.closest(".media-item").remove();
     if (listEl) refreshMainBadge(listEl);
@@ -952,9 +1069,23 @@ function refreshMainBadge(listEl) {
 // not just the ones present when the modal first opened. On drop, persists
 // the new order via Api.reorderMedia (sort = index) and keeps the closure's
 // `media` array in sync so subsequently-added photos get the right sort index.
+//
+// The actual DOM move happens once, on "drop" - not repeatedly during
+// "dragover" - because relocating the dragged node mid-drag (via
+// insertBefore/after) makes some browsers treat the source node as detached
+// and cancel the gesture outright, so nothing visibly moves. "dragover" only
+// tracks which tile you're currently over and highlights it; "drop" (which
+// also needs its own preventDefault - without one, dropping just does the
+// browser's default no-op instead of triggering our reorder) commits it.
 function initMediaDragReorder(listEl) {
   if (!listEl) return;
   let draggingEl = null;
+  let overEl = null;
+
+  const clearOver = () => {
+    if (overEl) overEl.classList.remove("drag-over");
+    overEl = null;
+  };
 
   listEl.addEventListener("dragstart", (e) => {
     const item = e.target.closest(".media-item");
@@ -968,29 +1099,33 @@ function initMediaDragReorder(listEl) {
   listEl.addEventListener("dragover", (e) => {
     if (!draggingEl) return;
     e.preventDefault();
-    let closest = null;
-    let closestDist = Infinity;
-    let after = false;
-    listEl.querySelectorAll(".media-item").forEach((child) => {
-      if (child === draggingEl) return;
-      const box = child.getBoundingClientRect();
-      const cx = box.left + box.width / 2;
-      const cy = box.top + box.height / 2;
-      const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
-      if (dist < closestDist) {
-        closestDist = dist;
-        closest = child;
-        after = e.clientX > cx;
-      }
-    });
-    if (!closest) return;
-    if (after) closest.after(draggingEl); else closest.before(draggingEl);
+    e.dataTransfer.dropEffect = "move";
+    const target = e.target.closest(".media-item");
+    if (!target || target === draggingEl) return;
+    if (target !== overEl) {
+      clearOver();
+      overEl = target;
+      overEl.classList.add("drag-over");
+    }
+  });
+
+  listEl.addEventListener("drop", (e) => {
+    e.preventDefault();
+    if (!draggingEl) return;
+    const target = e.target.closest(".media-item");
+    clearOver();
+    if (target && target !== draggingEl) {
+      const box = target.getBoundingClientRect();
+      const after = e.clientX > box.left + box.width / 2;
+      if (after) target.after(draggingEl); else target.before(draggingEl);
+    }
   });
 
   listEl.addEventListener("dragend", async () => {
     if (!draggingEl) return;
     draggingEl.classList.remove("dragging");
     draggingEl = null;
+    clearOver();
     refreshMainBadge(listEl);
     const ids = Array.from(listEl.querySelectorAll(".media-item")).map(el => el.dataset.id).filter(Boolean);
     if (!ids.length) return;

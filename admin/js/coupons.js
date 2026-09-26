@@ -31,7 +31,7 @@ async function loadCoupons() {
             <td><span class="badge ${c.is_active ? "on" : "off"}">${c.is_active ? "Active" : "Off"}</span></td>
             <td class="actions">
               <button class="btn secondary" onclick="openCouponForm('${c.id}')">Edit</button>
-              <button class="btn danger" onclick="removeCoupon('${c.id}')">Delete</button>
+              <button class="btn danger" onclick="removeCoupon('${c.id}', this)">Delete</button>
             </td>
           </tr>`).join("")}
       </tbody>
@@ -89,9 +89,10 @@ function openCouponForm(id) {
       placement: document.getElementById("f_placement").value || null,
       is_active: document.getElementById("f_active").checked,
     };
+    const btn = e.target.querySelector('button[type="submit"]');
     try {
-      if (c) await Api.updateCoupon(c.id, data);
-      else await Api.createCoupon(data);
+      await withBusy(btn, c ? "Saving…" : "Creating…", () =>
+        c ? Api.updateCoupon(c.id, data) : Api.createCoupon(data));
       closeModal();
       loadCoupons();
     } catch (err) {
@@ -100,8 +101,8 @@ function openCouponForm(id) {
   });
 }
 
-async function removeCoupon(id) {
+async function removeCoupon(id, btn) {
   if (!confirm("Delete this coupon?")) return;
-  try { await Api.deleteCoupon(id); loadCoupons(); }
+  try { await withBusy(btn, "Deleting…", () => Api.deleteCoupon(id)); loadCoupons(); }
   catch (err) { alert(err.message); }
 }

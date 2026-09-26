@@ -281,19 +281,21 @@ label.inline input { width: auto; }
 .mono { font-family: "Consolas", "SFMono-Regular", Menlo, monospace; font-size: 12px; color: var(--text-dim); }
 
 /* ---------- table ---------- */
-/* Tables render full-width markup from JS with no scroll wrapper. With many
-   columns (e.g. Bookings), letting the browser auto-shrink columns to fit
-   the viewport squeezes cells like the status <select> down to a couple of
-   clipped characters. Making the table itself a horizontal scroll container
-   at every width keeps every column at its natural, readable size instead. */
-table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-collapse: collapse; background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); }
-th, td { padding: 11px 14px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-th { color: var(--text-dim); font-weight: 700; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; background: var(--panel-2); }
+/* Tables with many columns (Bookings, Orders, Customers) used to force every
+   cell onto one line and turn the table into its own horizontal scroll
+   container, so the page always showed a left-right scrollbar. Letting cell
+   text wrap instead — plus tighter padding/font and capped widths on the
+   widest columns below (.bkr-venue, .otr-items-label, thumbnails, selects)
+   — keeps every column readable while fitting the admin's content width, so
+   overflow-x here is only a safety net for genuinely narrow viewports. */
+table { display: block; width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-collapse: collapse; background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); table-layout: auto; }
+th, td { padding: 9px 10px; text-align: left; font-size: 12.5px; border-bottom: 1px solid var(--border); white-space: normal; overflow-wrap: anywhere; }
+th { color: var(--text-dim); font-weight: 700; font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; background: var(--panel-2); }
 tbody tr:hover { background: var(--panel-2); }
 tr:last-child td { border-bottom: none; }
 td .actions { display: flex; gap: 6px; flex-wrap: wrap; white-space: normal; }
-td .actions button { font-size: 12px; padding: 5px 10px; }
-td select { width: auto; min-width: 130px; }
+td .actions button { font-size: 11.5px; padding: 4px 9px; }
+td select { width: auto; min-width: 105px; padding: 6px 8px; font-size: 12px; }
 .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
 .badge.on { background: var(--success-bg); color: var(--success); }
 .badge.off { background: var(--danger-bg); color: var(--danger); }
@@ -478,20 +480,20 @@ td select { width: auto; min-width: 130px; }
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 700; color: var(--text-dim);
 }
-.otr-items-label { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 210px; }
+.otr-items-label { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px; }
 .otr-dl { padding: 4px 10px; font-size: 11.5px; white-space: nowrap; }
 
 /* ---------- bookings table: package photo + venue ---------- */
-.bkr-service { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.bkr-service { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .bkr-thumb {
-  width: 76px; height: 76px; object-fit: cover; border-radius: 10px;
+  width: 42px; height: 42px; object-fit: cover; border-radius: 8px;
   border: 1px solid var(--border); background: var(--panel-2); flex-shrink: 0;
 }
 .bkr-service-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.bkr-service-text b { font-size: 13px; }
-.bkr-service-text span { font-size: 11.5px; color: var(--text-dim); }
+.bkr-service-text b { font-size: 12.5px; }
+.bkr-service-text span { font-size: 11px; color: var(--text-dim); }
 .bkr-addons { color: var(--accent-2) !important; font-weight: 600; }
-.bkr-venue { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bkr-venue { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Full-bleed banner across the top of the booking modal, replacing what used
    to be a 64×64 thumbnail squeezed next to the title — too small to actually
@@ -559,11 +561,22 @@ td select { width: auto; min-width: 130px; }
 /* ---------- media library grid ---------- */
 .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
 .media-tile { position: relative; margin: 0; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.media-tile-imgwrap { position: relative; }
 .media-tile img { width: 100%; height: 110px; object-fit: cover; cursor: pointer; display: block; }
 .media-tile figcaption { padding: 7px 9px; font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .media-tile-delete { position: absolute; top: 6px; right: 6px; background: var(--danger); color: #fff; border: 2px solid #fff; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 13px; line-height: 1; }
 .media-tile-delete:disabled { background: var(--text-dim); cursor: not-allowed; opacity: 0.7; }
-.media-tile-usage { position: absolute; top: 6px; left: 6px; background: rgba(0,0,0,0.65); color: #fff; border-radius: 10px; padding: 2px 7px; font-size: 11px; line-height: 1.4; }
+.media-tile-usage { position: absolute; bottom: 6px; right: 6px; background: rgba(0,0,0,0.65); color: #fff; border-radius: 10px; padding: 2px 7px; font-size: 11px; line-height: 1.4; }
+.media-tile-select { position: absolute; top: 6px; left: 6px; background: rgba(255,255,255,0.9); border-radius: 4px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.media-tile-select input { width: 16px; height: 16px; margin: 0; cursor: pointer; }
+.media-tile-select input:disabled { cursor: not-allowed; opacity: 0.4; }
+.media-tile-copy { display: block; width: 100%; border: none; border-top: 1px solid var(--border); background: var(--panel-2); color: var(--text); font-size: 11px; padding: 5px 0; cursor: pointer; }
+.media-tile-copy:hover { background: var(--accent, #7c3aed); color: #fff; }
+.media-tile-usedin { padding: 0 9px 8px; font-size: 10.5px; color: var(--text-dim); line-height: 1.5; }
+.media-tile-usedin a { color: var(--accent, #7c3aed); text-decoration: underline; }
+
+.media-bulk-bar { align-items: center; gap: 14px; margin-bottom: 14px; padding: 8px 12px; background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; }
+.media-bulk-bar #mediaSelectedCount { color: var(--text-dim); }
 
 #mediaLibraryPicker { max-height: 320px; overflow-y: auto; padding: 10px; background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--radius); }
 #libraryPickerSearch { width: 100%; }
@@ -655,8 +668,8 @@ td select { width: auto; min-width: 130px; }
 .order-status-cancelled, .order-status-refunded { background: var(--danger-bg); color: var(--danger); }
 
 select.order-status-select {
-  width: auto; min-width: 172px; padding: 7px 10px; border: 1px solid transparent;
-  border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: capitalize;
+  width: auto; min-width: 140px; padding: 6px 8px; border: 1px solid transparent;
+  border-radius: 20px; font-size: 11.5px; font-weight: 700; text-transform: capitalize;
   letter-spacing: .01em; cursor: pointer;
   background: var(--panel-2); color: var(--text-dim);
 }
@@ -780,6 +793,15 @@ select.order-status-select:focus { box-shadow: 0 0 0 3px rgba(92, 9, 48, .12); }
 }
 .form-section-title:first-child { margin-top: 0; padding-top: 0; border-top: none; }
 .form-hint { font-size: 12px; font-weight: 400; color: var(--text-dim); }
+.form-hint code { font-size: 11px; }
+
+.img-field-row { display: flex; align-items: flex-end; gap: 12px; }
+.img-field-col { flex: 1; min-width: 0; }
+.field-img-preview {
+  width: 56px; height: 56px; border-radius: 8px; object-fit: cover; flex-shrink: 0;
+  background: var(--border); border: 1px solid var(--border);
+}
+.field-img-preview.empty, .field-img-preview:not([src]) { background: var(--border) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1.5'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'/%3E%3Cpath d='M21 15l-5-5L5 21'/%3E%3C/svg%3E") center/24px no-repeat; }
 
 /* ---------------------------------------------------------------- studio "order options" builder */
 

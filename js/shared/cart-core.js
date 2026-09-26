@@ -127,7 +127,19 @@
   // so an item added while logged in from, say, the homepage or corporate.js
   // stayed local-only until the visitor happened to also open cart.html.
   function saveCart(cart) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
+    } catch (e) {
+      // Most commonly QuotaExceededError - a large base64 photo (or several)
+      // pushed the serialized cart past the browser's ~5-10MB localStorage
+      // limit. Left uncaught, this throws out of updateQty()/removeItem()
+      // (called directly from "Add to cart"/qty-stepper handlers with no
+      // try/catch of their own on most pages) and the item silently never
+      // gets added, with no indication to the shopper of what went wrong.
+      console.error('Could not save cart to local storage', e);
+      alert('This item could not be added - your browser storage is full. Try removing a photo from another cart item, or clearing some browser storage, then try again.');
+      return cart;
+    }
     pushCartIfLoggedIn(cart);
     return cart;
   }

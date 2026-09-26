@@ -3,7 +3,7 @@ import re
 import threading
 import time
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
@@ -212,6 +212,8 @@ def _build_page_bundle(page_slug: str, db: Session) -> dict:
                 "extra": p.extra or {},
                 "input_fields": p.input_fields or [],
                 "delivery_days": p.delivery_days,
+                "type": p.type,
+                "stock": p.stock,
             }
             for p in active_products
         ]
@@ -274,6 +276,8 @@ def get_product(product_id: str, db: Session = Depends(get_db)):
         "extra": product.extra or {},
         "input_fields": product.input_fields or [],
         "delivery_days": product.delivery_days,
+        "type": product.type,
+        "stock": product.stock,
     }
 
 
@@ -407,7 +411,23 @@ def public_homepage(db: Session = Depends(get_db)):
 
 
 @reviews_router.get("/api/products")
-def public_products(category_id: str | None = None, page: int = 1, page_size: int = 24, db: Session = Depends(get_db)):
+def public_products(
+    category_id: str | None = None,
+    page: int = Query(1, ge=1),
+    # Both callers that need "every live product in one call" (catalog.js's
+    # mergeLiveCatalogProducts(), search.js's loadLiveProducts()) request
+    # page_size=1000 - a le=200 cap made every one of those requests fail
+    # with a 422 that both callers silently swallowed (just console.error),
+    # so catalog.html never actually merged in a single admin-added product
+    # and nav search never found one either. The docstring below already
+    # explains why this costs nothing extra: the whole active-product set
+    # (currently 233 rows) is fetched and cached as one query regardless of
+    # the requested page_size, so raising this cap doesn't add DB load - it
+    # just lets it hand back what it already has in one response instead of
+    # rejecting the request outright.
+    page_size: int = Query(24, ge=1, le=1000),
+    db: Session = Depends(get_db),
+):
     """Public flat product listing across every category/page - what catalog.html's
     browse-all/wishlist view needs. Mirrors admin's GET /api/admin/products but
     public and is_active-only. The full active-product set is small (low hundreds

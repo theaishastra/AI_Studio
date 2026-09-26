@@ -23,9 +23,17 @@ def _field_value_errors(field: dict, value) -> list[str]:
 
     if ftype == "dropdown":
         options = set(field.get("options") or [])
-        chosen = value if isinstance(value, list) else [value]
-        if not field.get("multi_select") and len(chosen) > 1:
-            return [f'"{label}" only accepts a single selection']
+        if not field.get("multi_select"):
+            # A single-select dropdown's answer must be a scalar - a
+            # single-element list (e.g. a client that always wraps field
+            # answers in an array) must not silently pass through as a list,
+            # or resolve_product_price()'s dict.get(selected) blows up with
+            # an unhashable-type TypeError further down the checkout path.
+            if isinstance(value, list):
+                return [f'"{label}" only accepts a single selection']
+            chosen = [value]
+        else:
+            chosen = value if isinstance(value, list) else [value]
         invalid = [c for c in chosen if c not in options]
         if invalid:
             return [f'"{label}" has an invalid selection']

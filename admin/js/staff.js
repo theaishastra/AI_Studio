@@ -26,8 +26,8 @@ async function loadStaff() {
             <td>${esc(u.role)}</td>
             <td><span class="badge ${u.is_active ? "on" : "off"}">${u.is_active ? "Active" : "Deactivated"}</span></td>
             <td class="actions">${u.id === CURRENT_USER.id ? "" : u.is_active
-              ? `<button class="btn danger" onclick="removeStaff('${u.id}')">Deactivate</button>`
-              : `<button class="btn secondary" onclick="reactivateStaffAccount('${u.id}')">Reactivate</button>`}</td>
+              ? `<button class="btn danger" onclick="removeStaff('${u.id}', this)">Deactivate</button>`
+              : `<button class="btn secondary" onclick="reactivateStaffAccount('${u.id}', this)">Reactivate</button>`}</td>
           </tr>`).join("")}
       </tbody>
     </table>
@@ -52,13 +52,14 @@ function openStaffForm() {
   `);
   document.getElementById("staffForm").addEventListener("submit", async (e) => {
     e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
     try {
-      await Api.createStaff({
+      await withBusy(btn, "Creating…", () => Api.createStaff({
         name: document.getElementById("s_name").value.trim(),
         email: document.getElementById("s_email").value.trim(),
         password: document.getElementById("s_password").value,
         role: document.getElementById("s_role").value,
-      });
+      }));
       closeModal();
       loadStaff();
     } catch (err) {
@@ -67,15 +68,15 @@ function openStaffForm() {
   });
 }
 
-async function removeStaff(id) {
+async function removeStaff(id, btn) {
   if (!confirm("Deactivate this staff account?")) return;
-  try { await Api.deactivateStaff(id); loadStaff(); }
+  try { await withBusy(btn, "Deactivating…", () => Api.deactivateStaff(id)); loadStaff(); }
   catch (err) { alert(err.message); }
 }
 
-async function reactivateStaffAccount(id) {
+async function reactivateStaffAccount(id, btn) {
   if (!confirm("Reactivate this staff account? They'll be able to log in again.")) return;
-  try { await Api.reactivateStaff(id); loadStaff(); }
+  try { await withBusy(btn, "Reactivating…", () => Api.reactivateStaff(id)); loadStaff(); }
   catch (err) { alert(err.message); }
 }
 
@@ -93,7 +94,7 @@ async function renderAudit() {
       is this same data, filtered to just sign-ins/sign-ups - clearing here clears both.
     </p>
     <div id="auditWrap">${LOADING}</div>`;
-  document.getElementById("clearAuditBtn").addEventListener("click", () => clearAuditLog(renderAudit));
+  document.getElementById("clearAuditBtn").addEventListener("click", (e) => clearAuditLog(renderAudit, e.currentTarget));
   await loadAuditTable();
 }
 
@@ -121,10 +122,10 @@ async function loadAuditTable() {
   `;
 }
 
-async function clearAuditLog(onDone) {
+async function clearAuditLog(onDone, btn) {
   if (!confirm("Permanently clear the audit log? This also empties the Activity page (same underlying data). This cannot be undone.")) return;
   try {
-    await Api.clearAuditLog();
+    await withBusy(btn, "Clearing…", () => Api.clearAuditLog());
     onDone();
   } catch (err) { alert(err.message); }
 }
@@ -144,7 +145,7 @@ async function renderActivity() {
       the full Audit Log too, since it's the same data.
     </p>
     <div id="activityWrap">${LOADING}</div>`;
-  document.getElementById("clearActivityBtn").addEventListener("click", () => clearAuditLog(renderActivity));
+  document.getElementById("clearActivityBtn").addEventListener("click", (e) => clearAuditLog(renderActivity, e.currentTarget));
   await loadActivityTable();
 }
 

@@ -51,26 +51,28 @@ function logout() { clearToken(); location.href = "index.html"; }
 /* CSV report endpoints require the admin's bearer token like every other API
    call, so a plain <a href> (no Authorization header) always 401s — this
    fetches with the token instead and saves the response as a file. */
-async function downloadCsvReport(path, filename) {
-  const token = getToken();
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+async function downloadCsvReport(path, filename, btn) {
+  await withBusy(btn, "Exporting…", async () => {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}${path}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      let detail = res.statusText;
+      try { detail = (await res.json()).detail || detail; } catch (_) {}
+      alert(`Couldn't download the report: ${detail}`);
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
   });
-  if (!res.ok) {
-    let detail = res.statusText;
-    try { detail = (await res.json()).detail || detail; } catch (_) {}
-    alert(`Couldn't download the report: ${detail}`);
-    return;
-  }
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
 
 function parseHash() {
@@ -131,6 +133,53 @@ function card(num, lbl) {
    round-trips. Used via ${LOADING} inside a template literal, or assigned
    directly (`wrap.innerHTML = LOADING`) where there's no surrounding markup. */
 const LOADING = `<div class="loading"><span class="spinner"></span> Loading…</div>`;
+
+/* Disables `btn` and swaps its label to `busyLabel` while `fn()` runs, then
+   restores the original label/enabled state afterward whether `fn` succeeds
+   or throws. Every Save/Create/Delete button in the admin used to give no
+   feedback at all while its request was in flight, so a slow connection made
+   it look like nothing happened — inviting a second click that fired the
+   same request twice. Re-throws so the caller's own try/catch still runs. */
+async function withBusy(btn, busyLabel, fn) {
+  if (!btn) return fn();
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = busyLabel;
+  try {
+    return await fn();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+/* Copies `text` to the clipboard, trying the modern async Clipboard API first
+   and falling back to a hidden textarea + execCommand("copy") when that API
+   is missing or refuses (it silently rejects outside a secure/HTTPS context,
+   or when the page lacks clipboard-write permission) — the old code only
+   tried the async API with no fallback and no .catch, so on plain HTTP it
+   failed with zero feedback and looked like "copy" just didn't work. Resolves
+   true/false so callers can tell the admin whether it actually worked. */
+async function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch (e) { /* fall through to the execCommand fallback below */ }
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    ta.remove();
+    return ok;
+  } catch (e) {
+    return false;
+  }
+}
 
 function fmtINR(n) {
   return `₹${Number(n || 0).toLocaleString("en-IN")}`;

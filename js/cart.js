@@ -117,7 +117,17 @@
           const merged = mergeCarts(getCart(), serverItemsToCart(serverResult.items));
           saveCart(merged);
           await CustomerAuth.syncCart(cartToServerItems(merged));
-          renderCartPage();
+          // renderCartPage() unconditionally resets to step 1 - fine right after
+          // page load (the only place this used to matter), but this merge is a
+          // slow round trip to a remote DB (~1.5s+) and this async block can
+          // easily still be in flight after the customer has already clicked
+          // "Proceed to Checkout"/"Continue to Payment" and moved on. Forcing
+          // step 1 at that point yanked them straight back to the cart with no
+          // explanation. Only the badge count needs to be current regardless of
+          // step; the step-1 view itself only needs re-rendering if they're
+          // actually still looking at it.
+          if (currentCartStep === 1) renderCartPage();
+          else updateCartNavBadge();
         } catch (e) {
           // best-effort - a failed sync shouldn't block using the cart locally
         } finally {
@@ -209,6 +219,12 @@
     function useNewAddressForm() {
       selectedSavedAddressId = null;
       renderSavedAddressPicker();
+      // Without this, the form below still shows whichever saved address was
+      // last applied - clicking this button looked like it did nothing, since
+      // the only visible change was the (easy to miss) saved-address card
+      // losing its highlight while every field kept its old, wrong values.
+      applyAddressToForm({});
+      document.getElementById('custName')?.focus();
       if (typeof isCustomerLoggedIn === 'function' && isCustomerLoggedIn()) {
         const saveRow = document.getElementById('saveAddressRow');
         if (saveRow) saveRow.style.display = 'block';
@@ -326,20 +342,28 @@
     // multi-file field, an array) - checked the same way my-orders.js already
     // does for a placed order, so an uploaded photo shows up here too instead
     // of only after checkout.
-    function cartItemUploadedImage(item) {
+    // Returns every uploaded photo, not just the first - a multi-photo upload
+    // field (Product.input_fields, field.multiple) saves an array of data URIs
+    // under customization.fields[fieldId], and this used to `return` as soon as
+    // it found the first one, silently dropping the other 2 of 3 a customer
+    // uploaded from view (they were still saved and would still reach the
+    // order - this only ever affected what the cart preview showed).
+    function cartItemUploadedImages(item) {
       const cust = item.customization;
-      if (!cust) return '';
+      if (!cust) return [];
+      const images = [];
       const direct = cust.logoData || cust.photoData || '';
-      if (typeof direct === 'string' && direct.startsWith('data:image/')) return direct;
+      if (typeof direct === 'string' && direct.startsWith('data:image/')) images.push(direct);
       const fields = cust.fields;
       if (fields && typeof fields === 'object') {
-        for (const value of Object.values(fields)) {
+        Object.values(fields).forEach(value => {
           const candidates = Array.isArray(value) ? value : [value];
-          const hit = candidates.find(v => typeof v === 'string' && (v.startsWith('data:image/') || /^https?:\/\//.test(v)));
-          if (hit) return hit;
-        }
+          candidates.forEach(v => {
+            if (typeof v === 'string' && (v.startsWith('data:image/') || /^https?:\/\//.test(v))) images.push(v);
+          });
+        });
       }
-      return '';
+      return images;
     }
 
     // Different pages store the customer's custom message under different field
@@ -367,24 +391,28 @@
       const safeKey = escapeForAttr(key);
       const priceNum = parsePrice(item.price);
       const lineTotal = priceNum * item.qty;
-      const uploadedImage = cartItemUploadedImage(item);
+      const uploadedImages = cartItemUploadedImages(item);
       const customText = cartItemCustomText(item);
       const lazyAttr = index === 0 ? '' : ' loading="lazy"';
       return `
         <div class="cart-item-row">
           <div class="cart-item-thumb-wrap">
-            <img class="cart-item-img" src="${cldOpt(resolveCartImagePath(item.img))}" alt="${escapeHtml(item.name)}"${lazyAttr} onerror="this.style.visibility='hidden'">
+            <img class="cart-item-img" src="${cldOpt(resolveCartImagePath(item.img))}" alt="${escapeHtml(item.name)}"${lazyAttr} onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
           </div>
           <div class="cart-item-details">
             <h3>${escapeHtml(item.name)}</h3>
             <p>${item.price} each</p>
             ${item.customization && Object.values(item.customization).some(Boolean) ? '<span class="cart-item-customized-badge">&#10003; Customized</span>' : ''}
-            ${uploadedImage || customText ? `
+            ${uploadedImages.length || customText ? `
             <div class="cart-item-custom-preview">
-              ${uploadedImage ? `
+              ${uploadedImages.length ? `
               <div class="cart-item-custom-photo-wrap">
-                <img class="cart-item-custom-photo" src="${uploadedImage}" alt="Your uploaded photo" loading="lazy" title="Click to view full size" onclick="openImagePreview('${escapeForAttr(uploadedImage)}')">
-                <span class="cart-item-custom-photo-label">Your photo</span>
+                <div class="cart-item-custom-photo-row">
+                  ${uploadedImages.map(src => `
+                    <img class="cart-item-custom-photo" src="${src}" alt="Your uploaded photo" loading="lazy" title="Click to view full size" onclick="openImagePreview('${escapeForAttr(src)}')">
+                  `).join('')}
+                </div>
+                <span class="cart-item-custom-photo-label">${uploadedImages.length > 1 ? `Your photos (${uploadedImages.length})` : 'Your photo'}</span>
               </div>` : ''}
               ${customText ? `<span class="cart-item-custom-text">&ldquo;${escapeHtml(customText)}&rdquo;</span>` : ''}
             </div>` : ''}
@@ -446,19 +474,21 @@
       return !!(customization && Object.values(customization).some(v => v));
     }
 
+    function updateCartNavBadge() {
+      const { totalQty } = cartTotals();
+      [document.getElementById('navCartBadge'), document.getElementById('bottomNavCartBadge')].forEach(el => {
+        if (!el) return;
+        el.textContent = totalQty;
+        el.style.display = totalQty > 0 ? 'flex' : 'none';
+      });
+    }
+
     function renderCartPage() {
       const cart = getCart();
       const { items, totalQty, totalPrice } = cartTotals();
       const hasItemsSection = document.getElementById('cartHasItems');
       const emptyStateSection = document.getElementById('cartEmptyState');
-      const cartBadgeEl = document.getElementById('navCartBadge');
-      const bottomBadgeEl = document.getElementById('bottomNavCartBadge');
-
-      [cartBadgeEl, bottomBadgeEl].forEach(el => {
-        if (!el) return;
-        el.textContent = totalQty;
-        el.style.display = totalQty > 0 ? 'flex' : 'none';
-      });
+      updateCartNavBadge();
 
       currentCartStep = 1;
       document.getElementById('cartStepDetails').style.display = 'none';
@@ -477,8 +507,14 @@
       hasItemsSection.style.display = 'grid';
       emptyStateSection.style.display = 'none';
 
-      document.getElementById('cartItemsList').innerHTML =
+      const cartItemsListEl = document.getElementById('cartItemsList');
+      cartItemsListEl.innerHTML =
         Object.entries(cart).map(([key, item], index) => cartItemRowHTML(item, key, index)).join('');
+      if (window.SkLoading) {
+        cartItemsListEl.querySelectorAll('.cart-item-thumb-wrap img').forEach(img => {
+          window.SkLoading.wireImage(img, { wrap: img.closest('.cart-item-thumb-wrap') });
+        });
+      }
 
       document.getElementById('cartItemCount').textContent = `${totalQty} ${totalQty === 1 ? 'item' : 'items'}`;
       document.getElementById('cartSubtotalValue').textContent = `₹${totalPrice}`;
@@ -495,6 +531,7 @@
     let cartLoginEmail = '';
     let cartOrder = null;
     let cartPayment = null;
+    let cartCouponMessage = '';
 
     function setStepIndicator(step) {
       document.querySelectorAll('#cartSteps .cart-step').forEach(el => {
@@ -627,6 +664,18 @@
     /* ---------- login gate (email OTP, only asked at the final step) ---------- */
 
     function enterPaymentStep() {
+      // Every entry here creates a brand-new order (see createBackendOrder() ->
+      // CustomerAuth.checkout(), which unconditionally inserts a fresh Order row
+      // and reserves stock for it) - going "<- Back" to fix an address/coupon and
+      // then forward again used to abandon the previous order instead of reusing
+      // or cancelling it, leaving a duplicate "payment_pending" order sitting in
+      // the customer's order history forever with the exact same items. Cancel
+      // whatever we created last time (fire-and-forget - it's still
+      // payment_pending/unconfirmed, so the backend cancels it immediately and
+      // releases its stock reservation) before creating the replacement.
+      if (cartOrder && cartOrder.id && typeof CustomerAuth !== 'undefined') {
+        CustomerAuth.requestCancellation(cartOrder.id, 'duplicate_order', 'Superseded by a new order from the same checkout session').catch(() => {});
+      }
       cartOrder = null;
       cartPayment = null;
       const loggedIn = isCustomerLoggedIn();
@@ -761,6 +810,8 @@
         await updateMePromise;
 
         const { items } = cartTotals();
+        const couponInput = document.getElementById('cartCouponInput');
+        const couponCode = couponInput && couponInput.value.trim() ? couponInput.value.trim().toUpperCase() : null;
         const result = await CustomerAuth.checkout({
           items: items.map(item => ({
             product_id: item.product_id || null,
@@ -771,10 +822,16 @@
             customization: item.customization || null,
           })),
           address_id: addressId,
+          coupon_code: couponCode,
         });
 
         cartOrder = result.order;
         cartPayment = result.payment;
+        // Non-empty only when a coupon code was entered but didn't apply (not
+        // found/inactive/expired/below the minimum order value) - the order
+        // above is still created at full price in that case, so this is the
+        // only way the customer finds out why.
+        cartCouponMessage = couponCode ? (result.coupon_message || '') : '';
         renderPaymentStep();
         placeBtn.disabled = false;
       } catch (err) {
@@ -794,6 +851,27 @@
       updatePaymentSelectionUI();
       renderMiniList('cartReviewMiniList2', null);
       updateFinalPayable();
+
+      const discountRow = document.getElementById('cartDiscountRow');
+      const discount = cartOrder && cartOrder.discount ? Math.round(cartOrder.discount) : 0;
+      if (discountRow) {
+        discountRow.style.display = discount > 0 ? 'flex' : 'none';
+        if (discount > 0) document.getElementById('cartDiscountValue').textContent = `-₹${discount}`;
+      }
+      const msgEl = document.getElementById('cartCouponMsg2');
+      if (msgEl) {
+        if (cartCouponMessage) {
+          msgEl.textContent = cartCouponMessage;
+          msgEl.style.color = 'var(--error, #c0392b)';
+          msgEl.style.display = 'block';
+        } else if (discount > 0) {
+          msgEl.textContent = `Coupon "${cartOrder.coupon_code}" applied.`;
+          msgEl.style.color = 'var(--success, #2e7d32)';
+          msgEl.style.display = 'block';
+        } else {
+          msgEl.style.display = 'none';
+        }
+      }
     }
 
     function selectCartPayment(method) {
@@ -820,7 +898,7 @@
       const btn = document.getElementById('placeCartOrderBtn');
       msgEl.style.display = 'none';
 
-      btn.disabled = true;
+      if (window.SkLoading) window.SkLoading.button(btn, true); else btn.disabled = true;
       try {
         if (selectedCartPayment === 'cod') {
           // Without this, the order stays "payment_pending" forever - indistinguishable
@@ -838,7 +916,7 @@
         msgEl.textContent = err.message || 'Payment failed. Please try again.';
         msgEl.style.display = 'block';
       } finally {
-        btn.disabled = false;
+        if (window.SkLoading) window.SkLoading.button(btn, false); else btn.disabled = false;
       }
     }
 
@@ -853,7 +931,16 @@
         prefill: { contact: cartPayment.prefill_contact || '', email: cartPayment.prefill_email || '' },
         theme: { color: '#2563EB' },
         handler: async function (response) {
+          // Razorpay's own overlay has just closed and money has already moved on
+          // their end - leaving the page silent here while verifyPayment() awaits
+          // makes it look like the click did nothing, right when the customer most
+          // needs reassurance that their payment is still being processed.
           const msgEl = document.getElementById('cartPaymentMsg');
+          const btn = document.getElementById('placeCartOrderBtn');
+          if (window.SkLoading) window.SkLoading.button(btn, true); else btn.disabled = true;
+          msgEl.className = 'cart-form-msg is-info';
+          msgEl.textContent = 'Verifying your payment…';
+          msgEl.style.display = 'block';
           try {
             await CustomerAuth.verifyPayment({
               razorpay_order_id: response.razorpay_order_id,
@@ -862,13 +949,16 @@
             });
             showCartSuccess(cartOrder.number, 'Payment received.');
           } catch (err) {
+            if (window.SkLoading) window.SkLoading.button(btn, false); else btn.disabled = false;
+            msgEl.className = 'cart-form-msg';
             msgEl.textContent = err.message || 'Payment verification failed. Please contact support.';
             msgEl.style.display = 'block';
           }
         },
         modal: {
           ondismiss: function () {
-            document.getElementById('placeCartOrderBtn').disabled = false;
+            const btn = document.getElementById('placeCartOrderBtn');
+            if (window.SkLoading) window.SkLoading.button(btn, false); else btn.disabled = false;
           },
         },
       });

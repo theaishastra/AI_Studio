@@ -628,6 +628,16 @@
       return sorted;
     }
 
+    const CATALOG_IMG_FALLBACK = 'https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/customized_gifts_card.jpg';
+
+    function wireCatalogImageLoading(root) {
+      if (!window.SkLoading) return;
+      root.querySelectorAll('.card-thumb-wrap img, .drawer-item-thumb img').forEach(img => {
+        const wrap = img.closest('.card-thumb-wrap') || img.closest('.drawer-item-thumb');
+        window.SkLoading.wireImage(img, { wrap, fallback: CATALOG_IMG_FALLBACK });
+      });
+    }
+
     function renderCatalog() {
       const grid = document.getElementById('productGrid');
       const filtered = getFilteredProducts();
@@ -675,11 +685,6 @@
             <div class="card-body">
               <div class="card-meta-line">
                 <span class="card-category-pill">${product.category}</span>
-                <div class="card-rating-wrap">
-                  <span class="star-icon">★</span>
-                  <span>${product.rating}</span>
-                  <span class="review-count">(${product.reviews})</span>
-                </div>
               </div>
 
               <h3 class="card-title" title="${escCatalogHtml(product.title)}">${escCatalogHtml(product.title)}</h3>
@@ -708,6 +713,7 @@
           </div>
         `;
       }).join('');
+      wireCatalogImageLoading(grid);
     }
 
     function renderActiveFilterChips() {
@@ -947,12 +953,18 @@
       activeQuickViewItem = product;
       modalQuantity = 1;
 
-      document.getElementById('modalImg').src = cldOpt(product.img);
+      const modalImg = document.getElementById('modalImg');
+      // Reset the fade-in/onerror wiring on every open, not just once - it's the
+      // same <img> element reused across products, and SkLoading.wireImage() is a
+      // one-time (data-sk-img-wired) hookup that would otherwise ignore every
+      // product opened after the first.
+      delete modalImg.dataset.skImgWired;
+      modalImg.classList.remove('sk-img-loaded');
+      modalImg.src = cldOpt(product.img);
+      if (window.SkLoading) window.SkLoading.wireImage(modalImg, { wrap: modalImg.closest('.modal-main-img-box') || modalImg.parentElement, fallback: CATALOG_IMG_FALLBACK });
       document.getElementById('modalTitle').textContent = product.title;
       document.getElementById('modalCategory').textContent = product.category;
       document.getElementById('modalTagBadge').textContent = product.badge;
-      document.getElementById('modalRating').textContent = product.rating;
-      document.getElementById('modalReviewCount').textContent = `(${product.reviews} reviews)`;
       document.getElementById('modalPrice').textContent = `₹${product.price.toLocaleString('en-IN')}`;
       document.getElementById('modalOrigPrice').textContent = `₹${product.origPrice.toLocaleString('en-IN')}`;
       document.getElementById('modalDiscount').textContent = product.discount;
@@ -1053,6 +1065,7 @@
           </div>
         `;
       }).join('');
+      wireCatalogImageLoading(list);
 
       subtotalEl.textContent = `₹${total.toLocaleString('en-IN')}`;
     }

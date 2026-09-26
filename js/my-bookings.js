@@ -60,7 +60,7 @@
       }
 
       const btn = document.getElementById('bookingsSendOtpBtn');
-      btn.disabled = true;
+      if (window.SkLoading) window.SkLoading.button(btn, true); else btn.disabled = true;
       try {
         await CustomerAuth.requestOtp(email);
         bookingsPageLoginEmail = email;
@@ -72,7 +72,7 @@
         msgEl.textContent = err.message || 'Could not send the OTP. Please try again.';
         msgEl.style.display = 'block';
       } finally {
-        btn.disabled = false;
+        if (window.SkLoading) window.SkLoading.button(btn, false); else btn.disabled = false;
       }
     }
 
@@ -88,7 +88,7 @@
       }
 
       const btn = document.getElementById('bookingsVerifyOtpBtn');
-      btn.disabled = true;
+      if (window.SkLoading) window.SkLoading.button(btn, true); else btn.disabled = true;
       try {
         await CustomerAuth.verifyOtp(bookingsPageLoginEmail, code);
         window.SaiAuthNav?.refresh();
@@ -97,7 +97,7 @@
         msgEl.textContent = err.message || 'That code didn’t work. Please try again.';
         msgEl.style.display = 'block';
       } finally {
-        btn.disabled = false;
+        if (window.SkLoading) window.SkLoading.button(btn, false); else btn.disabled = false;
       }
     }
 

@@ -194,6 +194,15 @@ class WishlistSyncOut(BaseModel):
     items: list[WishlistItemOut] = []
 
 
+class NotificationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    title: str
+    body: str
+    is_read: bool
+    created_at: datetime
+
+
 # ---------------------------------------------------------------- site pages
 
 class SitePageIn(BaseModel):
@@ -228,6 +237,16 @@ class MediaOut(MediaIn):
     kind: str
 
 
+class MediaUsageOut(BaseModel):
+    """Where a non-deletable MediaLibraryOut image is actually attached, so the
+    admin doesn't have to hunt for it - the delete button there is disabled with
+    no other way to tell which category/product to go remove it from."""
+    kind: str  # "category" | "product"
+    name: str  # category name, or "<product title> (<category name>)"
+    category_id: str  # the category to jump to either way - itself, or the product's own category
+    page_slug: str  # that category's page, so the Categories tab can be pointed at the right page
+
+
 class MediaLibraryOut(BaseModel):
     """One row per distinct image URL for the admin Media Library page - the
     underlying `media` table has one row per *usage* (a product/category photo
@@ -238,6 +257,7 @@ class MediaLibraryOut(BaseModel):
     alt: str
     usage_count: int  # how many products/categories currently use this image
     deletable: bool  # true only if there's a standalone library upload of it
+    used_in: list[MediaUsageOut] = []  # empty when deletable (nothing to point at)
     # Small WebP for the picker grid - `url` stays the real full-resolution image
     # (it's what gets attached to a product/category on select), so this must never
     # replace it. None when not computed (the unscoped "all" library view skips this -

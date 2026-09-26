@@ -46,6 +46,12 @@
     let ordersLoginEmail = '';
     let _myOrders = [];
     let _expandedOrderId = null;
+    // Whole-card collapse state, separate from _expandedOrderId above (that one
+    // only controls the detailed tracking-events list within an already-open
+    // card). null means "nothing explicitly toggled yet" - showOrdersList()
+    // defaults that to the most recent order so a returning customer isn't
+    // greeted by an all-collapsed wall of order numbers.
+    let _expandedCardOrderId = null;
 
     function refreshCartBadge() {
       let totalQty = 0;
@@ -98,7 +104,7 @@
       }
 
       const btn = document.getElementById('ordersSendOtpBtn');
-      btn.disabled = true;
+      if (window.SkLoading) window.SkLoading.button(btn, true); else btn.disabled = true;
       try {
         await CustomerAuth.requestOtp(email);
         ordersLoginEmail = email;
@@ -110,7 +116,7 @@
         msgEl.textContent = err.message || 'Could not send the OTP. Please try again.';
         msgEl.style.display = 'block';
       } finally {
-        btn.disabled = false;
+        if (window.SkLoading) window.SkLoading.button(btn, false); else btn.disabled = false;
       }
     }
 
@@ -126,7 +132,7 @@
       }
 
       const btn = document.getElementById('ordersVerifyOtpBtn');
-      btn.disabled = true;
+      if (window.SkLoading) window.SkLoading.button(btn, true); else btn.disabled = true;
       try {
         await CustomerAuth.verifyOtp(ordersLoginEmail, code);
         window.SaiAuthNav?.refresh();
@@ -135,7 +141,7 @@
         msgEl.textContent = err.message || 'That code didn’t work. Please try again.';
         msgEl.style.display = 'block';
       } finally {
-        btn.disabled = false;
+        if (window.SkLoading) window.SkLoading.button(btn, false); else btn.disabled = false;
       }
     }
 
@@ -146,6 +152,7 @@
       wrap.innerHTML = '<div class="orders-loading">Loading your orders&hellip;</div>';
       try {
         _myOrders = await CustomerAuth.myOrders();
+        if (_expandedCardOrderId === null && _myOrders.length) _expandedCardOrderId = _myOrders[0].id;
         renderOrdersList(_myOrders);
       } catch (err) {
         wrap.innerHTML = `<div class="cart-form-msg" style="display:block;">${err.message || 'Could not load your orders.'}</div>`;
@@ -243,21 +250,29 @@
       return String(img).replace(/^(assets|corporate-assets)\//, 'photography-assets/');
     }
 
-    function orderItemUploadedImage(cust) {
-      if (!cust) return '';
+    // Returns every uploaded photo, not just the first - see the matching
+    // comment on cart.js's cartItemUploadedImages(). A multi-photo upload
+    // field saves an array under customization.fields[fieldId]; this used to
+    // return as soon as it found one, silently dropping the rest from the
+    // order view even though every one of them was actually saved and
+    // production still has all of them.
+    function orderItemUploadedImages(cust) {
+      if (!cust) return [];
+      const images = [];
       for (const field of CUSTOM_IMAGE_FIELDS) {
         const value = cust[field];
-        if (typeof value === 'string' && (value.startsWith('data:image/') || /^https?:\/\//.test(value))) return value;
+        if (typeof value === 'string' && (value.startsWith('data:image/') || /^https?:\/\//.test(value))) images.push(value);
       }
       const fields = cust.fields;
       if (fields && typeof fields === 'object') {
-        for (const value of Object.values(fields)) {
+        Object.values(fields).forEach(value => {
           const candidates = Array.isArray(value) ? value : [value];
-          const hit = candidates.find(v => typeof v === 'string' && (v.startsWith('data:image/') || /^https?:\/\//.test(v)));
-          if (hit) return hit;
-        }
+          candidates.forEach(v => {
+            if (typeof v === 'string' && (v.startsWith('data:image/') || /^https?:\/\//.test(v))) images.push(v);
+          });
+        });
       }
-      return '';
+      return images;
     }
 
     function orderItemCustomText(cust) {
@@ -317,7 +332,7 @@
       const title = snapshot.title || 'Item';
       const image = resolveOrderImagePath(snapshot.image);
       const customization = snapshot.customization || null;
-      const uploaded = orderItemUploadedImage(customization);
+      const uploaded = orderItemUploadedImages(customization);
       const customText = orderItemCustomText(customization);
       const specs = orderItemCustomSpecs(customization);
       const lineTotal = Math.round(item.unit_price * item.qty);
@@ -337,15 +352,19 @@
       }
       const canCancelThisItem = itemStatus === 'active' && !itemCancelDisabledReason;
 
-      const personalisation = (uploaded || customText || specs.length) ? `
+      const personalisation = (uploaded.length || customText || specs.length) ? `
         <div class="order-item-custom">
           <span class="order-item-custom-title">&#10003; Personalisation</span>
           <div class="order-item-custom-body">
-            ${uploaded ? `
+            ${uploaded.length ? `
               <figure class="order-custom-photo-wrap">
-                <img class="order-custom-photo" src="${escapeOrdAttr(uploaded)}" alt="Photo you uploaded for ${escapeOrdAttr(title)}" loading="lazy"
-                     title="Click to view full size" onclick="openOrderImagePreview(this.src)">
-                <figcaption class="order-custom-photo-label">Your upload</figcaption>
+                <div class="order-custom-photo-row">
+                  ${uploaded.map(src => `
+                    <img class="order-custom-photo" src="${escapeOrdAttr(src)}" alt="Photo you uploaded for ${escapeOrdAttr(title)}" loading="lazy"
+                         title="Click to view full size" onclick="openOrderImagePreview(this.src)">
+                  `).join('')}
+                </div>
+                <figcaption class="order-custom-photo-label">${uploaded.length > 1 ? `Your uploads (${uploaded.length})` : 'Your upload'}</figcaption>
               </figure>` : ''}
             <div class="order-custom-fields">
               ${customText ? `<div class="order-custom-text">&ldquo;${escapeOrdHTML(customText)}&rdquo;</div>` : ''}
@@ -509,20 +528,27 @@
       const statusLabel = ORDER_STATUS_LABELS[order.status] || order.status;
       const itemCount = order.items.reduce((sum, item) => sum + item.qty, 0);
       const expanded = _expandedOrderId === order.id;
+      const cardExpanded = _expandedCardOrderId === order.id;
       const hasTracking = (order.tracking_events || []).length > 0;
       const cancelReason = orderCancelDisabledReason(order);
       const addressReason = orderAddressDisabledReason(order);
 
       return `
-        <div class="order-card">
-          <div class="order-card-head">
+        <div class="order-card${cardExpanded ? '' : ' is-collapsed'}">
+          <button type="button" class="order-card-head order-card-head-toggle" onclick="toggleOrderCard('${order.id}')" aria-expanded="${cardExpanded}">
             <div>
               <span class="order-number">Order ${escapeOrdHTML(order.number)}</span>
               <span class="order-date">Placed on ${date} &middot; ${itemCount} item${itemCount === 1 ? '' : 's'}</span>
             </div>
-            <span class="order-status-badge order-status-${order.status}">${statusLabel}</span>
-          </div>
+            <div class="order-card-head-right">
+              <span class="order-status-badge order-status-${order.status}">${statusLabel}</span>
+              <span class="order-card-chevron" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </span>
+            </div>
+          </button>
 
+          ${cardExpanded ? `
           <div class="order-section">
             <h5 class="order-section-title">Items in this order</h5>
             <div class="order-items-list">${order.items.map(item => orderItemHTML(item, order)).join('')}</div>
@@ -555,6 +581,7 @@
           </div>
 
           ${expanded ? orderTimelineHTML(order) : ''}
+          ` : ''}
         </div>`;
     }
 
@@ -635,6 +662,11 @@
 
     function toggleOrderTimeline(orderId) {
       _expandedOrderId = _expandedOrderId === orderId ? null : orderId;
+      renderOrdersList(_myOrders);
+    }
+
+    function toggleOrderCard(orderId) {
+      _expandedCardOrderId = _expandedCardOrderId === orderId ? null : orderId;
       renderOrdersList(_myOrders);
     }
 
@@ -762,9 +794,21 @@
         note: document.getElementById('ac_note').value.trim(),
       };
 
-      if (data.full_name.length < 2 || !/^[6-9]\d{9}$/.test(data.phone) || data.line1.length < 3 ||
-          data.city.length < 2 || data.state.length < 2 || !/^\d{6}$/.test(data.pincode)) {
-        msgEl.textContent = 'Please fill in all required fields correctly.';
+      // One message per field instead of a single blanket "fill in all fields
+      // correctly" - that left no way to tell which field was actually wrong
+      // when every field visibly had something typed into it (e.g. a phone
+      // number that's 10 digits but doesn't start with 6-9 still "looks"
+      // filled in correctly at a glance).
+      let error = '';
+      if (data.full_name.length < 2) error = 'Please enter your full name.';
+      else if (!/^[6-9]\d{9}$/.test(data.phone)) error = 'Please enter a valid 10-digit mobile number (starting with 6-9).';
+      else if (data.line1.length < 3) error = 'Please enter the address line.';
+      else if (data.city.length < 2) error = 'Please enter a valid city.';
+      else if (data.state.length < 2) error = 'Please enter a valid state.';
+      else if (!/^\d{6}$/.test(data.pincode)) error = 'Please enter a valid 6-digit pincode.';
+
+      if (error) {
+        msgEl.textContent = error;
         msgEl.style.display = 'block';
         return;
       }

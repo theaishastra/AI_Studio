@@ -26,9 +26,9 @@ async function renderArrange(params) {
     location.hash = `#/arrange?cat=${e.target.value}`;
   });
   document.getElementById("toggleAddBtn").addEventListener("click", () => toggleQuickAdd(categoryId));
-  document.getElementById("saveArrangeBtn").addEventListener("click", async () => {
+  document.getElementById("saveArrangeBtn").addEventListener("click", async (e) => {
     try {
-      await Api.setArrange(categoryId, window._ARRANGE_ITEMS.map(i => i.id));
+      await withBusy(e.currentTarget, "Saving…", () => Api.setArrange(categoryId, window._ARRANGE_ITEMS.map(i => i.id)));
       alert("Order saved.");
     } catch (err) { alert(err.message); }
   });
@@ -71,8 +71,9 @@ function toggleQuickAdd(categoryId) {
     const mrp = document.getElementById("qa_mrp").value;
     const img = document.getElementById("qa_img").value.trim();
     const msg = e.target.querySelector(".save-msg");
+    const btn = e.target.querySelector('button[type="submit"]');
     try {
-      await Api.createProduct({
+      await withBusy(btn, "Adding…", () => Api.createProduct({
         category_id: categoryId,
         title,
         slug: `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}-${Date.now().toString(36)}`,
@@ -80,7 +81,7 @@ function toggleQuickAdd(categoryId) {
         price,
         mrp: mrp ? Number(mrp) : null,
         media: img ? [{ url: img }] : [],
-      });
+      }));
       wrap.innerHTML = "";
       loadArrangeList(categoryId);
     } catch (err) {

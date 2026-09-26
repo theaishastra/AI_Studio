@@ -436,6 +436,10 @@
           <div class="cart-summary-card">
             <h3>Order Summary</h3>
             <div id="cartReviewMiniList" class="cart-mini-list"></div>
+            <div class="cart-coupon-row" style="margin:12px 0;">
+              <label class="cart-field-label" for="cartCouponInput">Have a coupon code?</label>
+              <input type="text" id="cartCouponInput" class="cart-field-input" placeholder="Enter coupon code" autocapitalize="characters">
+            </div>
             <div class="cart-summary-total">
               <span>Total</span>
               <span id="cartTotalValueStep2">₹0</span>
@@ -508,6 +512,11 @@
           <div class="cart-summary-card">
             <h3>Order Summary</h3>
             <div id="cartReviewMiniList2" class="cart-mini-list"></div>
+            <div id="cartCouponMsg2" style="display:none;font-size:13px;margin-bottom:8px;"></div>
+            <div class="cart-summary-row" id="cartDiscountRow" style="display:none;">
+              <span>Coupon discount</span>
+              <span id="cartDiscountValue">-₹0</span>
+            </div>
             <div class="cart-summary-total">
               <span>Payable Amount</span>
               <span id="cartFinalPayable">₹0</span>
@@ -730,6 +739,7 @@
   <!-- ================= SCRIPTS ================= -->
   <script src="js/shared/search.js" defer></script>
   <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+  <script src="js/shared/loading-ui.js"></script>
   <script src="js/shared/api-config.js"></script>
   <script src="js/shared/customer-api.js"></script>
   <script src="js/shared/thumb-map.js"></script>

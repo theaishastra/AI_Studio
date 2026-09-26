@@ -284,7 +284,7 @@
 
       var name = document.getElementById('skName').value.trim();
       var btn = document.getElementById('skSendOtpBtn');
-      btn.disabled = true;
+      if (window.SkLoading) window.SkLoading.button(btn, true); else btn.disabled = true;
       CustomerAuth.requestOtp(email).then(function () {
         pendingEmail = email;
         pendingName = name;
@@ -293,7 +293,7 @@
         var otpInput = document.getElementById('skOtp');
         if (otpInput) otpInput.focus();
       }).catch(function (err) {
-        btn.disabled = false;
+        if (window.SkLoading) window.SkLoading.button(btn, false); else btn.disabled = false;
         showAuthMsg(err.message || 'Could not send the OTP. Please try again.');
       });
     });
@@ -322,7 +322,7 @@
       if (!valid) return;
 
       var btn = document.getElementById('skVerifyOtpBtn');
-      btn.disabled = true;
+      if (window.SkLoading) window.SkLoading.button(btn, true); else btn.disabled = true;
       CustomerAuth.verifyOtp(pendingEmail, code, pendingName || undefined).then(function () {
         // cart.html's own pull-from-server sync only ever runs once, at page
         // load, gated on already being logged in at that instant - logging in
@@ -350,7 +350,7 @@
           refreshTriggers();
         });
       }).catch(function (err) {
-        btn.disabled = false;
+        if (window.SkLoading) window.SkLoading.button(btn, false); else btn.disabled = false;
         showAuthMsg(err.message || 'That code didn’t work. Please try again.');
       });
     });

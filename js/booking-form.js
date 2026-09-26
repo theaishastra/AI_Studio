@@ -243,7 +243,7 @@ async function sendBookingOtp(){
     return;
   }
   const btn=document.getElementById("bookingSendOtpBtn");
-  btn.disabled=true;
+  if(window.SkLoading)window.SkLoading.button(btn,true);else btn.disabled=true;
   try{
     await CustomerAuth.requestOtp(email);
     bookingLoginEmail=email;
@@ -255,7 +255,7 @@ async function sendBookingOtp(){
     msgEl.textContent=err.message||"Could not send the OTP. Please try again.";
     msgEl.style.display="block";
   }finally{
-    btn.disabled=false;
+    if(window.SkLoading)window.SkLoading.button(btn,false);else btn.disabled=false;
   }
 }
 
@@ -269,7 +269,7 @@ async function verifyBookingOtp(){
     return;
   }
   const btn=document.getElementById("bookingVerifyOtpBtn");
-  btn.disabled=true;
+  if(window.SkLoading)window.SkLoading.button(btn,true);else btn.disabled=true;
   try{
     await CustomerAuth.verifyOtp(bookingLoginEmail,code,document.getElementById("fName").value.trim());
     document.getElementById("bookingLoginGate").style.display="none";
@@ -279,7 +279,7 @@ async function verifyBookingOtp(){
     msgEl.textContent=err.message||"That code didn’t work. Please try again.";
     msgEl.style.display="block";
   }finally{
-    btn.disabled=false;
+    if(window.SkLoading)window.SkLoading.button(btn,false);else btn.disabled=false;
   }
 }
 

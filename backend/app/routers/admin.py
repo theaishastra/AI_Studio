@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from datetime import datetime, timedelta, timezone
 
 import httpx
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -24,12 +24,13 @@ from ..schemas import (
     AddressChangeDecisionIn, AdminAddressChangeRequestOut, AdminCancellationRequestOut,
     ArrangeIn, BlockEmailIn, BookingOut, BookingStatusUpdate, CancellationDecisionIn, CategoryIn,
     CategoryOut, CouponIn, CouponOut, CustomerOut, HomepageLayoutIn, MediaIn, MediaLibraryOut,
-    MediaOut, MediaReorderIn, OrderOut, OrderStatusUpdate, ProductIn, ProductOut, ProductPatch,
+    MediaOut, MediaReorderIn, MediaUsageOut, OrderOut, OrderStatusUpdate, ProductIn, ProductOut, ProductPatch,
     SettingIn, SettingOut, SitePageIn, SitePageOut, StaffIn, TrackingUpdateIn, UserOut,
 )
 from ..security import hash_password
+from ..services.inventory import restock
 from ..services.media import process_image
-from ..services.notifications import notify, order_event
+from ..services.notifications import booking_event, notify, order_event
 from ..services.policy import annotate_order, annotate_orders, refund_status as compute_refund_status
 from ..services.pricing import money
 from ..services.storage import CUSTOM_UPLOAD_FIELDS, get_or_create_thumbnail, upload_media_library_asset
@@ -45,6 +46,12 @@ logger = logging.getLogger(__name__)
 # out of this sequence since they can legitimately be reached from several
 # points in the flow (an order can be cancelled/refunded from most states).
 ORDER_STATUS_FLOW = ["created", "payment_pending", "cod_confirmed", "paid", "in_production", "shipped", "delivered"]
+
+# Keep in sync with MAX_UPLOAD_FILES in admin/js/catalog.js - that's a
+# per-selection-batch cap only, this is the authoritative cumulative cap
+# (the frontend limit is a UX nicety, this is what actually blocks the DB
+# from ending up with more photos than the admin UI is designed to show).
+MAX_MEDIA_PER_ENTITY = 5
 
 
 def _is_own_r2_url(url: str) -> bool:
@@ -296,7 +303,20 @@ def add_category_media(cat_id: str, body: MediaIn, request: Request,
     cat = db.get(Category, cat_id)
     if not cat:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Category not found")
-    media = Media(category_id=cat_id, **body.model_dump())
+    existing = sum(1 for m in cat.media if m.kind == "portfolio")
+    if existing >= MAX_MEDIA_PER_ENTITY:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"This category already has the maximum of {MAX_MEDIA_PER_ENTITY} photos",
+        )
+    # Force the kind this endpoint's URL already implies, instead of trusting
+    # whatever the caller sent (MediaIn.kind defaults to "portfolio" when
+    # omitted, which happens to be correct here only by coincidence - the
+    # product-media endpoint below has the same field default to "portfolio"
+    # too, which is wrong for it. Several real products ended up with photos
+    # tagged "portfolio" this way and silently vanished from the storefront,
+    # since catalog.py only ever serves a product's media where kind="package").
+    media = Media(**{**body.model_dump(), "category_id": cat_id, "kind": "portfolio"})
     db.add(media)
     audit(db, admin, "create", "category_media", cat_id, {"url": media.url}, request)
     db.commit()
@@ -348,8 +368,8 @@ def _product_out(p: Product) -> ProductOut:
 def admin_products(
     admin: User = Depends(require_staff), db: Session = Depends(get_db),
     category_id: str | None = None,
-    page: int = 1,
-    page_size: int = 100,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(100, ge=1, le=500),
 ):
     query = db.query(Product).options(selectinload(Product.media))
     if category_id:
@@ -366,12 +386,18 @@ def create_product(body: ProductIn, request: Request,
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Category not found")
     if db.query(Product).filter(Product.slug == body.slug).first():
         raise HTTPException(status.HTTP_409_CONFLICT, "Slug already exists")
+    if len(body.media) > MAX_MEDIA_PER_ENTITY:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"A product can have at most {MAX_MEDIA_PER_ENTITY} photos",
+        )
     data = body.model_dump(exclude={"media"})
     product = Product(**data)
     db.add(product)
     db.flush()
     for i, m in enumerate(body.media):
-        db.add(Media(product_id=product.id, url=m.url, alt=m.alt, kind=m.kind, sort=m.sort or i))
+        # kind="package" forced, not m.kind - see add_product_media's comment.
+        db.add(Media(product_id=product.id, url=m.url, alt=m.alt, kind="package", sort=m.sort or i))
     audit(db, admin, "create", "product", product.id, {"title": product.title}, request)
     db.commit()
     db.refresh(product)
@@ -419,7 +445,19 @@ def add_product_media(product_id: str, body: MediaIn, request: Request,
     product = db.get(Product, product_id)
     if not product:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Product not found")
-    media = Media(product_id=product_id, **body.model_dump())
+    if len(product.media) >= MAX_MEDIA_PER_ENTITY:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"This product already has the maximum of {MAX_MEDIA_PER_ENTITY} photos",
+        )
+    # Force kind="package" regardless of what the caller sent - see the matching
+    # comment in add_category_media above. This is the endpoint where trusting
+    # MediaIn.kind's "portfolio" default actually broke things: several real
+    # products' photos got saved as kind="portfolio" and were then silently
+    # excluded from the storefront (catalog.py only serves a product's media
+    # where kind="package"), while still showing up fine in this admin panel's
+    # own photo list, which doesn't filter by kind.
+    media = Media(**{**body.model_dump(), "product_id": product_id, "kind": "package"})
     db.add(media)
     audit(db, admin, "create", "product_media", product_id, {"url": media.url}, request)
     db.commit()
@@ -500,6 +538,7 @@ def update_booking_status(booking_id: str, body: BookingStatusUpdate, request: R
     if not booking:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Booking not found")
     booking.status = body.status
+    booking_event(db, booking, body.status)
     audit(db, admin, "update_status", "booking", booking_id, {"status": body.status}, request)
     db.commit()
     db.refresh(booking)
@@ -666,6 +705,20 @@ def update_order_status(order_id: str, body: OrderStatusUpdate, request: Request
         # with no real refund ever happening.
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Owner access required to mark an order as refunded")
     _validate_order_status_transition(order.status, body.status)
+    if body.status == "cancelled" and order.status in ("cod_confirmed", "paid", "in_production", "shipped"):
+        # This plain status dropdown is also how staff cancel an order outside
+        # the customer-request flow (decide_cancellation_request, which already
+        # restocks). Without this, stock decremented at payment/COD-confirm time
+        # never comes back - silent, permanent inventory drift every time staff
+        # use this everyday action instead of the dedicated cancellation flow.
+        active_items = [item for item in order.items if item.status == "active"]
+        product_ids = [item.product_id for item in active_items if item.product_id]
+        products = {p.id: p for p in db.query(Product).filter(Product.id.in_(product_ids)).all()} if product_ids else {}
+        for item in active_items:
+            product = products.get(item.product_id)
+            if product and product.type == "product" and product.stock is not None:
+                restock(db, product.id, item.qty)
+            item.status = "cancelled"
     order.status = body.status
     db.add(OrderTrackingEvent(
         order_id=order.id, status=body.status,
@@ -761,12 +814,21 @@ def decide_cancellation_request(request_id: str, body: CancellationDecisionIn, r
     elif body.action == "approve":
         req.status = "approved"
         if order.status in ("cod_confirmed", "paid", "in_production", "shipped"):
-            product_ids = [item.product_id for item in order.items if item.product_id]
+            # Only restock items still "active" - one may have already been
+            # cancelled (and restocked) individually via a prior per-item
+            # cancellation request; restocking it again here would inflate
+            # stock above the true on-hand count.
+            active_items = [item for item in order.items if item.status == "active"]
+            product_ids = [item.product_id for item in active_items if item.product_id]
             products = {p.id: p for p in db.query(Product).filter(Product.id.in_(product_ids)).all()} if product_ids else {}
-            for item in order.items:
+            for item in active_items:
                 product = products.get(item.product_id)
                 if product and product.type == "product" and product.stock is not None:
-                    product.stock += item.qty
+                    restock(db, product.id, item.qty)
+                # Mark restocked so a later refund on this same (now-cancelled)
+                # order - refund_order() also restocks "paid"/"cancelled" orders -
+                # doesn't credit these units back to stock a second time.
+                item.status = "cancelled"
         order.status = "cancelled"
         db.add(OrderTrackingEvent(
             order_id=order.id, status="cancelled", title="Order cancelled",
@@ -798,7 +860,7 @@ def _decide_item_cancellation(db: Session, req: OrderCancellationRequest, order:
             item.status = "cancelled"
             product = db.get(Product, item.product_id) if item.product_id else None
             if product and product.type == "product" and product.stock is not None:
-                product.stock += item.qty
+                restock(db, product.id, item.qty)
             line_amount = money(item.unit_price) * item.qty
             order.subtotal = max(money(0), money(order.subtotal) - line_amount)
             order.total = max(money(0), money(order.total) - line_amount)
@@ -962,7 +1024,7 @@ def export_bookings_csv(admin: User = Depends(require_staff), db: Session = Depe
 # ---------------------------------------------------------------- customers
 
 @router.get("/customers")
-def list_customers(q: str | None = None, page: int = 1,
+def list_customers(q: str | None = None, page: int = Query(1, ge=1),
                    admin: User = Depends(require_staff), db: Session = Depends(get_db)):
     """Customers, merged with their OTP/login activity. Also surfaces emails that
     requested OTPs (or got blocked) but never completed signup, so pre-signup OTP
@@ -1223,7 +1285,14 @@ def list_media(
     # inventory of every image in use, not just ad hoc uploads. The table has one row
     # per *usage* though, so the same picture attached to three products is three rows -
     # group them by URL here so the grid shows each picture once, with a usage count.
-    query = db.query(Media)
+    # Eager-loaded so building each row's used_in below doesn't run a query per
+    # attached category/product (this can be up to 2000 rows) - Category.page and
+    # Product.category.page are one level deeper, needed for the page_slug that
+    # lets the frontend jump the Categories tab to the right page.
+    query = db.query(Media).options(
+        joinedload(Media.category).joinedload(Category.page),
+        joinedload(Media.product).joinedload(Product.category).joinedload(Category.page),
+    )
     # category_id/page_id scope this down to "images already used near where I'm
     # attaching one" (the product/category media picker's default view) instead of
     # every image across the whole site - the picker used to fetch all ~2000 rows
@@ -1247,11 +1316,23 @@ def list_media(
     for m in rows:
         g = groups.get(m.url)
         if g is None:
-            g = {"row_id": m.id, "library_id": None, "alt": m.alt, "usage_count": 0}
+            g = {"row_id": m.id, "library_id": None, "alt": m.alt, "usage_count": 0, "used_in": {}}
             groups[m.url] = g
             order.append(m.url)
-        if m.category_id or m.product_id:
+        if m.category_id and m.category:
             g["usage_count"] += 1
+            g["used_in"][("category", m.category_id)] = MediaUsageOut(
+                kind="category", name=m.category.name,
+                category_id=m.category_id, page_slug=m.category.page.slug,
+            )
+        elif m.product_id and m.product and m.product.category:
+            g["usage_count"] += 1
+            g["used_in"][("product", m.product_id)] = MediaUsageOut(
+                kind="product", name=f"{m.product.title} ({m.product.category.name})",
+                category_id=m.product.category_id, page_slug=m.product.category.page.slug,
+            )
+        elif m.category_id or m.product_id:
+            g["usage_count"] += 1  # attached row whose category/product got deleted underneath it
         elif g["library_id"] is None:
             g["library_id"] = m.id
             g["alt"] = m.alt
@@ -1263,6 +1344,7 @@ def list_media(
             alt=groups[url]["alt"],
             usage_count=groups[url]["usage_count"],
             deletable=groups[url]["library_id"] is not None,
+            used_in=list(groups[url]["used_in"].values()),
         )
         for url in order[:1000]
     ]

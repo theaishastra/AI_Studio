@@ -80,7 +80,7 @@ async function getOrderDetail(id) {
 async function renderOrders() {
   const view = document.getElementById("view");
   view.innerHTML = `
-    <header class="page-head"><h1>Orders</h1><button type="button" class="btn secondary" onclick="downloadCsvReport('/api/admin/reports/orders.csv', 'orders.csv')">Export CSV</button></header>
+    <header class="page-head"><h1>Orders</h1><button type="button" class="btn secondary" onclick="downloadCsvReport('/api/admin/reports/orders.csv', 'orders.csv', this)">Export CSV</button></header>
     <div class="tabs" id="ordersTabs"></div>
     <div id="ordersTabBody">${LOADING}</div>
   `;
@@ -166,7 +166,7 @@ async function loadOrders(statusFilter) {
             <td>${fmtIST(o.created_at)}</td>
             <td class="actions">
               <button class="btn secondary" onclick="viewOrder('${o.id}')">View</button>
-              ${orderRefundable(o) ? `<button class="btn danger owner-only" onclick="refundOrder('${o.id}')">Refund</button>` : ""}
+              ${orderRefundable(o) ? `<button class="btn danger owner-only" onclick="refundOrder('${o.id}', this)">Refund</button>` : ""}
             </td>
           </tr>`;
         }).join("")}
@@ -207,12 +207,14 @@ function orderRequestBadges(o) {
 }
 
 async function updateOrderStatus(id, status, selectEl) {
+  if (selectEl) selectEl.disabled = true;
   try {
     await Api.updateOrderStatus(id, status);
     if (selectEl) selectEl.className = `order-status-select order-status-${status}`;
     _ORDER_DETAIL_CACHE.delete(id);
   }
   catch (err) { alert(err.message); renderOrdersTabBody(); }
+  finally { if (selectEl) selectEl.disabled = false; }
 }
 
 /* ---------- customer artwork & personalisation ----------
@@ -548,7 +550,7 @@ function orderStageTrackerHTML(order) {
   return `
     <div class="stage-tracker-wrap">
       ${trackerBody}
-      <select class="order-status-select order-status-${esc(order.status)}" onchange="updateOrderStatusFromModal('${order.id}', this.value)">
+      <select class="order-status-select order-status-${esc(order.status)}" onchange="updateOrderStatusFromModal('${order.id}', this.value, this)">
         ${orderStatusOptionsFor(order.status).map(s => `<option value="${s}" ${s === order.status ? "selected" : ""}>${orderStatusLabel(s)}</option>`).join("")}
       </select>
     </div>`;
@@ -557,13 +559,15 @@ function orderStageTrackerHTML(order) {
 // Same PATCH as the table row's dropdown, but re-opens the modal afterward
 // so the tracker/status badge/refund row all reflect the new status
 // immediately instead of staff having to close and reopen it.
-async function updateOrderStatusFromModal(id, newStatus) {
+async function updateOrderStatusFromModal(id, newStatus, selectEl) {
+  if (selectEl) selectEl.disabled = true;
   try {
     await Api.updateOrderStatus(id, newStatus);
     _ORDER_DETAIL_CACHE.delete(id);
     viewOrder(id);
   } catch (err) {
     alert(err.message);
+    if (selectEl) selectEl.disabled = false;
   }
 }
 
@@ -594,8 +598,8 @@ function pendingRequestHTML(order) {
         <div class="request-card-head"><b>${scoped ? `Cancellation requested — ${esc(cancel.item_title || "one item")}` : "Cancellation requested (whole order)"}</b><span class="badge req-pending">Pending</span></div>
         <p>Reason: ${esc(CANCELLATION_REASON_LABELS[cancel.reason] || cancel.reason)}${cancel.note ? ` — “${esc(cancel.note)}”` : ""}</p>
         <div class="modal-actions" style="justify-content:flex-start;">
-          <button type="button" class="btn" onclick="decideRequest('cancellation', '${cancel.id}', 'approve')">Approve ${scoped ? "(cancel this item)" : "(cancel order)"}</button>
-          <button type="button" class="btn secondary" onclick="decideRequest('cancellation', '${cancel.id}', 'reject')">Reject</button>
+          <button type="button" class="btn" onclick="decideRequest('cancellation', '${cancel.id}', 'approve', this)">Approve ${scoped ? "(cancel this item)" : "(cancel order)"}</button>
+          <button type="button" class="btn secondary" onclick="decideRequest('cancellation', '${cancel.id}', 'reject', this)">Reject</button>
         </div>
       </div>`;
   }
@@ -608,15 +612,15 @@ function pendingRequestHTML(order) {
         ${esc(a.line1)}${a.line2 ? `, ${esc(a.line2)}` : ""}, ${esc(a.city)}, ${esc(a.state)} - ${esc(a.pincode)}</p>
         ${addr.note ? `<p class="odg-empty">Note: ${esc(addr.note)}</p>` : ""}
         <div class="modal-actions" style="justify-content:flex-start;">
-          <button type="button" class="btn" onclick="decideRequest('address', '${addr.id}', 'approve')">Approve (update address)</button>
-          <button type="button" class="btn secondary" onclick="decideRequest('address', '${addr.id}', 'reject')">Reject</button>
+          <button type="button" class="btn" onclick="decideRequest('address', '${addr.id}', 'approve', this)">Approve (update address)</button>
+          <button type="button" class="btn secondary" onclick="decideRequest('address', '${addr.id}', 'reject', this)">Reject</button>
         </div>
       </div>`;
   }
   return html;
 }
 
-async function decideRequest(kind, id, action) {
+async function decideRequest(kind, id, action, btn) {
   const label = action === "approve" ? "Approve" : "Reject";
   let adminNote = "";
   if (action === "reject") {
@@ -625,8 +629,9 @@ async function decideRequest(kind, id, action) {
     return;
   }
   try {
-    if (kind === "cancellation") await Api.decideCancellationRequest(id, action, adminNote);
-    else await Api.decideAddressChangeRequest(id, action, adminNote);
+    await withBusy(btn, action === "approve" ? "Approving…" : "Rejecting…", () => kind === "cancellation"
+      ? Api.decideCancellationRequest(id, action, adminNote)
+      : Api.decideAddressChangeRequest(id, action, adminNote));
     closeModal();
     renderOrdersTabs();
   } catch (err) {
@@ -665,8 +670,8 @@ function orderItemDetailHTML(order, item, index) {
           <div class="request-card-head"><b>Cancellation requested</b><span class="badge req-pending">Pending</span></div>
           <p>Reason: ${esc(CANCELLATION_REASON_LABELS[pendingItemRequest.reason] || pendingItemRequest.reason)}${pendingItemRequest.note ? ` — “${esc(pendingItemRequest.note)}”` : ""}</p>
           <div class="modal-actions" style="justify-content:flex-start;">
-            <button type="button" class="btn" onclick="decideRequest('cancellation', '${pendingItemRequest.id}', 'approve')">Approve (cancel this item)</button>
-            <button type="button" class="btn secondary" onclick="decideRequest('cancellation', '${pendingItemRequest.id}', 'reject')">Reject</button>
+            <button type="button" class="btn" onclick="decideRequest('cancellation', '${pendingItemRequest.id}', 'approve', this)">Approve (cancel this item)</button>
+            <button type="button" class="btn secondary" onclick="decideRequest('cancellation', '${pendingItemRequest.id}', 'reject', this)">Reject</button>
           </div>
         </div>` : ""}
 
@@ -777,7 +782,7 @@ function renderOrderModal(o) {
           <span>Refund</span>
           <span>
             ${refundBadgeHTML(o.refund_status) || `<span class="badge off">Not refunded</span>`}
-            ${orderRefundable(o) ? `<button type="button" class="btn danger owner-only" style="margin-left:8px;" onclick="refundOrder('${o.id}')">Refund</button>` : ""}
+            ${orderRefundable(o) ? `<button type="button" class="btn danger owner-only" style="margin-left:8px;" onclick="refundOrder('${o.id}', this)">Refund</button>` : ""}
           </span>
         </div>` : ""}
       </div>
@@ -833,8 +838,9 @@ function renderOrderModal(o) {
       event_location: document.getElementById("tk_event_location").value.trim() || null,
     };
     const msg = document.getElementById("trackingMsg");
+    const btn = e.target.querySelector('button[type="submit"]');
     try {
-      await Api.updateOrderTracking(o.id, data);
+      await withBusy(btn, "Saving…", () => Api.updateOrderTracking(o.id, data));
       closeModal();
       renderOrdersTabs();
     } catch (err) {
@@ -865,10 +871,10 @@ async function openArtworkZoom(orderId, itemIndex, field) {
   `);
 }
 
-async function refundOrder(id) {
+async function refundOrder(id, btn) {
   if (!confirm("Refund this order via Razorpay? This will restock physical items.")) return;
   try {
-    await Api.refundOrder(id);
+    await withBusy(btn, "Refunding…", () => Api.refundOrder(id));
     _ORDER_DETAIL_CACHE.delete(id);
     // Reflect the new refund/payment status wherever the admin is looking -
     // back in the order modal if that's where the button was clicked from,
@@ -903,8 +909,8 @@ async function renderCancellationRequests(body) {
             <td>${fmtIST(r.created_at)}</td>
             <td class="actions">
               ${r.status === "pending" ? `
-                <button class="btn" onclick="decideRequest('cancellation', '${r.id}', 'approve')">Approve</button>
-                <button class="btn secondary" onclick="decideRequest('cancellation', '${r.id}', 'reject')">Reject</button>
+                <button class="btn" onclick="decideRequest('cancellation', '${r.id}', 'approve', this)">Approve</button>
+                <button class="btn secondary" onclick="decideRequest('cancellation', '${r.id}', 'reject', this)">Reject</button>
               ` : (r.admin_note ? esc(r.admin_note) : "—")}
             </td>
           </tr>`).join("")}
@@ -934,8 +940,8 @@ async function renderAddressChangeRequests(body) {
             <td>${fmtIST(r.created_at)}</td>
             <td class="actions">
               ${r.status === "pending" ? `
-                <button class="btn" onclick="decideRequest('address', '${r.id}', 'approve')">Approve</button>
-                <button class="btn secondary" onclick="decideRequest('address', '${r.id}', 'reject')">Reject</button>
+                <button class="btn" onclick="decideRequest('address', '${r.id}', 'approve', this)">Approve</button>
+                <button class="btn secondary" onclick="decideRequest('address', '${r.id}', 'reject', this)">Reject</button>
               ` : (r.admin_note ? esc(r.admin_note) : "—")}
             </td>
           </tr>`;

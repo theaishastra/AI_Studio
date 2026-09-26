@@ -1343,6 +1343,22 @@ body {
   border-radius: 20px;
 }
 
+.stock-badge.low-stock {
+  background: #FEF3C7;
+  color: #B45309;
+}
+
+.stock-badge.out-of-stock {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+
+.btn-disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .modal-tabs-nav {
   display: flex;
   gap: 24px;

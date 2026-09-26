@@ -65,7 +65,7 @@
       return `
       <div class="p-card" onclick="${onClick}">
         <div class="p-thumb">
-          <img src="${cldOpt(imgUrl)}" alt="${name}" loading="lazy">
+          <img src="${cldOpt(imgUrl)}" alt="${name}" loading="lazy" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
           <button class="p-wish${isWished(name) ? ' active' : ''}" data-name="${name}" onclick="event.stopPropagation(); toggleWishItem('${name}', '${price}', '${imgUrl}', ${wishOpts})" aria-label="Add ${name} to wishlist">${heartIcon}</button>
         </div>
         <div class="p-body">
@@ -73,11 +73,9 @@
           ${badge ? `<span class="p-badge">${tagIcon}${badge}</span>` : ''}
           <div class="p-card-footer">
             <span class="price">${price}${old ? `<span class="price-sub"><span class="old">${old}</span><span class="off-pct">${pctOff(price, old)}% OFF</span></span>` : ''}</span>
-            ${rating ? `
             <div class="p-rating">
-              <span class="p-rating-num">${rating}</span>
               <button class="p-fav-btn" onclick="event.stopPropagation(); this.classList.toggle('faved')" aria-label="Add ${name} to favorites">${starIcon}</button>
-            </div>` : ''}
+            </div>
           </div>
           ${actionHTML ? `
           <div class="p-bottom-row">
@@ -109,6 +107,7 @@
           name, price, imgUrl, badge: tag, rating, href, onClick: `location.href='${href}'`
         });
       }).join('');
+      wireFeaturedImageLoading('photoServices');
     }
 
     // ---------- studio services ----------
@@ -185,16 +184,28 @@
       });
     }
 
+    function wireFeaturedImageLoading(containerId) {
+      if (!window.SkLoading) return;
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.querySelectorAll('.p-thumb img').forEach(img => {
+        window.SkLoading.wireImage(img, { wrap: img.closest('.p-thumb') });
+      });
+    }
+
     function renderProducts() {
       renderPhotoServices();
       document.getElementById('giftCards').innerHTML = gifts.map(([name, price, old, imgUrl, rating]) =>
         cartProductCardHTML(name, price, old, imgUrl, rating, giftHref(name))).join('');
+      wireFeaturedImageLoading('giftCards');
 
       document.getElementById('studioServices').innerHTML = studio.map(([name, price, old, imgUrl, rating, categoryKey, pid]) =>
         cartProductCardHTML(name, price, old, imgUrl, rating, studioHref(name, categoryKey, pid))).join('');
+      wireFeaturedImageLoading('studioServices');
 
       document.getElementById('corpCards').innerHTML = corp.map(([name, price, old, imgUrl, rating, pid]) =>
         cartProductCardHTML(name, price, old, imgUrl, rating, corpHref(name, price, imgUrl, pid))).join('');
+      wireFeaturedImageLoading('corpCards');
     }
 
     // --- Cart System (js/shared/cart-core.js - shared storage/sync logic) ---
