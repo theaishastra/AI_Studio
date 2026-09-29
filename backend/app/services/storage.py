@@ -29,7 +29,14 @@ from .media import make_thumbnail, process_image
 logger = logging.getLogger("storage")
 settings = get_settings()
 
-MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+# A cheap guard on the *estimated* decoded size of an incoming data: URI, so a
+# huge base64 string is dropped before being decoded into memory. Deliberately
+# above media.MAX_SIZE rather than equal to it: a photo right at the real cap
+# would otherwise trip this first, and a rejection here is a silent None (the
+# caller keeps the base64 inline) rather than process_image's clear "Image too
+# large" - so the headroom leaves the real limit to the validator that can
+# explain itself.
+MAX_UPLOAD_BYTES = 24 * 1024 * 1024
 
 # The customization keys storefront pages use for an uploaded photo/logo -
 # mirrored in admin/js/orders.js's CUSTOM_IMAGE_FIELDS and admin.py's import
@@ -76,6 +83,51 @@ def _put_object(data: bytes, key: str, content_type: str) -> str | None:
     except Exception as e:
         logger.warning("R2 upload failed: %s", e)
         return None
+
+
+def upload_customer_artwork(data: bytes, subfolder: str = "") -> tuple[str, str, str, int] | None:
+    """Validate and store one customer-supplied photo, returning
+    (public_url, storage_key, content_type, bytes) - or None if R2 isn't
+    configured or the upload fails. Raises ValueError (from process_image) if
+    the bytes aren't a valid, allowed image, so the caller can tell the
+    customer why rather than failing silently.
+
+    Unlike upload_data_uri() this takes raw bytes, because it runs at the moment
+    the customer picks the file rather than at checkout - there's no base64 step
+    any more (see models.CustomerUpload for why that matters).
+
+    The key is returned alongside the URL because this file is deleted later:
+    order artwork is kept only while it's needed, and the caller records the key
+    on a CustomerUpload row so the object can actually be found again. Keys are
+    datestamped rather than grouped by order because at upload time there is no
+    order yet - the customer is still shopping.
+    """
+    if not storage_configured():
+        return None
+    # Pillow decode / format allowlist / re-encode, same as every other upload
+    # path here. This is untrusted input straight off a customer's device.
+    data, ext, content_type = process_image(data)
+    prefix = f"{subfolder}/" if subfolder else ""
+    key = f"{settings.cloudinary_folder}/customer_uploads/{prefix}{uuid.uuid4().hex}{ext}"
+    url = _put_object(data, key, content_type)
+    if not url:
+        return None
+    return url, key, content_type, len(data)
+
+
+def delete_object(key: str) -> bool:
+    """Remove one object from R2 by key. True when R2 reports it gone (deleting a
+    key that no longer exists is also a success - the desired end state is the
+    same, and a retention sweep must not stall forever on an object someone
+    already removed by hand in the Cloudflare console)."""
+    if not storage_configured() or not key:
+        return False
+    try:
+        _client_once().delete_object(Bucket=settings.r2_bucket, Key=key)
+        return True
+    except Exception as e:
+        logger.warning("R2 delete failed for %s: %s", key, e)
+        return False
 
 
 def upload_data_uri(data_uri: str, subfolder: str) -> str | None:
@@ -211,10 +263,20 @@ def _safe_slug(value: str | None) -> str | None:
     return cleaned or None
 
 
-def upload_media_library_asset(data: bytes, page_slug: str | None = None, category_slug: str | None = None) -> str | None:
-    """Uploads an admin Media Library image (already validated/re-encoded by
-    services/media.py's process_image) to R2, returning its public URL - or None if R2
-    isn't configured or the upload fails.
+def upload_media_library_asset(
+    data: bytes,
+    page_slug: str | None = None,
+    category_slug: str | None = None,
+    ext: str = ".webp",
+    content_type: str = "image/webp",
+) -> str | None:
+    """Uploads an admin Media Library asset (already validated/re-encoded by
+    services/media.py's process_image, or validated by its process_video) to R2,
+    returning its public URL - or None if R2 isn't configured or the upload fails.
+
+    ext/content_type default to the WebP every image upload is re-encoded to; a
+    product video passes its own sniffed container/MIME instead, since it is
+    stored byte-for-byte (nothing here transcodes video).
 
     page_slug/category_slug (when the upload happens from a specific product/category's
     media picker) file the object under media_library/<page>/<category>/... instead of
@@ -236,5 +298,5 @@ def upload_media_library_asset(data: bytes, page_slug: str | None = None, catego
     page_slug = _safe_slug(page_slug)
     category_slug = _safe_slug(category_slug)
     subfolder = f"{page_slug}/{category_slug}/" if page_slug and category_slug else ""
-    key = f"{settings.cloudinary_folder}/media_library/{subfolder}{uuid.uuid4().hex}.webp"
-    return _put_object(data, key, "image/webp")
+    key = f"{settings.cloudinary_folder}/media_library/{subfolder}{uuid.uuid4().hex}{ext}"
+    return _put_object(data, key, content_type)

@@ -3,16 +3,18 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.trycloudflare.com http://127.0.0.1:8000 https://api.razorpay.com https://lumberjack.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com; object-src 'none'; base-uri 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' data: https:; connect-src 'self' https://*.trycloudflare.com http://127.0.0.1:8000 https://api.razorpay.com https://lumberjack.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com; object-src 'none'; base-uri 'self';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Studio Services - Sai Kumar Digital Lab & Studio</title>
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="css/shared/mobile-nav-extra.css">
-  <link rel="stylesheet" href="css/shared/product-fields.css">
+  <link rel="stylesheet" href="css/shared/product-fields.css?v=3">
   <link rel="stylesheet" href="css/shared/site-chrome.css">
-  <link rel="stylesheet" href="css/studio.css">
+  <link rel="stylesheet" href="css/studio.css?v=3">
+  <!-- Shared product-view rules. MUST stay after the page stylesheet above: it wins on source order. -->
+  <link rel="stylesheet" href="css/shared/product-view.css?v=1">
 </head>
 
 <body>
@@ -245,50 +247,6 @@
 
     <!-- Main Content Panel on the Right -->
     <main class="main-content">
-
-      <!-- ================= MOBILE PROMO SLIDER ================= -->
-      <div class="promo-hero-slider">
-        <div class="promo-hero-window">
-          <div class="promo-hero-track" id="studioPromoTrack">
-            <div class="promo-hero-slide" aria-hidden="true">
-              <a href="corporate.html" class="promo-hero-link" tabindex="-1">
-                <img class="promo-hero-img" src="https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/corporate_gifting_banner_1300x430.png" alt="" loading="lazy">
-              </a>
-            </div>
-            <div class="promo-hero-slide">
-              <a href="photography.html" class="promo-hero-link" aria-label="Explore Photography">
-                <img loading="lazy" class="promo-hero-img" src="https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/photography_banner_1300x430.png" alt="Photography">
-              </a>
-            </div>
-            <div class="promo-hero-slide">
-              <a href="gifts.html" class="promo-hero-link" aria-label="Explore Customised Gift Shop">
-                <img class="promo-hero-img" src="https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/personalized_gifts_shop_now_FINAL_1300x430.png" alt="Customised Gift Shop" loading="lazy">
-              </a>
-            </div>
-            <div class="promo-hero-slide">
-              <a href="studio.html" class="promo-hero-link" aria-label="Explore Studio Services">
-                <img class="promo-hero-img" src="https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/prints_lamination_shop_now_1300x430.png" alt="Studio Services" loading="lazy">
-              </a>
-            </div>
-            <div class="promo-hero-slide">
-              <a href="corporate.html" class="promo-hero-link" aria-label="Explore Corporate Gifts">
-                <img class="promo-hero-img" src="https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/corporate_gifting_banner_1300x430.png" alt="Corporate Gifts" loading="lazy">
-              </a>
-            </div>
-            <div class="promo-hero-slide" aria-hidden="true">
-              <a href="photography.html" class="promo-hero-link" tabindex="-1">
-                <img class="promo-hero-img" src="https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/photography_banner_1300x430.png" alt="" loading="lazy">
-              </a>
-            </div>
-          </div>
-          <div class="promo-hero-dots" id="studioPromoDots">
-            <button class="promo-hero-dot active" data-i="0" aria-label="Photography slide"></button>
-            <button class="promo-hero-dot" data-i="1" aria-label="Customised Gift Shop slide"></button>
-            <button class="promo-hero-dot" data-i="2" aria-label="Studio Services slide"></button>
-            <button class="promo-hero-dot" data-i="3" aria-label="Corporate Gifts slide"></button>
-          </div>
-        </div>
-      </div>
 
       <!-- ============ DESKTOP HERO BANNER (SLIDING CAROUSEL) ============ -->
       <div class="services-hero-banner">
@@ -645,10 +603,32 @@
       </div>
 
       <div class="preview-scroll">
+        <!-- Breadcrumb + product name + subtitle, as their own block rather than the
+             first thing inside .preview-info, so the name sits above the images on
+             mobile and beside them on desktop - matching .modal-title-block on
+             corporate.html and .details-copy on the gifts product page. IDs are
+             unchanged, so js/studio.js still finds #previewTitle and
+             #previewBreadcrumb. -->
+        <div class="preview-title-block">
+          <p class="preview-breadcrumb" id="previewBreadcrumb"></p>
+          <h2 id="previewTitle"></h2>
+        </div>
+
         <div class="preview-gallery-col">
           <div class="preview-thumb-rail" id="previewThumbRail"></div>
           <div class="preview-main-wrap">
             <div class="preview-gallery" id="previewGallery"></div>
+            <!-- Prev/next arrows, matching the gifts and corporate galleries. This
+                 page previously offered swipe and dots only, so on a desktop with
+                 no touch screen there was no visible way to reach photo 2. They
+                 drive the same scrollPreviewTo() the thumbnails use. Hidden by CSS
+                 when the product has a single photo. -->
+            <button type="button" class="preview-arrow-btn prev" aria-label="Previous image" onclick="navigatePreviewGallery(-1)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M11.03 3.97a.75.75 0 010 1.06l-6.22 6.22H21a.75.75 0 010 1.5H4.81l6.22 6.22a.75.75 0 11-1.06 1.06l-7.5-7.5a.75.75 0 010-1.06l7.5-7.5a.75.75 0 011.06 0z" clip-rule="evenodd" /></svg>
+            </button>
+            <button type="button" class="preview-arrow-btn next" aria-label="Next image" onclick="navigatePreviewGallery(1)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12.97 3.97a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 11-1.06-1.06l6.22-6.22H3a.75.75 0 010-1.5h16.19l-6.22-6.22a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg>
+            </button>
             <button type="button" class="preview-wishlist-btn" aria-label="Save" onclick="this.classList.toggle('active')">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                 <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
@@ -665,9 +645,6 @@
         </div>
 
         <div class="preview-info">
-          <p class="preview-breadcrumb" id="previewBreadcrumb"></p>
-          <h2 id="previewTitle"></h2>
-          <p id="previewSubtitle" class="preview-subtitle"></p>
           <div class="preview-price-row">
             <span id="previewPrice" class="preview-price"></span>
             <span id="previewOldPrice" class="preview-old-price"></span>
@@ -744,6 +721,14 @@
           </section>
 
         </div>
+
+        <section class="related-section" id="previewRelatedSection" aria-labelledby="previewRelatedTitle">
+          <div class="related-heading">
+            <div><span class="eyebrow">More to explore</span><h2 id="previewRelatedTitle">You May Also Like</h2></div>
+            <p>Similar studio services from this collection.</p>
+          </div>
+          <div class="related-grid" id="previewRelatedProducts"></div>
+        </section>
       </div>
     </div>
   </div>
@@ -877,18 +862,19 @@
 
   <!-- ================= DATA & INTERACTIVITY SCRIPT ================= -->
   <script src="js/shared/loading-ui.js"></script>
-  <script src="js/shared/product-fields.js"></script>
+  <script src="js/shared/product-fields.js?v=4"></script>
   <script src="js/shared/thumb-map.js"></script>
   <script src="js/shared/api-config.js"></script>
   <script src="js/shared/cart-core.js"></script>
   <script src="js/shared/cart-ui.js"></script>
-  <script src="js/studio.js"></script>
+  <script src="js/shared/product-media.js"></script>
+  <script src="js/studio.js?v=4"></script>
   <script src="js/shared/bottom-nav.js"></script>
   <script src="js/shared/home-nav.js" defer></script>
   <script src="js/shared/customer-api.js"></script>
   <script src="js/shared/auth-modal.js" defer></script>
   <script src="js/shared/chatbot.js" defer></script>
-  <script src="js/shared/search.js?v=2" defer></script>
+  <script src="js/shared/search.js?v=10" defer></script>
   <script src="js/shared/wishlist-menu.js"></script>
 </body>
 

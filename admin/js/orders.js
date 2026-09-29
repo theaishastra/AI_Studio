@@ -137,6 +137,9 @@ async function renderOrdersTable(body) {
 async function loadOrders(statusFilter) {
   const wrap = document.getElementById("ordersWrap");
   const orders = await Api.orders(statusFilter);
+  // See the note in coupons.js: the container was captured before the await, so
+  // it may already be detached if the admin navigated away mid-load.
+  if (!wrap) return;
   window._ORDERS_CACHE = orders;
   _ORDER_DETAIL_CACHE.clear();
   if (!orders.length) {

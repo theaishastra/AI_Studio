@@ -19,6 +19,7 @@ _COLUMN_MIGRATIONS: dict[str, list[str]] = {
         "ADD COLUMN IF NOT EXISTS address_change_window_hours INTEGER",
         "ADD COLUMN IF NOT EXISTS input_fields JSON DEFAULT '[]'::json",
         "ADD COLUMN IF NOT EXISTS delivery_days INTEGER",
+        "ADD COLUMN IF NOT EXISTS search_keywords JSON DEFAULT '[]'::json",
         "DROP COLUMN IF EXISTS is_featured",
     ],
     "orders": [
@@ -36,6 +37,14 @@ _COLUMN_MIGRATIONS: dict[str, list[str]] = {
     ],
     "otp_codes": [
         "ADD COLUMN IF NOT EXISTS ip VARCHAR(45)",
+    ],
+    "cart_items": [
+        "ADD COLUMN IF NOT EXISTS url TEXT",
+    ],
+    "media": [
+        # Postgres backfills every existing row with this DEFAULT, which is exactly
+        # right: every media row that predates product videos is an image.
+        "ADD COLUMN IF NOT EXISTS media_type VARCHAR(10) DEFAULT 'image'",
     ],
 }
 
@@ -141,6 +150,7 @@ _CHECK_CONSTRAINT_MIGRATIONS: list[tuple[str, str, str]] = [
     ),
     ("ck_order_items_status_valid", "order_items", "status IN ('active','cancel_requested','cancelled')"),
     ("ck_payments_status_valid", "payments", "status IN ('created','authorized','captured','failed','refunded')"),
+    ("ck_media_media_type_valid", "media", "media_type IS NULL OR media_type IN ('image','video')"),
 ]
 
 

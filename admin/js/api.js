@@ -79,6 +79,7 @@ const Api = {
   createCategory: (data) => api("/api/admin/categories", { method: "POST", body: JSON.stringify(data) }),
   updateCategory: (id, data) => api(`/api/admin/categories/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteCategory: (id) => api(`/api/admin/categories/${id}`, { method: "DELETE" }),
+  reorderCategories: (pageId, ids) => api("/api/admin/categories/reorder", { method: "PUT", body: JSON.stringify({ page_id: pageId, ids }) }),
   categoryMedia: (id) => api(`/api/admin/categories/${id}/media`),
   addCategoryMedia: (id, data) => api(`/api/admin/categories/${id}/media`, { method: "POST", body: JSON.stringify(data) }),
 
@@ -128,6 +129,12 @@ const Api = {
   blockEmail: (email, reason) => api("/api/admin/customers/block", { method: "POST", body: JSON.stringify({ email, reason: reason || "" }) }),
   unblockEmail: (email) => api("/api/admin/customers/unblock", { method: "POST", body: JSON.stringify({ email }) }),
   clearOtpActivity: (email) => api(`/api/admin/customers/otp-activity/${encodeURIComponent(email)}`, { method: "DELETE" }),
+
+  contactMessages: (unreadOnly) =>
+    api(`/api/admin/contact-messages${unreadOnly ? "?unread_only=true" : ""}`),
+  setContactMessageRead: (id, isRead) =>
+    api(`/api/admin/contact-messages/${id}/read`, { method: "PATCH", body: JSON.stringify({ is_read: isRead }) }),
+  deleteContactMessage: (id) => api(`/api/admin/contact-messages/${id}`, { method: "DELETE" }),
 
   reviews: () => api("/api/admin/reviews"),
   toggleReview: (id) => api(`/api/admin/reviews/${id}/toggle`, { method: "PATCH" }),

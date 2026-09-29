@@ -159,6 +159,12 @@ class Product(Base, TimestampMixin):
     # back to a generic 3-day estimate (see catalog.py/*.js delivery estimate code).
     delivery_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     features: Mapped[list] = mapped_column(JSON, default=list)  # ["150+ High-Res Photos", ...]
+    # Admin-entered synonyms/related terms for this product (e.g. a "Ceramic Mug"
+    # product tagged ["coffee cup", "birthday gift"]) - matched by storefront search
+    # alongside title/description/category so a shopper does not have to type the
+    # exact title wording. See catalog.py public_products and js/catalog.js /
+    # js/shared/search.js, which all match against this too.
+    search_keywords: Mapped[list] = mapped_column(JSON, default=list)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort: Mapped[int] = mapped_column(Integer, default=0)
     # Free-form JSON for fields with no dedicated column yet (studio's configurator:
@@ -185,8 +191,9 @@ class Product(Base, TimestampMixin):
 
 
 class Media(Base, TimestampMixin):
-    """An image attached either to a Category (portfolio gallery photo, kind="portfolio")
-    or to a Product (package carousel photo, kind="package")."""
+    """An image (or, for a product, a short video) attached either to a Category
+    (portfolio gallery photo, kind="portfolio") or to a Product (package carousel
+    photo/clip, kind="package")."""
     __tablename__ = "media"
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=uid)
@@ -199,6 +206,13 @@ class Media(Base, TimestampMixin):
     url: Mapped[str] = mapped_column(Text)
     alt: Mapped[str] = mapped_column(String(200), default="")  # portfolio caption
     kind: Mapped[str] = mapped_column(String(20), default="portfolio")  # portfolio | package
+    # "image" (the default, and what every row was before this column existed) or
+    # "video". Only a product's own gallery renders video - category portfolios,
+    # listing/card thumbnails, hero banners and the homepage all filter video rows
+    # out by this column, because none of them have anywhere sensible to play one.
+    # See services/media.py's sniff_video/process_video for what's accepted on
+    # upload, and catalog.py, which splits a product's media into images/videos.
+    media_type: Mapped[str] = mapped_column(String(10), default="image")  # image | video
     sort: Mapped[int] = mapped_column(Integer, default=0)
 
     category: Mapped["Category | None"] = relationship(back_populates="media", foreign_keys=[category_id])
@@ -242,6 +256,9 @@ class CartItem(Base, TimestampMixin):
     price: Mapped[str] = mapped_column(String(40))  # kept as the formatted string ("₹399") the frontend uses
     img: Mapped[str | None] = mapped_column(Text, nullable=True)
     qty: Mapped[int] = mapped_column(Integer, default=1)
+    # Deep link back to the product page/modal this line was configured on, so
+    # the cart can make the row clickable - see schemas.CartItemIn.url.
+    url: Mapped[str | None] = mapped_column(Text, nullable=True)
     customization: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     requirement: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
@@ -350,6 +367,71 @@ class OrderItem(Base):
 
     order: Mapped["Order"] = relationship(back_populates="items")
     product: Mapped["Product | None"] = relationship()
+
+
+class CustomerUpload(Base, TimestampMixin):
+    """One photo/artwork file a customer attached to a product they're ordering.
+
+    The file goes to R2 when the item is added to the cart, and only its URL
+    travels through the cart and into the order. Previously a customer's photo
+    was carried as a base64 data: URI in localStorage, pushed to
+    cart_items.customization on every cart change, and only moved to R2 by a
+    background task after checkout - which put multi-MB strings through the
+    browser's ~5MB localStorage quota (a large upload simply failed to add to
+    the cart), through the database, and through every cart read in between.
+
+    This row is the record that lets the file be found and deleted later.
+    Nothing else knows the R2 object key: the cart and the order only carry the
+    public URL, and an order's artwork has to be removable once it has served
+    its purpose. Keeping customer photographs forever is a liability, not a
+    feature - they're personal data we have no reason to hold after the print
+    has shipped and the return window has closed.
+
+    Lifecycle:
+      uploaded         order_id NULL, purge_after NULL   - orphan until checkout
+      in an order      order_id set                      - kept while it's needed
+      order delivered  purge_after = delivered + N days  - clock starts
+      purged           purged_at set, R2 object deleted  - row kept as the record
+    """
+    __tablename__ = "customer_uploads"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=uid)
+    # SET NULL rather than CASCADE: deleting a customer account must not delete the
+    # artwork of an order that was already produced and shipped - the order itself
+    # survives account deletion (orders.user_id is RESTRICT), so its files must too.
+    user_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    # The R2 object key. Stored explicitly rather than parsed back out of `url`,
+    # because deletion must not depend on reversing however the public URL was
+    # built at the time (the base URL has already changed once, in the Cloudinary
+    # -> R2 move). Without a reliable key an orphaned object can never be removed.
+    storage_key: Mapped[str] = mapped_column(Text)
+    # The public URL that goes into the cart line and the order's snapshot.
+    # Indexed because linking uploads to an order at checkout looks them up by it.
+    url: Mapped[str] = mapped_column(Text, index=True)
+    content_type: Mapped[str] = mapped_column(String(80), default="")
+    bytes: Mapped[int] = mapped_column(Integer, default=0)
+    # What the customer called it. Shown to admin next to the order so a support
+    # conversation ("the second photo I sent") has something to match against.
+    original_filename: Mapped[str | None] = mapped_column(String(300), nullable=True)
+
+    order_id: Mapped[str | None] = mapped_column(
+        ForeignKey("orders.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    # The date this file becomes eligible for deletion. NULL means "not yet" -
+    # either it isn't in a delivered order, or it's an orphan still inside the
+    # orphan grace period. Indexed: the sweep queries exactly this column.
+    purge_after: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
+    purged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Admin's "keep this one". A reprint, a dispute or a complaint means the
+    # artwork must outlive the retention window, and that decision has to survive
+    # the automatic sweep - so it's a flag on the row, not a date that the next
+    # status change would recompute.
+    purge_hold: Mapped[bool] = mapped_column(Boolean, default=False)
+    purge_note: Mapped[str | None] = mapped_column(String(300), nullable=True)
+
+    order: Mapped["Order | None"] = relationship()
 
 
 class Payment(Base, TimestampMixin):

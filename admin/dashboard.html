@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.trycloudflare.com http://127.0.0.1:8000 https://api.razorpay.com https://lumberjack.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com; object-src 'none'; base-uri 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' data: https:; connect-src 'self' https://*.trycloudflare.com http://127.0.0.1:8000 https://api.razorpay.com https://lumberjack.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com; object-src 'none'; base-uri 'self';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sai Studio Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,7 +12,7 @@
      file instead of quietly reusing yesterday's cached copy (StaticFiles sets
      Last-Modified/ETag, but browsers can still serve a heuristically "fresh"
      cached response without revalidating). -->
-<link rel="stylesheet" href="css/admin.css?v=10">
+<link rel="stylesheet" href="css/admin.css?v=25">
 </head>
 <body>
   <div class="mobile-topbar">
@@ -32,8 +32,10 @@
         <a href="#/bookings" data-route="bookings">Bookings</a>
         <a href="#/orders" data-route="orders">Orders</a>
         <a href="#/customers" data-route="customers">Customers</a>
+        <a href="#/enquiries" data-route="enquiries">Enquiries</a>
         <a href="#/reviews" data-route="reviews">Reviews</a>
         <a href="#/media" data-route="media">Media Library</a>
+        <a href="#/artwork" data-route="artwork">Order Artwork</a>
         <a href="#/homepage" data-route="homepage">Homepage Builder</a>
         <a href="#/settings" data-route="settings">Settings</a>
         <a href="#/staff" data-route="staff" class="owner-only">Staff</a>
@@ -45,19 +47,21 @@
     <main class="main" id="view"></main>
   </div>
 
-  <script src="js/api.js?v=10"></script>
-  <script src="js/core.js?v=10"></script>
-  <script src="js/catalog.js?v=10"></script>
-  <script src="js/coupons.js?v=10"></script>
-  <script src="js/bookings.js?v=10"></script>
-  <script src="js/staff.js?v=10"></script>
-  <script src="js/orders.js?v=10"></script>
-  <script src="js/customers.js?v=10"></script>
-  <script src="js/reviews.js?v=10"></script>
-  <script src="js/media.js?v=10"></script>
-  <script src="js/settings.js?v=10"></script>
-  <script src="js/homepage.js?v=10"></script>
-  <script src="js/arrange.js?v=10"></script>
-  <script src="js/app.js?v=10"></script>
+  <script src="js/api.js?v=25"></script>
+  <script src="js/core.js?v=25"></script>
+  <script src="js/catalog.js?v=25"></script>
+  <script src="js/coupons.js?v=25"></script>
+  <script src="js/bookings.js?v=25"></script>
+  <script src="js/staff.js?v=25"></script>
+  <script src="js/orders.js?v=25"></script>
+  <script src="js/customers.js?v=25"></script>
+  <script src="js/enquiries.js?v=25"></script>
+  <script src="js/reviews.js?v=25"></script>
+  <script src="js/media.js?v=25"></script>
+  <script src="js/artwork.js?v=25"></script>
+  <script src="js/settings.js?v=25"></script>
+  <script src="js/homepage.js?v=25"></script>
+  <script src="js/arrange.js?v=25"></script>
+  <script src="js/app.js?v=25"></script>
 </body>
 </html>

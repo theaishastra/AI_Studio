@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/cart", tags=["cart"])
 def _to_out(row: CartItem) -> CartItemOut:
     return CartItemOut(
         key=row.item_key, product_id=row.product_id, name=row.name, price=row.price, img=row.img,
-        qty=row.qty, customization=row.customization, requirement=row.requirement,
+        qty=row.qty, url=row.url, customization=row.customization, requirement=row.requirement,
     )
 
 
@@ -32,7 +32,7 @@ def sync_cart(body: CartSyncIn, user: User = Depends(get_current_user), db: Sess
     for item in body.items:
         db.add(CartItem(
             user_id=user.id, item_key=item.key, product_id=item.product_id, name=item.name, price=item.price,
-            img=item.img, qty=item.qty, customization=item.customization,
+            img=item.img, qty=item.qty, url=item.url, customization=item.customization,
             requirement=item.requirement,
         ))
     db.commit()

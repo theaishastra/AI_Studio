@@ -54,6 +54,86 @@
     return parseInt(String(str || '0').replace(/[^\d]/g, ''), 10) || 0;
   }
 
+  /* ---------------- cart line identity ----------------------------------
+     A cart line is one *configuration* of a product, not one product. Two
+     lines of the same product that differ in any choice the customer made -
+     a priced "16 Photos" vs "8 Photos" dropdown, a colour, an engraving, a
+     different uploaded photo - are different things to buy, usually at
+     different prices, and each needs its own row.
+
+     Every page used to key lines by product name alone (studio.js appended
+     the selected dropdown values to the *display* name, which helped only as
+     long as that suffix was built; corporate.js didn't even do that), so two
+     configurations of one product collapsed into a single row that kept
+     whichever price and customization was added FIRST and just multiplied
+     its quantity - the customer saw "16 Photos" at the 8-photo price, qty 2.
+
+     Hashing the configuration - rather than gifts.js's old
+     `${name}::${Date.now()}`, which was unique per *click* - keeps this
+     deterministic: re-adding an identical configuration increments the row
+     that's already there instead of stacking near-duplicate rows. */
+
+  // Canonical JSON: object keys sorted, so two equal configurations always
+  // hash the same regardless of the order the page happened to build them in.
+  function stableStringify(value) {
+    if (value === null || value === undefined) return 'null';
+    if (typeof value !== 'object') return JSON.stringify(value);
+    if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+    return `{${Object.keys(value).sort()
+      .map(k => `${JSON.stringify(k)}:${stableStringify(value[k])}`).join(',')}}`;
+  }
+
+  // Drops empty answers so a product whose optional fields were all left blank
+  // still keys by its plain name (and so merges with an identical earlier add)
+  // instead of by the hash of `{a:'',b:[]}`.
+  function pruneEmpty(value) {
+    if (Array.isArray(value)) {
+      const out = value.map(pruneEmpty).filter(v => v !== undefined);
+      return out.length ? out : undefined;
+    }
+    if (value && typeof value === 'object') {
+      const out = {};
+      Object.keys(value).forEach(k => {
+        const v = pruneEmpty(value[k]);
+        if (v !== undefined) out[k] = v;
+      });
+      return Object.keys(out).length ? out : undefined;
+    }
+    if (value === '' || value === null || value === undefined || value === false) return undefined;
+    return value;
+  }
+
+  // FNV-1a, base36. Not a checksum anyone verifies - just a short, stable,
+  // collision-unlikely id for a configuration, including base64 photo data.
+  function hash36(str) {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+    }
+    return h.toString(36);
+  }
+
+  // `signature` is whatever distinguishes this line from another of the same
+  // product - normally the whole `customization` object. Labels-only metadata
+  // (fieldLabels) is ignored: it describes the questions, not the answers, so
+  // it must not split a row. Returns the plain name when nothing distinguishes
+  // it, which is what uncustomized products have always used (and what the
+  // qty steppers on the simpler pages still key by).
+  const MAX_KEY_LEN = 300; // cart_items.item_key is VARCHAR(300) server-side
+  function lineKey(name, signature) {
+    const meaningful = pruneEmpty(stripLabelMeta(signature));
+    const base = String(name == null ? '' : name);
+    if (meaningful === undefined) return base.slice(0, MAX_KEY_LEN);
+    return `${base.slice(0, MAX_KEY_LEN - 12)}::${hash36(stableStringify(meaningful))}`;
+  }
+
+  function stripLabelMeta(signature) {
+    if (!signature || typeof signature !== 'object' || Array.isArray(signature)) return signature;
+    const { fieldLabels, ...rest } = signature;
+    return rest;
+  }
+
   function cartTotals(cart) {
     const items = Object.values(cart || getCart());
     let totalQty = 0;
@@ -73,6 +153,14 @@
       price: String(item.price),
       img: item.img || null,
       qty: item.qty,
+      // Deep link back to the product page/modal this line was configured on,
+      // so the cart can make each row clickable (see cart.js). Kept on the
+      // line rather than derived from product_id because each storefront page
+      // has its own deep-link scheme (gifts ?view=product, studio/corporate
+      // ?openProduct=&pid=) and the line doesn't record which page it came
+      // from. Round-trips through the server cart so it survives a device
+      // switch - see backend schemas.CartItemIn.url.
+      url: item.url || null,
       customization: item.customization || null,
       requirement: item.requirement || null,
     }));
@@ -87,6 +175,7 @@
         price: item.price,
         img: item.img,
         qty: item.qty,
+        url: item.url || '',
         customization: item.customization,
         requirement: item.requirement,
       };
@@ -159,10 +248,21 @@
         qty: 0,
         price: extra.price || '',
         img: extra.img || '',
+        url: extra.url || '',
         customization: extra.customization || null,
         requirement: extra.requirement || null,
       };
     }
+    // Refresh the display fields whenever the caller actually supplies them
+    // (an add-to-cart does; a +/- stepper passes `{}` and so changes nothing).
+    // Previously only qty ever changed on an existing row, so a line kept the
+    // name/price it was first created with forever - which is how a row could
+    // sit in the cart showing a price the product no longer sells at.
+    if (extra.name) cart[key].name = extra.name;
+    if (extra.price) cart[key].price = extra.price;
+    if (extra.img) cart[key].img = extra.img;
+    if (extra.product_id) cart[key].product_id = extra.product_id;
+    if (extra.url) cart[key].url = extra.url;
     if (extra.customization) cart[key].customization = extra.customization;
     if (extra.requirement) cart[key].requirement = extra.requirement;
     cart[key].qty += delta;
@@ -187,6 +287,7 @@
     getCart,
     saveCart,
     parsePrice,
+    lineKey,
     cartTotals,
     updateQty,
     removeItem,

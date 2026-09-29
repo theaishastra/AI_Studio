@@ -4,7 +4,7 @@ import logging
 import re
 import time
 from urllib.parse import urlparse
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import httpx
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, UploadFile, status
@@ -16,23 +16,31 @@ from ..config import get_settings
 from ..database import get_db
 from ..deps import audit, require_owner, require_staff
 from ..models import (
-    Address, AuditLog, BlockedEmail, Booking, Category, Coupon, Media, Order,
+    Address, AuditLog, BlockedEmail, Booking, Category, ContactMessage, Coupon, CustomerUpload,
+    Media, Order,
     OrderAddressChangeRequest, OrderCancellationRequest, OrderTrackingEvent,
     OtpCode, Product, Review, Setting, SitePage, User,
 )
 from ..schemas import (
     AddressChangeDecisionIn, AdminAddressChangeRequestOut, AdminCancellationRequestOut,
-    ArrangeIn, BlockEmailIn, BookingOut, BookingStatusUpdate, CancellationDecisionIn, CategoryIn,
-    CategoryOut, CouponIn, CouponOut, CustomerOut, HomepageLayoutIn, MediaIn, MediaLibraryOut,
+    ArrangeIn, ArtworkHoldIn, ArtworkPurgeIn, ArtworkRetentionIn,
+    BlockEmailIn, BookingOut, BookingStatusUpdate, CancellationDecisionIn, CategoryIn,
+    CategoryOut, CategoryReorderIn, ContactOut, ContactReadIn, CouponIn, CouponOut, CustomerOut,
+    HomepageLayoutIn, MediaIn, MediaLibraryOut,
     MediaOut, MediaReorderIn, MediaUsageOut, OrderOut, OrderStatusUpdate, ProductIn, ProductOut, ProductPatch,
     SettingIn, SettingOut, SitePageIn, SitePageOut, StaffIn, TrackingUpdateIn, UserOut,
 )
 from ..security import hash_password
 from ..services.inventory import restock
-from ..services.media import process_image
+from ..services.media import process_image, process_video, sniff_video
 from ..services.notifications import booking_event, notify, order_event
 from ..services.policy import annotate_order, annotate_orders, refund_status as compute_refund_status
 from ..services.pricing import money
+from ..services.retention import (
+    DEFAULT_RETENTION_DAYS, RETENTION_SETTING_KEY,
+    TERMINAL_STATUSES as RETENTION_TERMINAL_STATUSES,
+    get_retention_days, purge_due_artwork, purge_uploads_now, schedule_order_artwork_purge,
+)
 from ..services.storage import CUSTOM_UPLOAD_FIELDS, get_or_create_thumbnail, upload_media_library_asset
 from .catalog import invalidate_catalog_cache
 
@@ -51,7 +59,7 @@ ORDER_STATUS_FLOW = ["created", "payment_pending", "cod_confirmed", "paid", "in_
 # per-selection-batch cap only, this is the authoritative cumulative cap
 # (the frontend limit is a UX nicety, this is what actually blocks the DB
 # from ending up with more photos than the admin UI is designed to show).
-MAX_MEDIA_PER_ENTITY = 5
+MAX_MEDIA_PER_ENTITY = 10
 
 
 def _is_own_r2_url(url: str) -> bool:
@@ -129,18 +137,58 @@ def _invalidate_media_library_cache() -> None:
 # multi-MB blob regardless of which shape ends up in a given row.
 
 
+def _is_inline_upload(value) -> bool:
+    return isinstance(value, str) and value.startswith("data:")
+
+
 def _strip_uploads(snapshot: dict) -> tuple[dict, int]:
+    """Drops still-inline base64 uploads out of one order item's snapshot and
+    reports how many there were, so the list endpoint can show a "N files"
+    badge without shipping the files themselves.
+
+    Two shapes have to be handled, not one. The legacy storefront keys
+    (CUSTOM_UPLOAD_FIELDS) sit at the top of `customization`, but every upload
+    from an admin-configured upload field (Product.input_fields) lands under
+    `customization.fields[<fieldId>]` instead - as a single data: URI, or a
+    list of them for a multi-file field. Counting only the legacy keys meant a
+    dynamic-field order was never stripped at all (the whole base64 blob went
+    out with the list, several MB per photo) and always reported upload_count
+    0, so the badge never appeared for the field type actually in use. See
+    orders.py's _externalize_customization(), which already walks both shapes."""
     customization = snapshot.get("customization")
     if not isinstance(customization, dict):
         return snapshot, 0
-    upload_count = sum(
-        1 for f in CUSTOM_UPLOAD_FIELDS
-        if isinstance(customization.get(f), str) and customization[f].startswith("data:")
-    )
+
+    upload_count = sum(1 for f in CUSTOM_UPLOAD_FIELDS if _is_inline_upload(customization.get(f)))
+
+    fields = customization.get("fields")
+    stripped_fields = None
+    if isinstance(fields, dict):
+        for key, value in fields.items():
+            if _is_inline_upload(value):
+                upload_count += 1
+                if stripped_fields is None:
+                    stripped_fields = dict(fields)
+                # Replaced rather than removed: the admin UI keys its per-field
+                # display off the field id, so dropping the key entirely would
+                # make an uploaded field look like one the customer skipped.
+                stripped_fields[key] = ""
+            elif isinstance(value, list):
+                inline = [v for v in value if _is_inline_upload(v)]
+                if inline:
+                    upload_count += len(inline)
+                    if stripped_fields is None:
+                        stripped_fields = dict(fields)
+                    stripped_fields[key] = [v for v in value if not _is_inline_upload(v)]
+
     if not upload_count:
         return snapshot, 0
+
     trimmed = dict(snapshot)
-    trimmed["customization"] = {k: v for k, v in customization.items() if k not in CUSTOM_UPLOAD_FIELDS}
+    new_customization = {k: v for k, v in customization.items() if k not in CUSTOM_UPLOAD_FIELDS}
+    if stripped_fields is not None:
+        new_customization["fields"] = stripped_fields
+    trimmed["customization"] = new_customization
     return trimmed, upload_count
 
 
@@ -180,6 +228,11 @@ def dashboard_summary(admin: User = Depends(require_staff), db: Session = Depend
             select(sa_func.count()).select_from(OrderAddressChangeRequest)
                 .where(OrderAddressChangeRequest.status == "pending")
                 .scalar_subquery().label("address_change_requests_pending"),
+            # Surfaced on the dashboard so a contact-form enquiry is noticed even
+            # if its notification email never arrived - see list_contact_messages.
+            select(sa_func.count()).select_from(ContactMessage)
+                .where(ContactMessage.is_read == False)
+                .scalar_subquery().label("enquiries_unread"),
         )
     ).one()
     return {
@@ -194,6 +247,7 @@ def dashboard_summary(admin: User = Depends(require_staff), db: Session = Depend
         "revenue": float(row.revenue),
         "cancellation_requests_pending": row.cancellation_requests_pending,
         "address_change_requests_pending": row.address_change_requests_pending,
+        "enquiries_unread": row.enquiries_unread,
     }
 
 
@@ -253,6 +307,33 @@ def create_category(body: CategoryIn, request: Request,
     return _category_out(cat)
 
 
+@router.put("/categories/reorder")
+def reorder_categories(body: CategoryReorderIn, request: Request,
+                       admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    # Must be registered before PUT /categories/{cat_id} below - otherwise
+    # that path-param route would swallow this one first, treating "reorder"
+    # as a category id and 404ing instead of ever reaching this handler.
+    #
+    # Scoped to page_id (like set_arrange is scoped to category_id) so a
+    # stale/tampered id list can only ever reorder within the one page the
+    # admin was looking at, never reach across into another page's categories.
+    valid_ids = {
+        c.id for c in db.query(Category.id).filter(Category.page_id == body.page_id).all()
+    }
+    mappings = [
+        {"id": cat_id, "sort": position}
+        for position, cat_id in enumerate(body.ids)
+        if cat_id in valid_ids
+    ]
+    if mappings:
+        db.bulk_update_mappings(Category, mappings)
+    count = len(mappings)
+    audit(db, admin, "reorder", "category", body.page_id, {"count": count}, request)
+    db.commit()
+    invalidate_catalog_cache()
+    return {"ok": True, "count": count}
+
+
 @router.put("/categories/{cat_id}", response_model=CategoryOut)
 def update_category(cat_id: str, body: CategoryIn, request: Request,
                     admin: User = Depends(require_staff), db: Session = Depends(get_db)):
@@ -308,6 +389,16 @@ def add_category_media(cat_id: str, body: MediaIn, request: Request,
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             f"This category already has the maximum of {MAX_MEDIA_PER_ENTITY} photos",
+        )
+    # A category's portfolio is rendered only as <img> everywhere it appears
+    # (sidebar thumb, hero banner, the folio strip) - there is no player to put a
+    # clip in - so a video is refused here outright rather than silently stored as
+    # a row that would render as a broken image. Product galleries are where video
+    # belongs; see add_product_media below.
+    if body.media_type == "video":
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Videos can only be added to a product's photos, not a category portfolio",
         )
     # Force the kind this endpoint's URL already implies, instead of trusting
     # whatever the caller sent (MediaIn.kind defaults to "portfolio" when
@@ -389,7 +480,7 @@ def create_product(body: ProductIn, request: Request,
     if len(body.media) > MAX_MEDIA_PER_ENTITY:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            f"A product can have at most {MAX_MEDIA_PER_ENTITY} photos",
+            f"A product can have at most {MAX_MEDIA_PER_ENTITY} photos/videos",
         )
     data = body.model_dump(exclude={"media"})
     product = Product(**data)
@@ -397,7 +488,8 @@ def create_product(body: ProductIn, request: Request,
     db.flush()
     for i, m in enumerate(body.media):
         # kind="package" forced, not m.kind - see add_product_media's comment.
-        db.add(Media(product_id=product.id, url=m.url, alt=m.alt, kind="package", sort=m.sort or i))
+        db.add(Media(product_id=product.id, url=m.url, alt=m.alt, kind="package",
+                     media_type=m.media_type, sort=m.sort or i))
     audit(db, admin, "create", "product", product.id, {"title": product.title}, request)
     db.commit()
     db.refresh(product)
@@ -448,7 +540,7 @@ def add_product_media(product_id: str, body: MediaIn, request: Request,
     if len(product.media) >= MAX_MEDIA_PER_ENTITY:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            f"This product already has the maximum of {MAX_MEDIA_PER_ENTITY} photos",
+            f"This product already has the maximum of {MAX_MEDIA_PER_ENTITY} photos/videos",
         )
     # Force kind="package" regardless of what the caller sent - see the matching
     # comment in add_category_media above. This is the endpoint where trusting
@@ -528,7 +620,21 @@ def list_bookings(status_filter: str | None = None,
     query = db.query(Booking)
     if status_filter:
         query = query.filter(Booking.status == status_filter)
-    return query.order_by(Booking.created_at.desc()).all()
+    bookings = query.order_by(Booking.created_at.desc()).all()
+
+    # One query for every referenced package's configured advance, rather than a
+    # lazy-load per booking - see BookingOut.advance_expected for why it's here.
+    product_ids = {b.product_id for b in bookings if b.product_id}
+    advances = dict(
+        db.query(Product.id, Product.advance_amount).filter(Product.id.in_(product_ids)).all()
+    ) if product_ids else {}
+
+    out = []
+    for b in bookings:
+        row = BookingOut.model_validate(b)
+        row.advance_expected = advances.get(b.product_id)
+        out.append(row)
+    return out
 
 
 @router.patch("/bookings/{booking_id}", response_model=BookingOut)
@@ -720,6 +826,13 @@ def update_order_status(order_id: str, body: OrderStatusUpdate, request: Request
                 restock(db, product.id, item.qty)
             item.status = "cancelled"
     order.status = body.status
+    # Delivered (or cancelled/refunded) means the customer's uploaded artwork has
+    # done its job, so this is where its deletion clock starts - 15 days by
+    # default, owner-configurable, and skipped for any file an admin has put on
+    # hold. Nothing is deleted here; the sweep does that when the date arrives.
+    # See services/retention.py for the policy and why delivery is the trigger.
+    if body.status in RETENTION_TERMINAL_STATUSES:
+        schedule_order_artwork_purge(db, order)
     db.add(OrderTrackingEvent(
         order_id=order.id, status=body.status,
         title=ORDER_STATUS_TRACKING_TITLES.get(body.status, body.status.replace("_", " ").title()),
@@ -1162,6 +1275,47 @@ def delete_customer(user_id: str, request: Request,
     db.commit()
 
 
+# ---------------------------------------------------------------- contact enquiries
+
+@router.get("/contact-messages", response_model=list[ContactOut])
+def list_contact_messages(unread_only: bool = False, limit: int = Query(200, ge=1, le=500),
+                          admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    """Contact-form enquiries. POST /api/contact has always saved these and
+    emailed the owner, but nothing could read them back - so an enquiry whose
+    notification email failed (best-effort by design, see routers/contact.py)
+    was effectively lost, and ContactMessage.is_read had no way to ever be set."""
+    query = db.query(ContactMessage)
+    if unread_only:
+        query = query.filter(ContactMessage.is_read == False)
+    return query.order_by(ContactMessage.created_at.desc()).limit(limit).all()
+
+
+@router.patch("/contact-messages/{message_id}/read", response_model=ContactOut)
+def mark_contact_message_read(message_id: str, body: ContactReadIn, request: Request,
+                              admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    message = db.get(ContactMessage, message_id)
+    if not message:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Message not found")
+    message.is_read = body.is_read
+    audit(db, admin, "read" if body.is_read else "unread", "contact_message", message_id, {}, request)
+    db.commit()
+    db.refresh(message)
+    return message
+
+
+@router.delete("/contact-messages/{message_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_contact_message(message_id: str, request: Request,
+                           admin: User = Depends(require_owner), db: Session = Depends(get_db)):
+    """Owner-only: staff can read and triage enquiries, but only the owner can
+    destroy one - same split as the audit log and staff management."""
+    message = db.get(ContactMessage, message_id)
+    if not message:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Message not found")
+    audit(db, admin, "delete", "contact_message", message_id, {"email": message.email}, request)
+    db.delete(message)
+    db.commit()
+
+
 # ---------------------------------------------------------------- reviews
 
 @router.patch("/reviews/{review_id}/toggle")
@@ -1244,8 +1398,15 @@ def upload_media(file: UploadFile, request: Request,
     # `async def` route doing that same work would block the whole event loop
     # (every other concurrent request) for its duration.
     data = file.file.read()
+    # Which of the two validators to run is decided by the file's own magic bytes,
+    # never by its name or declared Content-Type - both are caller-controlled, and
+    # this picks the content-type the object is then served back out under from a
+    # public bucket. An image still gets decoded and re-encoded to WebP; a video is
+    # stored byte-for-byte (no transcoding - this app has no ffmpeg), so
+    # sniff_video()'s container check is all that gates it.
+    is_video = sniff_video(data) is not None
     try:
-        image_bytes, _ext, mime = process_image(data, to_webp=True)
+        media_bytes, ext, mime = process_video(data) if is_video else process_image(data, to_webp=True)
     except ValueError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
 
@@ -1255,17 +1416,21 @@ def upload_media(file: UploadFile, request: Request,
     # reading the same Media row. page_slug/category_slug (sent when this upload
     # comes from a specific product/category's media picker) just organize the R2
     # key for human browsability - see upload_media_library_asset()'s docstring.
-    url = upload_media_library_asset(image_bytes, page_slug=page_slug, category_slug=category_slug)
+    url = upload_media_library_asset(
+        media_bytes, page_slug=page_slug, category_slug=category_slug, ext=ext, content_type=mime,
+    )
     if not url:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Image upload failed — try again")
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Upload failed — try again")
 
-    media = Media(url=url, alt=file.filename or "", kind="library")
+    media = Media(url=url, alt=file.filename or "", kind="library",
+                  media_type="video" if is_video else "image")
     db.add(media)
     audit(db, admin, "upload", "media", media.id, {"url": media.url}, request)
     db.commit()
     db.refresh(media)
     _invalidate_media_library_cache()
-    return {"id": media.id, "url": media.url, "alt": media.alt, "mime": mime, "size": len(image_bytes)}
+    return {"id": media.id, "url": media.url, "alt": media.alt, "mime": mime,
+            "media_type": media.media_type, "size": len(media_bytes)}
 
 
 @router.get("/media", response_model=list[MediaLibraryOut])
@@ -1316,7 +1481,8 @@ def list_media(
     for m in rows:
         g = groups.get(m.url)
         if g is None:
-            g = {"row_id": m.id, "library_id": None, "alt": m.alt, "usage_count": 0, "used_in": {}}
+            g = {"row_id": m.id, "library_id": None, "alt": m.alt, "usage_count": 0,
+                 "media_type": m.media_type or "image", "used_in": {}}
             groups[m.url] = g
             order.append(m.url)
         if m.category_id and m.category:
@@ -1343,6 +1509,7 @@ def list_media(
             url=url,
             alt=groups[url]["alt"],
             usage_count=groups[url]["usage_count"],
+            media_type=groups[url]["media_type"],
             deletable=groups[url]["library_id"] is not None,
             used_in=list(groups[url]["used_in"].values()),
         )
@@ -1358,9 +1525,14 @@ def list_media(
     if category_id or page_id:
         from concurrent.futures import ThreadPoolExecutor
         with ThreadPoolExecutor(max_workers=16) as pool:
-            thumbs = list(pool.map(lambda r: get_or_create_thumbnail(r.url), result))
+            # Videos are skipped, not thumbnailed: get_or_create_thumbnail() runs the
+            # bytes through Pillow, which can't open an MP4, so every video row would
+            # pay a wasted R2 fetch just to fail. The picker renders those as a
+            # <video> element off `url` instead.
+            thumbs = list(pool.map(
+                lambda r: get_or_create_thumbnail(r.url) if r.media_type != "video" else None, result))
         for item, thumb in zip(result, thumbs):
-            item.thumb_url = thumb  # None (thumbnailing failed/unconfigured) -> frontend falls back to item.url
+            item.thumb_url = thumb  # None (thumbnailing failed/unconfigured, or a video) -> frontend falls back to item.url
     _media_library_cache[cache_key] = (time.monotonic(), result)
     return result
 
@@ -1397,7 +1569,9 @@ def get_homepage(admin: User = Depends(require_staff), db: Session = Depends(get
         return c.thumb_image_url or c.hero_image_url
 
     def prod_image(p):
-        return p.media[0].url if p.media else None
+        # First *image*, skipping any video in the gallery - this is rendered as a
+        # plain <img> preview in the homepage builder.
+        return next((m.url for m in p.media if m.media_type != "video"), None)
 
     return {
         "layout": {
@@ -1459,7 +1633,7 @@ def get_arrange(category_id: str, admin: User = Depends(require_staff), db: Sess
         "items": [
             {
                 "id": p.id, "slug": p.slug, "title": p.title,
-                "image": p.media[0].url if p.media else None,
+                "image": next((m.url for m in p.media if m.media_type != "video"), None),
                 "price": float(p.price), "active": p.is_active, "type": p.type,
             }
             for p in products
@@ -1485,3 +1659,137 @@ def set_arrange(body: ArrangeIn, request: Request,
     db.commit()
     invalidate_catalog_cache()
     return {"ok": True, "count": count}
+
+
+# ---------------------------------------------------------------- order artwork retention
+# Customer-uploaded photos are personal data held only to produce an order. These
+# endpoints are the admin side of services/retention.py: see what is scheduled for
+# deletion, keep anything that is still needed, delete on request, and set the
+# window. Nothing here deletes on a timer - the sweep in main.py does that.
+
+@router.get("/artwork")
+def list_artwork(status_filter: str = "scheduled", limit: int = 200,
+                 admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    """Artwork files, newest first.
+
+    status_filter:
+      scheduled - has a deletion date and is still on the clock (the default view:
+                  "what is about to go")
+      held      - an admin has chosen to keep it past its window
+      purged    - already deleted; the row remains as the record that it existed
+      orphan    - uploaded but never checked out
+      all       - everything
+    """
+    q = db.query(CustomerUpload)
+    if status_filter == "scheduled":
+        q = q.filter(CustomerUpload.purged_at.is_(None), CustomerUpload.purge_hold.is_(False),
+                     CustomerUpload.purge_after.isnot(None))
+    elif status_filter == "held":
+        q = q.filter(CustomerUpload.purged_at.is_(None), CustomerUpload.purge_hold.is_(True))
+    elif status_filter == "purged":
+        q = q.filter(CustomerUpload.purged_at.isnot(None))
+    elif status_filter == "orphan":
+        q = q.filter(CustomerUpload.purged_at.is_(None), CustomerUpload.order_id.is_(None))
+    rows = q.order_by(CustomerUpload.created_at.desc()).limit(min(limit, 500)).all()
+
+    order_ids = {r.order_id for r in rows if r.order_id}
+    orders = {
+        o.id: o for o in db.query(Order).filter(Order.id.in_(order_ids)).all()
+    } if order_ids else {}
+    return {
+        "retention_days": get_retention_days(db),
+        "items": [
+            {
+                "id": r.id,
+                # The URL is omitted once purged - it would 404, and offering a dead
+                # link reads as a broken page rather than a deleted file.
+                "url": None if r.purged_at else r.url,
+                "filename": r.original_filename,
+                "bytes": r.bytes,
+                "created_at": r.created_at,
+                "order_id": r.order_id,
+                "order_number": orders[r.order_id].order_number if r.order_id in orders else None,
+                "order_status": orders[r.order_id].status if r.order_id in orders else None,
+                "purge_after": r.purge_after,
+                "purged_at": r.purged_at,
+                "purge_hold": r.purge_hold,
+                "purge_note": r.purge_note,
+            }
+            for r in rows
+        ],
+    }
+
+
+@router.put("/artwork/{upload_id}/hold")
+def set_artwork_hold(upload_id: str, body: ArtworkHoldIn, request: Request,
+                     admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    """Keep a file past its deletion date, or release it back onto the clock.
+
+    Holding is the escape hatch for reprints, damage claims and disputes, so it
+    is staff-level rather than owner-only: the failure mode is keeping a file
+    too long, which is recoverable, unlike deleting one too early."""
+    row = db.get(CustomerUpload, upload_id)
+    if not row:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Upload not found")
+    if row.purged_at:
+        raise HTTPException(status.HTTP_409_CONFLICT, "That file has already been deleted")
+    row.purge_hold = bool(body.hold)
+    row.purge_note = (body.note or "").strip()[:300] or None
+    if not row.purge_hold and row.order_id and row.purge_after is None:
+        # Released with no date left on it (its order hit a terminal status while
+        # it was held, so scheduling skipped it) - give it today's window rather
+        # than leaving it in limbo, unscheduled and never swept.
+        row.purge_after = date.today() + timedelta(days=get_retention_days(db))
+    audit(db, admin, "artwork_hold", "customer_upload", row.id,
+          {"hold": row.purge_hold, "note": row.purge_note}, request)
+    db.commit()
+    return {"ok": True, "hold": row.purge_hold, "purge_after": row.purge_after}
+
+
+@router.post("/artwork/purge-now")
+def purge_artwork_now(body: ArtworkPurgeIn, request: Request,
+                      admin: User = Depends(require_owner), db: Session = Depends(get_db)):
+    """Delete specific files immediately, ignoring schedule and hold.
+
+    Owner-gated and irreversible: the object is removed from R2 and cannot be
+    recovered. This exists for a customer asking for their photo to be erased,
+    and for artwork that should never have been uploaded."""
+    rows = db.query(CustomerUpload).filter(CustomerUpload.id.in_(body.ids)).all()
+    if not rows:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No matching uploads")
+    result = purge_uploads_now(db, rows)
+    audit(db, admin, "artwork_purge_now", "customer_upload", ",".join(body.ids[:20]), result, request)
+    db.commit()
+    return {"ok": True, **result}
+
+
+@router.post("/artwork/run-sweep")
+def run_artwork_sweep(request: Request,
+                      admin: User = Depends(require_owner), db: Session = Depends(get_db)):
+    """Run the retention sweep now instead of waiting for the scheduled one.
+    Only deletes what is already due, so it is the same operation the timer
+    performs - useful after changing the window, or to confirm it works."""
+    result = purge_due_artwork(db)
+    audit(db, admin, "artwork_sweep", "customer_upload", "-", result, request)
+    db.commit()
+    return {"ok": True, **result}
+
+
+@router.put("/artwork/retention")
+def set_artwork_retention(body: ArtworkRetentionIn, request: Request,
+                          admin: User = Depends(require_owner), db: Session = Depends(get_db)):
+    """Set how many days after delivery artwork is kept.
+
+    Owner-only: shortening this shortens the life of files already scheduled,
+    and lengthening it is a data-retention commitment. Already-scheduled dates
+    are left alone - a file's deletion date is fixed when its order completes,
+    so a policy change applies to orders completed from now on and can't
+    retroactively delete something sooner than promised."""
+    row = db.query(Setting).filter(Setting.key == RETENTION_SETTING_KEY).first()
+    if not row:
+        row = Setting(key=RETENTION_SETTING_KEY, value={})
+        db.add(row)
+    row.value = {"days": body.days}
+    audit(db, admin, "artwork_retention", "setting", RETENTION_SETTING_KEY, {"days": body.days}, request)
+    db.commit()
+    return {"ok": True, "days": body.days, "default": DEFAULT_RETENTION_DAYS}

@@ -145,4 +145,30 @@ const CustomerAuth = {
   requestAddressChange: (orderId, address) =>
     customerApi(`/api/orders/${orderId}/address-change`, { method: "POST", body: JSON.stringify(address) }),
   myBookings: () => customerApi("/api/bookings/my"),
+
+  // Uploads one customer photo and resolves to its stored URL. Deliberately not
+  // routed through customerApi(): that sets Content-Type: application/json,
+  // whereas a multipart body needs the browser to set the header itself so it
+  // can include the multipart boundary. Everything else - the bearer token, the
+  // expired-session handling, the server's error text - matches.
+  uploadArtwork: async (file) => {
+    const token = getCustomerToken();
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(`${CUSTOMER_API_BASE}/api/uploads/artwork`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    if (res.status === 401 && token) {
+      handleExpiredCustomerSession();
+      throw new Error("Your session has expired. Please sign in again.");
+    }
+    if (!res.ok) {
+      let detail = res.statusText;
+      try { detail = (await res.json()).detail || detail; } catch (_) {}
+      throw new Error(detail);
+    }
+    return res.json();
+  },
 };

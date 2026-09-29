@@ -24,6 +24,10 @@ async function renderHomepage() {
     <div id="homeProducts"></div>
   `;
   const data = await Api.homepage();
+  // Bail out if the admin navigated to another section while this request was in
+  // flight - the elements below belong to a view that is no longer in the document,
+  // and writing to them throws an uncaught TypeError (see coupons.js).
+  if (!document.getElementById("homeAutoNotice")) return;
   const isAutomatic = !data.layout.category_ids.length && !data.layout.product_ids.length;
 
   // Nothing curated yet doesn't mean the homepage is blank - the storefront

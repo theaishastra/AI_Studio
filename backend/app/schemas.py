@@ -29,6 +29,16 @@ def _validate_email_str(v: str) -> str:
 # on to be escaped correctly at every render site.
 _UNSAFE_URL_CHARS = re.compile(r"[\"'<>]")
 
+# Same idea for free-text that gets rendered into storefront/admin markup by a
+# template string rather than a DOM text node (product input field labels,
+# options, placeholders): reject at the source rather than trusting every render
+# site to escape correctly. Narrower than _UNSAFE_URL_CHARS above - a bare
+# apostrophe is deliberately allowed, because labels like "Child's Name" are
+# entirely legitimate and every attribute this text reaches is double-quoted and
+# run through a quote-escaping helper anyway (see js/shared/product-fields.js's
+# escAttr). A double quote or an angle bracket has no such legitimate use here.
+_UNSAFE_TEXT_CHARS = re.compile(r"[\"<>]")
+
 
 def _validate_media_url(v: str) -> str:
     v = (v or "").strip()
@@ -155,6 +165,12 @@ class CartItemIn(BaseModel):
     price: str
     img: str | None = None
     qty: int = Field(default=1, ge=1)
+    # Relative deep link back to the product page/modal the line was configured
+    # on ("studio.html?openProduct=...&pid=..."), so the cart can make each row
+    # clickable. Stored on the line rather than derived from product_id because
+    # each storefront page has its own deep-link scheme and the line doesn't
+    # record which page it came from. Set by the browser; see cart-core.js.
+    url: str | None = None
     customization: dict | None = None
     requirement: dict | None = None
 
@@ -223,6 +239,10 @@ class MediaIn(BaseModel):
     url: str
     alt: str = ""
     kind: str = Field(default="portfolio", pattern="^(portfolio|package)$")
+    # "video" is only accepted on a product's media (add_product_media) - a category
+    # portfolio rejects it, because nothing renders a category's media as anything
+    # but an <img>. See models.Media.media_type.
+    media_type: str = Field(default="image", pattern="^(image|video)$")
     sort: int = 0
 
     _validate_url = field_validator("url")(_validate_media_url)
@@ -256,12 +276,14 @@ class MediaLibraryOut(BaseModel):
     url: str
     alt: str
     usage_count: int  # how many products/categories currently use this image
+    media_type: str = "image"  # "video" rows render as a <video> tile, not an <img>
     deletable: bool  # true only if there's a standalone library upload of it
     used_in: list[MediaUsageOut] = []  # empty when deletable (nothing to point at)
     # Small WebP for the picker grid - `url` stays the real full-resolution image
     # (it's what gets attached to a product/category on select), so this must never
-    # replace it. None when not computed (the unscoped "all" library view skips this -
-    # see list_media()) - the frontend falls back to `url` in that case.
+    # replace it. None when not computed (the unscoped "all" library view skips this,
+    # and a video has no still to thumbnail without ffmpeg - see list_media()) - the
+    # frontend falls back to `url` in that case.
     thumb_url: str | None = None
 
 
@@ -296,11 +318,23 @@ class ProductInputFieldIn(BaseModel):
     catalog UI. `id` is stable across edits so submitted values (keyed by
     field id in an order item's customization.fields) keep meaning even if
     the label/options are edited later."""
-    id: str = Field(min_length=1, max_length=40)
+    # Restricted to an identifier charset, not just a length: this value is used
+    # as a DOM id / for= target by the storefront field renderer
+    # (js/shared/product-fields.js) and as a key in an order item's
+    # customization.fields, so anything quote- or bracket-bearing here is a
+    # markup-injection vector on a public product page. Same reasoning as
+    # _EMAIL_RE and _validate_media_url above: reject it at the source instead
+    # of relying on every render site to escape it correctly.
+    id: str = Field(min_length=1, max_length=40, pattern=r"^[A-Za-z0-9_-]+$")
     type: str = Field(pattern="^(upload|dropdown|text)$")
     label: str = Field(min_length=1, max_length=160)
     required: bool = False
     help_text: str = Field(default="", max_length=300)
+    # Optional hint text shown inside a text field's input. Was already read by
+    # the storefront renderer but had no home in this schema, so it could never
+    # actually be set - declared here (and offered in the admin field builder)
+    # so the renderer's support for it is reachable.
+    placeholder: str = Field(default="", max_length=120)
     sort: int = 0
     # upload only
     multiple: bool = False
@@ -313,6 +347,47 @@ class ProductInputFieldIn(BaseModel):
     # "16 Photos = ₹200" quantity picker). Keyed by the option string itself; an
     # option with no entry here just behaves like a normal answer.
     option_prices: dict[str, float] | None = None
+    # Display only, and only meaningful alongside option_prices: the struck-through
+    # "was" price shown on that option's tile in the storefront's variant picker
+    # (js/shared/product-fields.js). Deliberately NOT read by
+    # services/product_fields.py's resolve_product_price - what a customer is
+    # charged comes from option_prices alone, so a wrong figure here can only ever
+    # mis-advertise a discount, never mis-bill. The storefront hides it unless it is
+    # above that option's actual price.
+    option_mrps: dict[str, float] | None = None
+    # Display only, and entirely optional: maps an option to one of this product's
+    # own gallery photos by position ("9X9 is the 2nd photo"), so picking that
+    # option swaps the product page's main image to the matching one. 1-based,
+    # matching how the admin field builder counts photos in the Photos dialog.
+    # Options with no entry - and a product with no mapping at all - simply leave
+    # the gallery alone, which is the behaviour every existing product has. An
+    # index past the end of the gallery is ignored by the storefront rather than
+    # rejected here, because photos can be removed long after the mapping is set.
+    option_images: dict[str, int] | None = None
+
+    # Longest answer a customer may submit for a text field on this product.
+    # Without a cap, nothing stopped a several-hundred-KB string being stored as
+    # an order line's answer and then re-sent with every order list/detail
+    # response that includes it. Per-field so a "Name to print" and a "Gift
+    # message" can differ; the ceiling keeps any single answer bounded.
+    max_length: int = Field(default=500, ge=1, le=5000)
+
+    @field_validator("label", "help_text", "placeholder")
+    @classmethod
+    def _no_markup_chars(cls, v: str) -> str:
+        # These are rendered into the storefront product page; quotes and angle
+        # brackets are rejected here for the same reason as `id` above.
+        if v and _UNSAFE_TEXT_CHARS.search(v):
+            raise ValueError("Cannot contain double quotes or angle brackets")
+        return v
+
+    @field_validator("options")
+    @classmethod
+    def _safe_options(cls, v: list[str]) -> list[str]:
+        for option in v:
+            if _UNSAFE_TEXT_CHARS.search(option):
+                raise ValueError(f'Option "{option}" cannot contain double quotes or angle brackets')
+        return v
 
     @model_validator(mode="after")
     def _check_type_fields(self):
@@ -320,6 +395,12 @@ class ProductInputFieldIn(BaseModel):
             raise ValueError(f'Dropdown field "{self.label}" needs at least one option')
         if self.type == "upload" and self.multiple and self.max_files < 2:
             raise ValueError(f'Upload field "{self.label}" allows multiple files but has max_files < 2')
+        if self.option_prices:
+            unknown = [o for o in self.option_prices if o not in set(self.options or [])]
+            if unknown:
+                raise ValueError(
+                    f'Field "{self.label}" prices an option it does not offer: {", ".join(unknown)}'
+                )
         return self
 
 
@@ -337,6 +418,7 @@ class ProductIn(BaseModel):
     address_change_window_hours: int | None = Field(default=None, ge=0, le=720)
     delivery_days: int | None = Field(default=None, ge=0, le=365)
     features: list[str] = []
+    search_keywords: list[str] = []
     is_active: bool = True
     sort: int = 0
     extra: dict = {}
@@ -358,6 +440,7 @@ class ProductPatch(BaseModel):
     address_change_window_hours: int | None = Field(default=None, ge=0, le=720)
     delivery_days: int | None = Field(default=None, ge=0, le=365)
     features: list[str] | None = None
+    search_keywords: list[str] | None = None
     is_active: bool | None = None
     sort: int | None = None
     extra: dict | None = None
@@ -380,6 +463,7 @@ class ProductOut(BaseModel):
     address_change_window_hours: int | None
     delivery_days: int | None
     features: list[str]
+    search_keywords: list[str] = []
     is_active: bool
     sort: int
     extra: dict
@@ -417,12 +501,20 @@ class CouponOut(CouponIn):
 # ---------------------------------------------------------------- bookings
 
 class ContactIn(BaseModel):
-    name: str
-    phone: str
+    # This was the one input schema on the app with no validation at all - it
+    # accepted {"email": "not-an-email", "phone": "1"} and had no length limits
+    # on any field, on an endpoint that is both unauthenticated and the easiest
+    # table to flood. Lengths match the ContactMessage columns so an over-long
+    # value is a readable 422 rather than a database error, and email reuses the
+    # same validator every other email field on the app uses.
+    name: str = Field(min_length=2, max_length=120)
+    phone: str = Field(pattern=r"^[6-9]\d{9}$")
     email: str
-    topic: str | None = None
-    subject: str
-    message: str
+    topic: str | None = Field(default=None, max_length=60)
+    subject: str = Field(min_length=3, max_length=200)
+    message: str = Field(min_length=3, max_length=5000)
+
+    _validate_email = field_validator("email")(_validate_email_str)
 
 
 class ContactOut(BaseModel):
@@ -436,6 +528,10 @@ class ContactOut(BaseModel):
     message: str
     is_read: bool
     created_at: datetime
+
+
+class ContactReadIn(BaseModel):
+    is_read: bool = True
 
 
 class BookingIn(BaseModel):
@@ -466,6 +562,13 @@ class BookingOut(BaseModel):
     advance_paid: float
     status: str
     created_at: datetime
+    # What this booking's package is configured to take as an advance
+    # (Product.advance_amount), alongside advance_paid, which is what staff have
+    # actually recorded as received. Read-only, filled in by the admin bookings
+    # endpoint from the joined product - without it the advance an admin sets on
+    # a service package had no effect anywhere and staff had no reference for
+    # what they were supposed to be collecting.
+    advance_expected: float | None = None
 
 
 # ---------------------------------------------------------------- orders / payments
@@ -724,6 +827,11 @@ class ArrangeIn(BaseModel):
     ids: list[str]
 
 
+class CategoryReorderIn(BaseModel):
+    page_id: str
+    ids: list[str]
+
+
 class MediaReorderIn(BaseModel):
     ids: list[str]  # media ids in the desired display order (first = main image)
 
@@ -738,3 +846,22 @@ class SettingOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     key: str
     value: dict
+
+
+# ---------------------------------------------------------------- order artwork retention
+
+class ArtworkHoldIn(BaseModel):
+    hold: bool
+    # Why this file is being kept - shown in the admin list so a hold set months
+    # ago still explains itself ("reprint pending", "damage claim #1234").
+    note: str | None = None
+
+
+class ArtworkPurgeIn(BaseModel):
+    ids: list[str] = Field(min_length=1, max_length=200)
+
+
+class ArtworkRetentionIn(BaseModel):
+    # 1 day minimum: same-day deletion would remove artwork before anyone could
+    # act on a delivery complaint. 3650 is a sanity ceiling, not a policy.
+    days: int = Field(ge=1, le=3650)

@@ -269,10 +269,24 @@ function initSidebar() {
   document.getElementById('mobileCatScroll').innerHTML = mobileHTML;
 }
 
+/* Text-node escaping only - textContent -> innerHTML escapes & < > but NOT
+   quotes, so this is safe between tags and NOT safe inside an attribute value.
+   Use escapeAttr() there. */
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+/* Attribute-value escaping. Product titles and category names come from the
+   live catalog and have no character validation, so one containing a double
+   quote would close an attribute early (data-mega-name=, alt=) and let the rest
+   of the string become live markup. Same quote-safe form the rest of the
+   storefront already uses (cart.js's escapeHtml, my-orders.js's escapeOrdAttr). */
+function escapeAttr(str) {
+  return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
 }
 
 function buildCategoryMegaMenus() {
@@ -282,7 +296,7 @@ function buildCategoryMegaMenus() {
     if (!cat) return;
 
     const linksHTML = cat.packages.map(pkg => `
-      <a href="javascript:void(0)" class="mega-link" data-mega-name="${escapeHtml(pkg.name)}">
+      <a href="javascript:void(0)" class="mega-link" data-mega-name="${escapeAttr(pkg.name)}">
         ${escapeHtml(pkg.name)}
         ${pkg.badge ? `<span class="mega-badge">${escapeHtml(pkg.badge)}</span>` : ''}
       </a>
@@ -297,7 +311,7 @@ function buildCategoryMegaMenus() {
         ${linksHTML}
       </div>
       <a href="javascript:void(0)" class="mega-promo" data-mega-viewall>
-        <img src="${cldOpt(banner ? banner.src : cat.icon)}" alt="${escapeHtml(cat.title)}" loading="lazy">
+        <img src="${cldOpt(banner ? banner.src : cat.icon)}" alt="${escapeAttr(cat.title)}" loading="lazy">
         <div class="mega-promo-text">
           <strong>${escapeHtml(cat.title)}</strong>
           <span>Starting at &#8377;${startingPrice}</span>
@@ -365,19 +379,29 @@ function renderContent() {
   let title = "";
   let desc = "";
   let packages = [];
+  // Only meaningful when searchQuery is set - how many of `packages` (the ones
+  // at the front) are actual matches, for the "Best Match" badge below.
+  let matchCount = 0;
 
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
-    const keys = Object.keys(categoriesData);
-    keys.forEach(k => {
-      packages = packages.concat(categoriesData[k].packages.map(p => ({ ...p, _catKey: k })));
+    let allPackages = [];
+    Object.keys(categoriesData).forEach(k => {
+      allPackages = allPackages.concat(categoriesData[k].packages.map(p => ({ ...p, _catKey: k })));
     });
-    packages = packages.filter(pkg =>
-      pkg.name.toLowerCase().includes(q) || pkg.subtitle.toLowerCase().includes(q)
-    );
+    const isMatch = pkg => pkg.name.toLowerCase().includes(q) || pkg.subtitle.toLowerCase().includes(q) ||
+      (pkg.search_keywords && pkg.search_keywords.join(' ').toLowerCase().includes(q));
+    // Matches float to the top instead of hiding every other service - a query
+    // only a couple of packages are tagged with used to leave the whole grid
+    // looking empty. Sort (price/etc) applies within each group separately so
+    // it can't scramble matches back in among the rest.
+    const matches = applyFilters(allPackages.filter(isMatch));
+    const others = applyFilters(allPackages.filter(p => !isMatch(p)));
+    packages = matches.concat(others);
+    matchCount = matches.length;
     title = `Search results for "${searchQuery}"`;
-    desc = packages.length
-      ? `${packages.length} service${packages.length === 1 ? '' : 's'} found matching your search.`
+    desc = matches.length
+      ? `${matches.length} service${matches.length === 1 ? '' : 's'} match your search.`
       : "No services matched your search. Try a different keyword.";
   } else if (currentCategory === 'all') {
     title = "All Studio Services";
@@ -386,14 +410,14 @@ function renderContent() {
     keys.forEach(k => {
       packages = packages.concat(categoriesData[k].packages.map(p => ({ ...p, _catKey: k })));
     });
+    packages = applyFilters(packages);
   } else {
     const cat = categoriesData[currentCategory];
     title = cat.title;
     desc = cat.desc;
     packages = cat.packages.map(p => ({ ...p, _catKey: currentCategory }));
+    packages = applyFilters(packages);
   }
-
-  packages = applyFilters(packages);
 
   // Header
   document.getElementById('catTitle').textContent = title;
@@ -402,12 +426,13 @@ function renderContent() {
   // Packages
   currentPackages = packages;
   const packagesHTML = packages.map((pkg, idx) => {
+    const isSearchMatch = searchQuery && idx < matchCount;
     return `
-    <div class="pkg-card">
+    <div class="pkg-card${isSearchMatch ? ' search-match' : ''}">
       <div class="pkg-image-wrap" onclick="openProductPreview(${idx})">
         <img class="pkg-image" src="${cldOpt(pkg.img)}" alt="${pkg.name}" loading="lazy" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
-        ${pkg.tag ? `<span class="pkg-badge">${escapeHtml(pkg.tag)}</span>` : ''}
-        ${pkg.badge ? `<span class="pkg-ribbon pkg-ribbon-${pkg.badge.toLowerCase()}">${pkg.badge}</span>` : ''}
+        ${isSearchMatch ? `<span class="pkg-ribbon pkg-ribbon-bestseller">Best Match</span>` : (pkg.badge ? `<span class="pkg-ribbon pkg-ribbon-${pkg.badge.toLowerCase()}">${pkg.badge}</span>` : '')}
+        ${!isSearchMatch && pkg.tag ? `<span class="pkg-badge">${escapeHtml(pkg.tag)}</span>` : ''}
         <button type="button" class="pkg-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
@@ -443,7 +468,8 @@ function orderNowFromCard(idx) {
     openProductPreview(idx);
     return;
   }
-  addToStudioCart(pkg.name, pkg.price, pkg.img, null, null, pkg.id);
+  addToStudioCart(pkg.name, pkg.price, pkg.img, null, null, pkg.id, 1,
+    `studio.html?category=${encodeURIComponent(currentCategory)}&openProduct=${encodeURIComponent(pkg.name)}${pkg.id ? `&pid=${encodeURIComponent(pkg.id)}` : ''}`);
   location.href = 'cart.html';
 }
 
@@ -465,6 +491,9 @@ function openProductPreview(idx, opts = {}) {
   document.getElementById('previewItemQty').textContent = '1';
 
   const images = pkg.images && pkg.images.length ? pkg.images : [pkg.img];
+  // Photos first, then any clip the admin attached - see js/shared/product-media.js
+  // for why videos are kept out of `images` rather than appended to it upstream.
+  const galleryItems = ProductMedia.build(images, pkg.videos);
   const highlights = pkg.highlights && pkg.highlights.length
     ? pkg.highlights
     : ["High-Quality Output", "Premium Paper Stock", "Quick Studio Handover"];
@@ -474,7 +503,11 @@ function openProductPreview(idx, opts = {}) {
     `<a href="javascript:void(0)" onclick="closeProductPreview()">Home</a> / ${catTitle} / ${pkg.name}`;
 
   document.getElementById('previewTitle').textContent = pkg.name;
-  document.getElementById('previewSubtitle').textContent = pkg.subtitle;
+  // pkg.subtitle is the product's description (see the mapping further down).
+  // It used to be printed twice - once as a grey line under the title and again
+  // here in the Description accordion - so the subtitle line is gone and this is
+  // the single place it appears, matching the gifts and corporate product views.
+  // pkg.subtitle itself stays: search and the share sheet still read it.
   document.getElementById('previewDescriptionContent').textContent = pkg.subtitle;
   document.getElementById('previewPrice').textContent = pkg.price;
   document.getElementById('previewActionPrice').textContent = pkg.price;
@@ -488,7 +521,11 @@ function openProductPreview(idx, opts = {}) {
     const newNum = parsePrice(pkg.price);
     const percentOff = Math.round((1 - newNum / oldNum) * 100);
     discountEl.textContent = `${percentOff}% off`;
-    discountEl.style.display = 'inline';
+    // '' rather than 'inline' for the same reason as the gallery dots below:
+    // the shared product-view stylesheet renders this as an inline-flex pill,
+    // and an inline display set here would beat that and knock the pill's
+    // centring out. This line only decides shown vs hidden.
+    discountEl.style.display = '';
   } else {
     oldPriceEl.style.display = 'none';
     discountEl.style.display = 'none';
@@ -497,28 +534,42 @@ function openProductPreview(idx, opts = {}) {
   renderPreviewOptions(pkg);
 
   const galleryEl = document.getElementById('previewGallery');
-  galleryEl.innerHTML = images.map((img, i) => `
-    <img src="${cldOpt(img)}" class="preview-slide" alt="${pkg.name} view ${i + 1}" loading="${i === 0 ? 'eager' : 'lazy'}" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
-  `).join('');
+  // controls (not autoplay) and preload="metadata": the clip is one slide in a
+  // carousel the visitor may never scroll to, so it costs a header until played.
+  galleryEl.innerHTML = galleryItems.map((item, i) => item.type === 'video'
+    ? `<video src="${cldOpt(item.url)}" class="preview-slide preview-slide-video" controls playsinline preload="metadata" aria-label="${pkg.name} video"></video>`
+    : `<img src="${cldOpt(item.url)}" class="preview-slide" alt="${pkg.name} view ${i + 1}" loading="${i === 0 ? 'eager' : 'lazy'}" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">`
+  ).join('');
 
-  document.getElementById('previewDots').innerHTML = images.map((img, i) => `
+  document.getElementById('previewDots').innerHTML = galleryItems.map((item, i) => `
     <span class="preview-dot ${i === 0 ? 'active' : ''}" onclick="scrollPreviewTo(${i})"></span>
   `).join('');
-  document.getElementById('previewDots').style.display = images.length > 1 ? 'flex' : 'none';
+  // '' (not 'flex') so the stylesheet decides whether dots are shown at all:
+  // css/shared/product-view.css hides them, because the thumbnail rail is the
+  // shared way to switch photos across all three product views. An inline
+  // 'flex' here would beat that rule and this page would show dots AND
+  // thumbnails together. Only the single-image case is decided here - one
+  // photo needs no switcher of either kind.
+  document.getElementById('previewDots').style.display = galleryItems.length > 1 ? '' : 'none';
 
   const thumbRailEl = document.getElementById('previewThumbRail');
-  thumbRailEl.innerHTML = images.map((img, i) => `
-    <img src="${cldOpt(img)}" class="preview-thumb ${i === 0 ? 'active' : ''}" onclick="scrollPreviewTo(${i})" alt="${pkg.name} thumbnail ${i + 1}" loading="${i === 0 ? 'eager' : 'lazy'}" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
-  `).join('');
+  thumbRailEl.innerHTML = galleryItems.map((item, i) => item.type === 'video'
+    ? `<span class="preview-thumb preview-thumb-video ${i === 0 ? 'active' : ''}" onclick="scrollPreviewTo(${i})" role="button" tabindex="0" aria-label="${pkg.name} video"><video src="${cldOpt(item.url)}" muted playsinline preload="metadata"></video><span class="preview-thumb-play"></span></span>`
+    : `<img src="${cldOpt(item.url)}" class="preview-thumb ${i === 0 ? 'active' : ''}" onclick="scrollPreviewTo(${i})" alt="${pkg.name} thumbnail ${i + 1}" loading="${i === 0 ? 'eager' : 'lazy'}" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">`
+  ).join('');
   if (window.SkLoading) {
-    galleryEl.querySelectorAll('.preview-slide').forEach(img => window.SkLoading.wireImage(img));
-    thumbRailEl.querySelectorAll('.preview-thumb').forEach(img => window.SkLoading.wireImage(img));
+    // img only - wireImage attaches load/error handlers that mean nothing on a
+    // <video>, and the skeleton class it adds would sit over the clip forever.
+    galleryEl.querySelectorAll('img.preview-slide').forEach(img => window.SkLoading.wireImage(img));
+    thumbRailEl.querySelectorAll('img.preview-thumb').forEach(img => window.SkLoading.wireImage(img));
   }
 
   galleryEl.scrollLeft = 0;
   galleryEl.onscroll = handlePreviewGalleryScroll;
 
   document.getElementById('previewHighlights').innerHTML = highlights.map(h => `<li>${h}</li>`).join('');
+
+  renderPreviewRelated(pkg);
 
   const est = new Date();
   est.setDate(est.getDate() + (pkg.deliveryDays || 3));
@@ -527,6 +578,16 @@ function openProductPreview(idx, opts = {}) {
 
   document.getElementById('productPreviewModal').classList.add('open');
   document.body.style.overflow = 'hidden';
+
+  // An option can name one of this product's photos (see option_images in
+  // js/shared/product-fields.js). A priced dropdown comes up with its first
+  // option already selected, so the gallery should open on that option's photo
+  // rather than on photo 1 - but only once the modal is actually laid out, since
+  // scrollPreviewTo() measures the slide width and that is 0 while it is closed.
+  // No mapping, or one pointing past the last photo, leaves the gallery on the
+  // cover exactly as before.
+  const mappedIdx = previewMappedImageIndex();
+  if (mappedIdx !== null) requestAnimationFrame(() => scrollPreviewTo(mappedIdx, 'auto'));
 
   // Reflect the open product in the URL (?category=..&openProduct=..&pid=..) so the
   // address bar is specific to this product, refresh/share/back-button behave sanely,
@@ -542,6 +603,74 @@ function openProductPreview(idx, opts = {}) {
     window.history.pushState({ studioProductPreview: true }, '', url);
   }
 }
+
+// "You may also like" for the product preview modal - scored by shared
+// search_keywords first (admin-entered synonyms/tags), same category as a
+// secondary tiebreak, across every loaded category (not just the one the
+// opened package belongs to).
+function findStudioPackageCategory(id) {
+  if (!id) return null;
+  for (const [catKey, cat] of Object.entries(categoriesData)) {
+    if ((cat.packages || []).some(p => p.id === id)) return catKey;
+  }
+  return null;
+}
+
+function renderPreviewRelated(pkg) {
+  const relatedEl = document.getElementById('previewRelatedProducts');
+  const sectionEl = document.getElementById('previewRelatedSection');
+  if (!relatedEl) return;
+  const currentCatKey = pkg._catKey || findStudioPackageCategory(pkg.id);
+  const currentKeywords = new Set((pkg.search_keywords || []).map(k => String(k).toLowerCase().trim()).filter(Boolean));
+  const pool = [];
+  Object.entries(categoriesData).forEach(([catKey, cat]) => {
+    (cat.packages || []).forEach(p => pool.push(Object.assign({ _catKey: catKey }, p)));
+  });
+  const scored = pool
+    .filter(p => p.id !== pkg.id)
+    .map(p => {
+      const itemKeywords = (p.search_keywords || []).map(k => String(k).toLowerCase().trim());
+      const shared = itemKeywords.filter(k => currentKeywords.has(k)).length;
+      const sameCategory = p._catKey === currentCatKey ? 1 : 0;
+      return { item: p, score: shared * 10 + sameCategory };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4)
+    .map(entry => entry.item);
+
+  if (sectionEl) sectionEl.style.display = scored.length ? '' : 'none';
+  relatedEl.innerHTML = scored.map(p => `
+    <div class="pkg-card" onclick="openStudioRelatedProduct('${p.id}')">
+      <div class="pkg-image-wrap">
+        <img class="pkg-image" src="${cldOpt(p.img)}" alt="${p.name}" loading="lazy" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
+      </div>
+      <div class="pkg-body">
+        <h3>${p.name}</h3>
+        <div class="pkg-meta-row">
+          <span class="pkg-price">${p.price}</span>${p.oldPrice ? `<span class="pkg-old-price">${p.oldPrice}</span>` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+  if (window.SkLoading) {
+    relatedEl.querySelectorAll('.pkg-image-wrap img').forEach(img => window.SkLoading.wireImage(img, { wrap: img.closest('.pkg-image-wrap') }));
+  }
+}
+
+// Recommended items can belong to a category the visitor never browsed to, so
+// they won't already be sitting in currentPackages (openProductPreview() only
+// opens by index into that array) - append it first if it's missing, then open
+// by the resulting index.
+window.openStudioRelatedProduct = function (id) {
+  let idx = currentPackages.findIndex(p => String(p.id) === String(id));
+  if (idx === -1) {
+    const found = Object.values(categoriesData).flatMap(c => c.packages || []).find(p => String(p.id) === String(id));
+    if (!found) return;
+    currentPackages = currentPackages.concat([found]);
+    idx = currentPackages.length - 1;
+  }
+  openProductPreview(idx);
+};
 
 function renderPreviewOptions(pkg) {
   activePreviewQtyOption = null;
@@ -573,7 +702,7 @@ function renderPreviewOptions(pkg) {
   if (customFieldsWrap && window.ProductFields) {
     ProductFields.renderProductFields(customFieldsWrap, pkg);
     const price = ProductFields.getSelectedPrice(customFieldsWrap, pkg);
-    const priceText = (price || price === 0) ? `₹${price}` : pkg.price;
+    const priceText = (price || price === 0) ? ProductFields.formatPrice(price) : pkg.price;
     document.getElementById('previewPrice').textContent = priceText;
     document.getElementById('previewActionPrice').textContent = priceText;
   }
@@ -629,7 +758,7 @@ function handlePreviewPhotoUpload(input) {
     if (window.ProductFields && file.size > ProductFields.MAX_UPLOAD_BYTES) {
       activePreviewPhotoFile = null;
       input.value = '';
-      if (filenameEl) filenameEl.textContent = 'That image is larger than 2 MB - please choose a smaller photo.';
+      if (filenameEl) filenameEl.textContent = `That image is larger than ${ProductFields.MAX_UPLOAD_MB} MB - please choose a smaller photo.`;
       return;
     }
   }
@@ -697,6 +826,9 @@ function handlePreviewGalleryScroll() {
   const idx = Math.round(galleryEl.scrollLeft / slideWidth);
   if (idx === activePreviewImgIdx) return;
   activePreviewImgIdx = idx;
+  // Scrolling away from a playing clip must stop it - otherwise its audio keeps
+  // running under whatever slide the visitor actually landed on.
+  ProductMedia.pauseAll(galleryEl, galleryEl.children[idx]);
   document.querySelectorAll('.preview-dot').forEach((el, i) => {
     el.classList.toggle('active', i === idx);
   });
@@ -705,9 +837,37 @@ function handlePreviewGalleryScroll() {
   });
 }
 
-function scrollPreviewTo(i) {
+function scrollPreviewTo(i, behavior = 'smooth') {
   const galleryEl = document.getElementById('previewGallery');
-  galleryEl.scrollTo({ left: i * galleryEl.clientWidth, behavior: 'smooth' });
+  galleryEl.scrollTo({ left: i * galleryEl.clientWidth, behavior });
+}
+
+/* Prev/next arrows on the preview gallery (studio.html), so this view is reached
+   the same way as the gifts and corporate galleries rather than by swipe alone.
+   Wraps at both ends - the gallery is a short loop of product photos, and a dead
+   arrow on the last slide reads as broken. */
+function navigatePreviewGallery(step) {
+  const galleryEl = document.getElementById('previewGallery');
+  const count = galleryEl ? galleryEl.children.length : 0;
+  if (count < 2) return;
+  scrollPreviewTo((activePreviewImgIdx + step + count) % count);
+}
+
+/* The photo index the current Customer-Questions selection points at, or null if
+   nothing maps or the mapping is out of range for this product's photos. Videos
+   sit after the photos in the gallery (see js/shared/product-media.js), so a
+   valid mapping is always inside the image portion. */
+function previewMappedImageIndex() {
+  const wrap = document.getElementById('previewCustomFields');
+  if (!wrap || !window.ProductFields || !activePreviewPkg) return null;
+  const index = ProductFields.getSelectedImageIndex(wrap, activePreviewPkg);
+  return clampPreviewImageIndex(index);
+}
+
+function clampPreviewImageIndex(index) {
+  if (index === null || index === undefined) return null;
+  const count = (activePreviewPkg && activePreviewPkg.images && activePreviewPkg.images.length) || 1;
+  return index >= 0 && index < count ? index : null;
 }
 
 function sharePreviewProduct() {
@@ -725,6 +885,7 @@ function adjustPreviewItemQty(delta) {
 }
 
 function closeProductPreview() {
+  ProductMedia.pauseAll(document.getElementById('previewGallery'));
   document.getElementById('productPreviewModal').classList.remove('open');
   document.body.style.overflow = '';
   activePreviewPkg = null;
@@ -741,6 +902,7 @@ function closeProductPreview() {
 // (the URL has already changed by the time this fires) - just tear down the modal UI/state.
 window.addEventListener('popstate', () => {
   if (activePreviewPkg && !new URLSearchParams(window.location.search).has('openProduct')) {
+    ProductMedia.pauseAll(document.getElementById('previewGallery'));
     document.getElementById('productPreviewModal').classList.remove('open');
     document.body.style.overflow = '';
     activePreviewPkg = null;
@@ -755,10 +917,12 @@ function readActivePreviewPhoto() {
     return Promise.resolve(null);
   }
   // Shared with the admin-configured "Customer Input Fields" upload type
-  // (js/shared/product-fields.js) - auto-resizes large photos before they're
-  // ever turned into a base64 string, instead of storing a phone photo's raw
-  // multi-MB bytes straight into localStorage (see CartCore.saveCart()).
-  return ProductFields.fileToDataUri(activePreviewPhotoFile);
+  // (js/shared/product-fields.js): uploads the photo and returns its URL, so
+  // the cart line carries a link rather than a multi-MB base64 string that
+  // could exhaust localStorage and make add-to-cart fail (see
+  // CartCore.saveCart()). Falls back to an inline, resized data: URI when the
+  // upload isn't possible.
+  return ProductFields.fileToStoredValue(activePreviewPhotoFile);
 }
 
 // Returns { fields: {fieldId: value}, fieldLabels: {fieldId: label} } so the
@@ -779,26 +943,46 @@ async function collectPreviewCustomFields() {
 function currentPreviewPrice() {
   const wrap = document.getElementById('previewCustomFields');
   const price = wrap && window.ProductFields ? ProductFields.getSelectedPrice(wrap, activePreviewPkg) : null;
-  return (price || price === 0) ? `₹${price}` : activePreviewPkg.price;
+  return (price || price === 0) ? ProductFields.formatPrice(price) : activePreviewPkg.price;
 }
 
-async function previewAddToCart() {
+// Deep link back to this product's own modal on this page - used both for the
+// cart line's "needs your attention" Fix link and (now) to make the cart row
+// itself clickable, so a shopper can get back to the thing they configured.
+function previewProductUrl() {
+  if (!activePreviewPkg) return '';
+  return `studio.html?category=${encodeURIComponent(currentCategory)}`
+    + `&openProduct=${encodeURIComponent(activePreviewPkg.name)}`
+    + (activePreviewPkg.id ? `&pid=${encodeURIComponent(activePreviewPkg.id)}` : '');
+}
+
+/* Uploading the customer's photo happens inside readActivePreviewPhoto() below,
+   on this click - not when the file was picked. On a slow connection that is a
+   few seconds of nothing, on the one button the customer is waiting for, so the
+   button shows it is working. Without this the page looks frozen and people
+   click again. */
+async function previewAddToCart(ev) {
   if (!activePreviewPkg) return;
   if (!validatePreviewOptions()) return;
+  const btn = (ev && ev.currentTarget) || document.querySelector('.preview-add-btn');
   const price = currentPreviewPrice();
   let photoData;
+  if (window.SkLoading) SkLoading.button(btn, true);
   try {
     photoData = await readActivePreviewPhoto();
   } catch {
+    if (window.SkLoading) SkLoading.button(btn, false);
     alert('That photo could not be processed - please choose a different image.');
     return;
   }
   const custom = await collectPreviewCustomFields();
+  if (window.SkLoading) SkLoading.button(btn, false);
   const customization = (photoData || custom) ? { ...(photoData ? { photoData } : {}), ...(custom || {}) } : null;
+  const url = previewProductUrl();
   const requirement = activePreviewPkg.requiresPhotoUpload
-    ? { label: 'Upload your photo', fields: ['photoData'], editUrl: `studio.html?category=${currentCategory}&openProduct=${encodeURIComponent(activePreviewPkg.name)}${activePreviewPkg.id ? `&pid=${encodeURIComponent(activePreviewPkg.id)}` : ''}` }
+    ? { label: 'Upload your photo', fields: ['photoData'], editUrl: url }
     : null;
-  addToStudioCart(buildPreviewCartName(), price, activePreviewPkg.img, customization, requirement, activePreviewPkg.id, activePreviewItemQty);
+  addToStudioCart(buildPreviewCartName(), price, activePreviewPkg.img, customization, requirement, activePreviewPkg.id, activePreviewItemQty, url);
   showCartToast();
 }
 
@@ -818,23 +1002,33 @@ function goToCartFromToast() {
   location.href = 'cart.html';
 }
 
-async function previewBuyNow() {
+/* Uploading the customer's photo happens inside readActivePreviewPhoto() below,
+   on this click - not when the file was picked. On a slow connection that is a
+   few seconds of nothing, on the one button the customer is waiting for, so the
+   button shows it is working. Without this the page looks frozen and people
+   click again. */
+async function previewBuyNow(ev) {
   if (!activePreviewPkg) return;
   if (!validatePreviewOptions()) return;
+  const btn = (ev && ev.currentTarget) || document.querySelector('.preview-buy-btn');
   const price = currentPreviewPrice();
   let photoData;
+  if (window.SkLoading) SkLoading.button(btn, true);
   try {
     photoData = await readActivePreviewPhoto();
   } catch {
+    if (window.SkLoading) SkLoading.button(btn, false);
     alert('That photo could not be processed - please choose a different image.');
     return;
   }
   const custom = await collectPreviewCustomFields();
+  if (window.SkLoading) SkLoading.button(btn, false);
   const customization = (photoData || custom) ? { ...(photoData ? { photoData } : {}), ...(custom || {}) } : null;
+  const url = previewProductUrl();
   const requirement = activePreviewPkg.requiresPhotoUpload
-    ? { label: 'Upload your photo', fields: ['photoData'], editUrl: `studio.html?category=${currentCategory}&openProduct=${encodeURIComponent(activePreviewPkg.name)}${activePreviewPkg.id ? `&pid=${encodeURIComponent(activePreviewPkg.id)}` : ''}` }
+    ? { label: 'Upload your photo', fields: ['photoData'], editUrl: url }
     : null;
-  addToStudioCart(buildPreviewCartName(), price, activePreviewPkg.img, customization, requirement, activePreviewPkg.id, activePreviewItemQty);
+  addToStudioCart(buildPreviewCartName(), price, activePreviewPkg.img, customization, requirement, activePreviewPkg.id, activePreviewItemQty, url);
   closeProductPreview();
   // The item's already in the persistent cart above (unlike gifts.js's Buy Now,
   // which hands the item itself to cart.html) - this just flags the handoff as
@@ -858,9 +1052,16 @@ function saveStudioCart(cart) {
   updateStudioCartBadge();
 }
 
-function addToStudioCart(name, price, img, customization, requirement, productId, qty) {
-  CartCore.updateQty(name, qty || 1, {
-    name, price, img, product_id: productId, customization, requirement,
+// `name` here is the display name, which already carries the selected options
+// as a "(16 Photos)" suffix (buildPreviewCartName). The cart *key*, though,
+// comes from the configuration itself (CartCore.lineKey) rather than from that
+// string: the suffix is presentation and can legitimately be absent, and when
+// it was the only thing separating two variants, the 8-photo and 16-photo
+// lines merged into one row priced at whichever went in first.
+function addToStudioCart(name, price, img, customization, requirement, productId, qty, url) {
+  const key = CartCore.lineKey(name, customization);
+  CartCore.updateQty(key, qty || 1, {
+    name, price, img, url, product_id: productId, customization, requirement,
   });
   updateStudioCartBadge();
 }
@@ -909,7 +1110,11 @@ function parsePrice(str) {
 
 function computeCartTotals() {
   const cart = getStudioCart();
-  const items = Object.values(cart);
+  // Each item carries the object key it's stored under: a line's key is no
+  // longer simply its name (two configurations of one product share a name but
+  // are separate rows - see addToStudioCart), so the qty/remove buttons have to
+  // act on the real key.
+  const items = Object.entries(cart).map(([key, item]) => ({ ...item, __key: key }));
   let productTotal = 0;
   let discountTotal = 0;
 
@@ -971,6 +1176,10 @@ function renderPriceDetails(suffix) {
 }
 
 function cartItemRowHTML(item, withActions) {
+  // The line's own object key, not its name: two configurations of one product
+  // share a name but are separate rows (see addToStudioCart), so keying these
+  // buttons by name would drive the wrong row - or no row at all.
+  const key = String(item.__key || item.name).replace(/'/g, "\\'");
   return `
     <div class="checkout-cart-item">
       <img src="${cldOpt(item.img)}" alt="${item.name}" class="checkout-item-img" loading="lazy" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
@@ -979,14 +1188,14 @@ function cartItemRowHTML(item, withActions) {
         <p class="checkout-item-price">${item.price}</p>
         ${withActions ? `
           <div class="checkout-qty-stepper">
-            <button type="button" onclick="event.stopPropagation(); adjustCartQty('${item.name.replace(/'/g, "\\'")}', -1)">−</button>
+            <button type="button" onclick="event.stopPropagation(); adjustCartQty('${key}', -1)">−</button>
             <span>${item.qty}</span>
-            <button type="button" onclick="event.stopPropagation(); adjustCartQty('${item.name.replace(/'/g, "\\'")}', 1)">+</button>
+            <button type="button" onclick="event.stopPropagation(); adjustCartQty('${key}', 1)">+</button>
           </div>
         ` : `<p class="checkout-item-qty">Qty: ${item.qty}</p>`}
       </div>
       ${withActions ? `
-        <button type="button" class="checkout-item-remove" onclick="removeCartItem('${item.name.replace(/'/g, "\\'")}')" aria-label="Remove">
+        <button type="button" class="checkout-item-remove" onclick="removeCartItem('${key}')" aria-label="Remove">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -1130,6 +1339,8 @@ async function loadStudioCatalog() {
           price: p.price,
           img: (p.images && p.images[0]) || "",
           images: p.images || [],
+          // Rendered only by the preview modal's gallery, never by a card.
+          videos: p.videos || [],
           highlights,
         };
         if (p.mrp) pkg.oldPrice = p.mrp;
@@ -1139,6 +1350,7 @@ async function loadStudioCatalog() {
         if (extra.requiresPhotoUpload) pkg.requiresPhotoUpload = extra.requiresPhotoUpload;
         pkg.input_fields = p.input_fields || [];
         pkg.deliveryDays = p.delivery_days || null;
+        pkg.search_keywords = p.search_keywords || [];
         return pkg;
       }),
     };
@@ -1198,9 +1410,17 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('previewCustomFields')?.addEventListener('pf:pricechange', (e) => {
     if (!activePreviewPkg) return;
     const price = e.detail && (e.detail.price || e.detail.price === 0) ? e.detail.price : null;
-    const text = price !== null ? `₹${price}` : activePreviewPkg.price;
+    const text = price !== null ? ProductFields.formatPrice(price) : activePreviewPkg.price;
     document.getElementById('previewPrice').textContent = text;
     document.getElementById('previewActionPrice').textContent = text;
+  });
+
+  // An option that names one of this product's photos scrolls the carousel to it.
+  // Only fires for options an admin actually mapped, so an unmapped dropdown
+  // leaves the gallery alone.
+  document.getElementById('previewCustomFields')?.addEventListener('pf:imagechange', (e) => {
+    const index = clampPreviewImageIndex(e.detail && e.detail.index);
+    if (index !== null) scrollPreviewTo(index);
   });
 
   // A ?category= deep link (header mega-menu, homepage cards, ...) should land on
@@ -1264,62 +1484,3 @@ window.addEventListener('DOMContentLoaded', async () => {
     }, { passive: true });
   }
 });
-
-(function initMobilePromoSlider() {
-  function init() {
-    const track = document.getElementById('studioPromoTrack');
-    const dots = document.querySelectorAll('#studioPromoDots .promo-hero-dot');
-    if (!track || !dots.length) return;
-
-    const slideCount = 4;
-    const totalSlots = slideCount + 2;
-    const slotWidth = 100 / totalSlots;
-    let pos = 1;
-    let timer;
-
-    function goTo(p, animate) {
-      track.style.transition = animate === false ? 'none' : 'transform .7s cubic-bezier(.65,0,.35,1)';
-      track.style.transform = 'translateX(-' + (p * slotWidth) + '%)';
-      const realIndex = ((p - 1) % slideCount + slideCount) % slideCount;
-      dots.forEach((d, di) => d.classList.toggle('active', di === realIndex));
-    }
-
-    function next() {
-      pos++;
-      goTo(pos);
-    }
-
-    track.addEventListener('transitionend', (e) => {
-      if (e.target !== track || e.propertyName !== 'transform') return;
-      if (pos >= totalSlots - 1) {
-        pos = 1;
-        goTo(pos, false);
-      } else if (pos <= 0) {
-        pos = slideCount;
-        goTo(pos, false);
-      }
-    });
-
-    function startAutoplay() {
-      clearInterval(timer);
-      timer = setInterval(next, 3000);
-    }
-
-    dots.forEach((dot) => {
-      dot.addEventListener('click', () => {
-        pos = parseInt(dot.dataset.i, 10) + 1;
-        goTo(pos);
-        startAutoplay();
-      });
-    });
-
-    goTo(pos, false);
-    startAutoplay();
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-})();

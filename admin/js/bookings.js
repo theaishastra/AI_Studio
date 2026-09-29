@@ -97,13 +97,17 @@ async function renderBookings() {
   const bookings = await Api.bookings();
   window._BOOKINGS_CACHE = bookings;
   const wrap = document.getElementById("bookingsWrap");
+  // Bail out if the admin navigated to another section while this request was in
+  // flight - the elements below belong to a view that is no longer in the document,
+  // and writing to them throws an uncaught TypeError (see coupons.js).
+  if (!wrap) return;
   if (!bookings.length) {
     wrap.innerHTML = `<div class="empty-state">No bookings yet.</div>`;
     return;
   }
   wrap.innerHTML = `
     <table>
-      <thead><tr><th>Service Booked</th><th>Customer</th><th>Phone</th><th>Event Date</th><th>Slot</th><th>Venue</th><th>Package</th><th>Advance Paid</th><th>Status</th><th>Created</th><th></th></tr></thead>
+      <thead><tr><th>Service Booked</th><th>Customer</th><th>Phone</th><th>Event Date</th><th>Slot</th><th>Venue</th><th>Package</th><th>Advance</th><th>Status</th><th>Created</th><th></th></tr></thead>
       <tbody>
         ${bookings.map(b => {
           const details = b.details || {};
@@ -127,7 +131,12 @@ async function renderBookings() {
             <td>${esc(b.slot || "—")}</td>
             <td class="bkr-venue" title="${esc(venue)}">${esc(venue)}</td>
             <td>${esc(details.price || "—")}</td>
-            <td>${fmtINR(b.advance_paid)}</td>
+            <td>${fmtINR(b.advance_paid)}${
+              // The package's configured advance (Product.advance_amount), shown
+              // next to what has actually been received so staff can see at a
+              // glance whether anything is still outstanding.
+              b.advance_expected ? `<div class="bkr-advance-expected">of ${fmtINR(b.advance_expected)}</div>` : ""
+            }</td>
             <td><select onchange="updateBookingStatus('${b.id}', this.value, this)">
               ${BOOKING_STATUSES.map(s => `<option value="${s}" ${s === b.status ? "selected" : ""}>${s.replace("_", " ")}</option>`).join("")}
             </select></td>

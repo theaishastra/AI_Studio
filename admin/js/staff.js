@@ -15,6 +15,11 @@ async function renderStaff() {
 async function loadStaff() {
   const wrap = document.getElementById("staffWrap");
   const staff = await Api.staff();
+  // The container is captured before the await above; a staff member who navigates
+  // to another section while this request is in flight leaves it detached from the
+  // document, and writing to it then throws an uncaught TypeError. Nothing is left
+  // half-rendered by bailing out - the route they moved to owns the view now.
+  if (!wrap) return;
   wrap.innerHTML = `
     <table>
       <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>

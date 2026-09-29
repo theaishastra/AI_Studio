@@ -9,6 +9,11 @@ async function renderReviews() {
 async function loadReviews() {
   const wrap = document.getElementById("reviewsWrap");
   const reviews = await Api.reviews();
+  // The container is captured before the await above; a staff member who navigates
+  // to another section while this request is in flight leaves it detached from the
+  // document, and writing to it then throws an uncaught TypeError. Nothing is left
+  // half-rendered by bailing out - the route they moved to owns the view now.
+  if (!wrap) return;
   if (!reviews.length) {
     wrap.innerHTML = `<div class="empty-state">No reviews yet.</div>`;
     return;

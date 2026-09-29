@@ -22,11 +22,43 @@ from ..services.policy import (
 from ..services.pricing import money, price_cart, to_paise
 from ..services.product_fields import resolve_product_price, validate_product_field_values
 from ..services.razorpay_service import create_rzp_order
+from ..services.retention import link_uploads_to_order
 from ..services.storage import CUSTOM_UPLOAD_FIELDS, upload_data_uri
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
 settings = get_settings()
 logger = logging.getLogger("orders")
+
+
+def _customization_upload_urls(customization: dict | None) -> list[str]:
+    """Every already-uploaded artwork URL in one line's customization.
+
+    The counterpart to _customization_has_upload below: that one finds inline
+    base64 still waiting to be moved to R2, this one finds files the storefront
+    already uploaded up front (POST /api/uploads/artwork). Both shapes exist at
+    once - a cart built before this change, or by a browser that fell back to
+    the inline path, still arrives as base64 - so checkout handles either.
+
+    These URLs are how a CustomerUpload row is matched to the order it ended up
+    in, which is what starts its retention clock (services/retention.py)."""
+    urls: list[str] = []
+    if not isinstance(customization, dict):
+        return urls
+
+    def collect(value):
+        if isinstance(value, str) and value.startswith(("http://", "https://")):
+            urls.append(value)
+        elif isinstance(value, list):
+            for v in value:
+                collect(v)
+
+    for field in CUSTOM_UPLOAD_FIELDS:
+        collect(customization.get(field))
+    fields = customization.get("fields")
+    if isinstance(fields, dict):
+        for value in fields.values():
+            collect(value)
+    return urls
 
 
 def _customization_has_upload(customization: dict | None) -> bool:
@@ -296,6 +328,7 @@ def checkout(body: CheckoutIn, background_tasks: BackgroundTasks,
     # address_change_requests/user/address - ~1.5s each on this DB), on
     # every single checkout.
     pending_externalization: list[tuple[str, dict]] = []
+    artwork_urls: list[str] = []
     for line in priced["lines"]:
         item_id = uid()
         customization = line.get("customization")
@@ -311,6 +344,16 @@ def checkout(body: CheckoutIn, background_tasks: BackgroundTasks,
         ))
         if _customization_has_upload(customization):
             pending_externalization.append((item_id, customization))
+        artwork_urls.extend(_customization_upload_urls(customization))
+
+    # Claim the CustomerUpload rows behind this order's artwork. Until now they
+    # were orphans on a short expiry clock (the customer might never have
+    # checked out); from here they live and die with the order, and get their
+    # real deletion date when it reaches a terminal status. Inside the same
+    # transaction as the order itself, so an order can never exist with its
+    # artwork still marked orphaned and due for sweeping.
+    if artwork_urls:
+        link_uploads_to_order(db, order, artwork_urls)
 
     # Payment/OrderTrackingEvent both default created_at to a server-side
     # func.now() - normally picked up by refreshing after commit, but the

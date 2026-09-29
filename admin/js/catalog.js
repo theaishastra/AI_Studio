@@ -13,6 +13,9 @@ async function renderDashboard() {
   view.innerHTML = `<header class="page-head"><h1>Dashboard</h1></header><div class="cards" id="cards">${LOADING}</div>`;
   const cardsEl = document.getElementById("cards");
   const s = await Api.summary();
+  // See the note in coupons.js: the container was captured before the await, so
+  // it may already be detached if the admin navigated away mid-load.
+  if (!cardsEl) return;
   cardsEl.innerHTML =
     card(s.pages, "Site Pages") +
     card(s.categories, "Categories") +
@@ -22,7 +25,10 @@ async function renderDashboard() {
     card(s.bookings_total, "Total Bookings") +
     card(s.orders_pending, "Pending Orders") +
     card(s.orders_total, "Total Orders") +
-    card(fmtINR(s.revenue), "Revenue");
+    card(fmtINR(s.revenue), "Revenue") +
+    // Enquiries are only actionable if someone knows they arrived - the
+    // notification email is best-effort, so the count belongs here too.
+    card(s.enquiries_unread ?? 0, "Unread Enquiries");
 }
 
 // ==================================================================== categories
@@ -43,10 +49,20 @@ async function renderCategories(params) {
   if (pageParam && pages.some(p => p.slug === pageParam)) CURRENT_PAGE_SLUG = pageParam;
   else if (!CURRENT_PAGE_SLUG || !pages.some(p => p.slug === CURRENT_PAGE_SLUG)) CURRENT_PAGE_SLUG = pages[0].slug;
 
+  // Loaded up front (not just on the Products & Packages tab) so the "+ Add
+  // Service" / "+ Add Product" buttons below can offer every section from
+  // every page in their own dropdown, without the admin first navigating
+  // to a category and only then to Products & Packages.
+  window._ALL_CATS = await allCategoriesAcrossPages(pages);
+
   view.innerHTML = `
     <header class="page-head">
       <h1>Categories</h1>
-      <button class="btn" id="addCatBtn">+ Add Category</button>
+      <div class="btn-row">
+        <button class="btn secondary" id="addServiceBtn">+ Add Service</button>
+        <button class="btn secondary" id="addProductBtn">+ Add Product</button>
+        <button class="btn" id="addCatBtn">+ Add Category</button>
+      </div>
     </header>
     <div class="toolbar">
       <select id="pageSelect">${pages.map(p => `<option value="${esc(p.slug)}" ${p.slug === CURRENT_PAGE_SLUG ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select>
@@ -55,7 +71,34 @@ async function renderCategories(params) {
   `;
   document.getElementById("pageSelect").addEventListener("change", (e) => { CURRENT_PAGE_SLUG = e.target.value; loadCatTable(); });
   document.getElementById("addCatBtn").addEventListener("click", () => openCategoryForm());
+  document.getElementById("addServiceBtn").addEventListener("click", () => openQuickAddProduct("service"));
+  document.getElementById("addProductBtn").addEventListener("click", () => openQuickAddProduct("product"));
   await loadCatTable();
+}
+
+// Photography's categories are all booking services; every other page's
+// categories are all physical goods - there's no mixed page today. So
+// "Add Service" only makes sense against Photography's sections and "Add
+// Product" only against everyone else's - offering the other page's sections
+// would let the admin file e.g. a "ships to customer" product under Wedding
+// Photography, which the storefront has no sane way to show.
+function categoriesForType(allCats, type) {
+  return allCats.filter(c => (c.pageSlug === "photography") === (type === "service"));
+}
+
+// Entry point for the Categories page's "+ Add Service" / "+ Add Product"
+// buttons: same product form as Products & Packages, just opened without
+// first requiring the admin to select a category there. Guards against the
+// (rare) case of zero matching categories existing yet, since the form's own
+// "Section" dropdown would otherwise have nothing to offer.
+function openQuickAddProduct(type) {
+  if (!categoriesForType(window._ALL_CATS || [], type).length) {
+    alert(type === "service"
+      ? "No Photography categories yet — add one on the Photography page first."
+      : "No product categories yet — add one on the Studio, Corporate, or Gifts page first.");
+    return;
+  }
+  openProductForm(null, { type });
 }
 
 async function loadCatTable() {
@@ -69,10 +112,14 @@ async function loadCatTable() {
   }
   wrap.innerHTML = `
     <table>
-      <thead><tr><th></th><th>Name</th><th>Slug</th><th>Group</th><th>In Hero</th><th>Status</th><th>Sort</th><th></th></tr></thead>
-      <tbody>
+      <thead><tr><th class="drag-col"></th><th class="table-thumb-col"></th><th></th><th>Name</th><th>Slug</th><th>Group</th><th>In Hero</th><th>Status</th><th>Sort</th><th></th></tr></thead>
+      <tbody id="catTableBody">
         ${cats.map(c => `
-          <tr>
+          <tr draggable="true" data-id="${esc(c.id)}">
+            <td class="drag-col"><span class="drag-handle" title="Drag to reorder">⠿</span></td>
+            <td class="table-thumb-col">${c.thumb_image_url
+              ? `<img class="table-thumb" src="${esc(mediaUrl(c.thumb_image_url))}" alt="" onerror="this.outerHTML='<div class=&quot;table-thumb-empty&quot;></div>'">`
+              : `<div class="table-thumb-empty"></div>`}</td>
             <td>${esc(c.icon || "")}</td>
             <td>${esc(c.name)}</td>
             <td>${esc(c.slug)}</td>
@@ -84,13 +131,21 @@ async function loadCatTable() {
               <button class="btn secondary" onclick="openCategoryForm('${c.id}')">Edit</button>
               <button class="btn secondary" onclick="openCategoryMedia('${c.id}')">Photos</button>
               <button class="btn secondary" onclick="location.hash='#/products?cat=${c.id}'">Packages</button>
-              <button class="btn secondary" onclick="location.hash='#/arrange?cat=${c.id}'">Arrange</button>
               <button class="btn danger" onclick="removeCategory('${c.id}', this)">Delete</button>
             </td>
           </tr>`).join("")}
       </tbody>
     </table>
   `;
+  initTableRowDragReorder(document.getElementById("catTableBody"), async (ids) => {
+    const page = PAGES_CACHE.find(p => p.slug === CURRENT_PAGE_SLUG);
+    try {
+      await Api.reorderCategories(page.id, ids);
+    } catch (err) {
+      alert(`Could not save the new order: ${err.message}`);
+    }
+    loadCatTable();
+  });
 }
 
 function openCategoryForm(id) {
@@ -270,25 +325,37 @@ async function loadProdTable() {
   }
   wrap.innerHTML = `
     <table>
-      <thead><tr><th>Tier</th><th>Title</th><th>Price</th><th>Photos</th><th>Status</th><th>Sort</th><th></th></tr></thead>
-      <tbody>
+      <thead><tr><th class="drag-col"></th><th class="table-thumb-col"></th><th>Tier</th><th>Title</th><th>Price</th><th>Media</th><th>Status</th><th>Sort</th><th></th></tr></thead>
+      <tbody id="prodTableBody">
         ${products.map(p => `
-          <tr>
+          <tr draggable="true" data-id="${esc(p.id)}">
+            <td class="drag-col"><span class="drag-handle" title="Drag to reorder">⠿</span></td>
+            <td class="table-thumb-col">${(p.media || []).find(m => !isVideoMedia(m))
+              ? `<img class="table-thumb" src="${esc(mediaUrl(p.media.find(m => !isVideoMedia(m)).url))}" alt="" onerror="this.outerHTML='<div class=&quot;table-thumb-empty&quot;></div>'">`
+              : `<div class="table-thumb-empty"></div>`}</td>
             <td>${esc(p.tier || "—")}</td>
             <td>${esc(p.title)}</td>
             <td>${fmtINR(p.price)}</td>
-            <td>${p.media.length}</td>
+            <td>${p.media.length}${(p.media || []).some(isVideoMedia) ? " ▶" : ""}</td>
             <td><span class="badge ${p.is_active ? "on" : "off"}">${p.is_active ? "Active" : "Hidden"}</span></td>
             <td>${p.sort}</td>
             <td class="actions">
               <button class="btn secondary" onclick="openProductForm('${p.id}')">Edit</button>
-              <button class="btn secondary" onclick="openProductMedia('${p.id}')">Photos</button>
+              <button class="btn secondary" onclick="openProductMedia('${p.id}')">Photos/Video</button>
               <button class="btn danger" onclick="removeProduct('${p.id}', this)">Delete</button>
             </td>
           </tr>`).join("")}
       </tbody>
     </table>
   `;
+  initTableRowDragReorder(document.getElementById("prodTableBody"), async (ids) => {
+    try {
+      await Api.setArrange(CURRENT_CATEGORY_ID, ids);
+    } catch (err) {
+      alert(`Could not save the new order: ${err.message}`);
+    }
+    loadProdTable();
+  });
 }
 
 // Extra-JSON keys that have a dedicated, friendlier control elsewhere in this form.
@@ -303,27 +370,58 @@ function slugify(s) {
   return (s || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
-function openProductForm(id) {
+// allCats grouped under an <optgroup> per site page, so the "Section"
+// dropdown reads as "Photography > Wedding Photography" instead of one long
+// flat list an admin has to hunt through.
+function categorySectionOptionsHTML(allCats, selectedId) {
+  const byPage = new Map();
+  allCats.forEach(c => {
+    if (!byPage.has(c.pageName)) byPage.set(c.pageName, []);
+    byPage.get(c.pageName).push(c);
+  });
+  return Array.from(byPage.entries()).map(([pageName, cats]) => `
+    <optgroup label="${esc(pageName)}">
+      ${cats.map(c => `<option value="${c.id}" ${c.id === selectedId ? "selected" : ""}>${esc(c.name)}</option>`).join("")}
+    </optgroup>`).join("");
+}
+
+function openProductForm(id, opts = {}) {
   const p = id ? window._PRODUCTS_CACHE.find(x => x.id === id) : null;
-  const cat = window._ALL_CATS.find(c => c.id === CURRENT_CATEGORY_ID);
+  const allCats = window._ALL_CATS || [];
+  // Only a brand-new product opened with an explicit opts.type (the Categories
+  // page's quick-add buttons) restricts the Section list - the generic
+  // "+ Add Product" button and editing an existing product still offer every
+  // section, since by then admin intent isn't just "one or the other".
+  const restrictToType = !p && opts.type ? opts.type : null;
+  const selectableCats = restrictToType ? categoriesForType(allCats, restrictToType) : allCats;
+  const initialCategoryId = p ? p.category_id : (opts.categoryId || CURRENT_CATEGORY_ID);
+  let cat = selectableCats.find(c => c.id === initialCategoryId) || selectableCats[0] || allCats[0];
   // Gifts/Corporate/Studio are entirely physical goods (ship to the customer,
   // track stock) - only Photography is booking-based. Defaulting a brand-new
-  // product's Type to match its page means the Stock/Delivery days/Address-
+  // product's Type to match its section means the Stock/Delivery days/Address-
   // change fields just below are visible right away instead of the admin
-  // having to know to flip this dropdown first.
+  // having to know to flip this dropdown first. An explicit opts.type (the
+  // Categories page's "+ Add Service" / "+ Add Product" buttons) wins over
+  // that page-based guess, since the admin already told us which one they want.
   const defaultType = cat.pageSlug === "photography" ? "service" : "product";
+  const initialType = p ? p.type : (opts.type || defaultType);
+  const modalTitle = p ? "Edit Product / Package" : opts.type === "service" ? "Add Service" : opts.type === "product" ? "Add Product" : "Add Product / Package";
   openModal(`
-    <h2>${p ? "Edit" : "Add"} Product / Package</h2>
-    <p style="color:var(--text-dim);font-size:12px;margin-top:0;">Category: ${esc(cat.pageName)} — ${esc(cat.name)}</p>
+    <h2>${modalTitle}</h2>
     <div id="formMsg"></div>
     <form id="prodForm">
+      <div class="form-section-title">Section</div>
+      <label>Which page &amp; category does this belong to?</label>
+      <select id="f_category">${categorySectionOptionsHTML(selectableCats, cat.id)}</select>
+      <div class="form-hint" style="margin-bottom:8px;">Saving adds it straight into this section — no need to visit it separately first.</div>
+
       <div class="form-section-title">Basic info</div>
       <div class="two-col">
         <div><label>Tier (Standard / Premium / Platinum, or blank)</label><input id="f_tier" value="${esc(p?.tier || "")}"></div>
         <div><label>Type</label>
           <select id="f_type">
-            <option value="service" ${(p ? p.type === "service" : defaultType === "service") ? "selected" : ""}>Service (booking)</option>
-            <option value="product" ${(p ? p.type === "product" : defaultType === "product") ? "selected" : ""}>Product (physical, ships to customer)</option>
+            <option value="service" ${initialType === "service" ? "selected" : ""}>Service (booking)</option>
+            <option value="product" ${initialType === "product" ? "selected" : ""}>Product (physical, ships to customer)</option>
           </select>
         </div>
       </div>
@@ -350,17 +448,25 @@ function openProductForm(id) {
       <label style="margin-top:0;">Features / inclusions <span class="form-hint">(one per line — shown as a checklist to the customer)</span></label>
       <textarea id="f_features" rows="5">${esc((p?.features || []).join("\n"))}</textarea>
 
+      <label>Search keywords <span class="form-hint">(comma-separated — extra words shoppers might search that do not appear in the title/description, e.g. "coffee cup, birthday gift")</span></label>
+      <input id="f_keywords" value="${esc((p?.search_keywords || []).join(", "))}">
+
       <div class="form-section-title">Customer questions</div>
-      <label style="margin-top:0;">Extra questions on this product's order form <span class="form-hint">— e.g. upload a photo, pick from a dropdown, free text. Tick "Required" to block the customer from adding it to cart until they answer. This is the only place to set that up — it works the same on every page (Studio, Corporate, Gifts, Photography).</span></label>
+      <label style="margin-top:0;">Extra questions on this product's order form <span class="form-hint">— e.g. upload a photo, pick from a dropdown, free text. Tick "Required" to block the customer from adding it to cart until they answer. This is the only place to set that up — it works the same on Studio, Corporate and Gifts.</span></label>
+      <div id="inputFieldsPhotoWarning" class="form-warning" style="${cat.pageSlug === "photography" ? "" : "display:none;"}">
+        Photography products are enquiry/booking-only — they have no cart or customise panel,
+        so questions added here are never shown to the customer and never collected.
+        Use <b>Events &amp; team details</b> below for photography instead.
+      </div>
       <div id="inputFieldsRows" class="field-builder"></div>
       <button type="button" class="btn secondary add-field-btn" id="addFieldBtn">+ Add Field</button>
 
-      ${cat.pageSlug === "photography" ? `
-      <div class="form-section-title">Events &amp; team details</div>
-      <label style="margin-top:0;">Table shown on the product page <span class="form-hint">— leave empty to auto-generate from the features above</span></label>
-      <div id="eventsRows"></div>
-      <button type="button" class="btn secondary" id="addEventRowBtn" style="margin-top:6px;">+ Add Row</button>
-      ` : ""}
+      <div id="eventsSectionWrap" style="${cat.pageSlug === "photography" ? "" : "display:none;"}">
+        <div class="form-section-title">Events &amp; team details</div>
+        <label style="margin-top:0;">Table shown on the product page <span class="form-hint">— leave empty to auto-generate from the features above</span></label>
+        <div id="eventsRows"></div>
+        <button type="button" class="btn secondary" id="addEventRowBtn" style="margin-top:6px;">+ Add Row</button>
+      </div>
 
       <details class="advanced-details">
         <summary>Advanced settings <span class="form-hint">(rarely needed — for one-off custom fields only; everything above already covers the common cases)</span></summary>
@@ -391,6 +497,29 @@ function openProductForm(id) {
   typeSelect.addEventListener("change", syncPhysicalFields);
   syncPhysicalFields();
 
+  // The admin picked Type explicitly (either by hand, or by clicking "+ Add
+  // Service" / "+ Add Product" on the Categories page) means the Section
+  // dropdown switching pages below should stop guessing Type for them.
+  let typeDirty = !!p || !!opts.type;
+  typeSelect.addEventListener("change", () => { typeDirty = true; });
+
+  // ---- Section (category) picker drives Type's default guess and whether
+  // Events & team details (photography-only) is shown ----
+  const categorySelect = document.getElementById("f_category");
+  const eventsSectionWrap = document.getElementById("eventsSectionWrap");
+  categorySelect.addEventListener("change", () => {
+    const newCat = allCats.find(c => c.id === categorySelect.value);
+    if (!newCat) return;
+    cat = newCat;
+    eventsSectionWrap.style.display = cat.pageSlug === "photography" ? "" : "none";
+    const photoFieldWarning = document.getElementById("inputFieldsPhotoWarning");
+    if (photoFieldWarning) photoFieldWarning.style.display = cat.pageSlug === "photography" ? "" : "none";
+    if (!typeDirty) {
+      typeSelect.value = cat.pageSlug === "photography" ? "service" : "product";
+      syncPhysicalFields();
+    }
+  });
+
   // ---- Customer Input Fields (Product.input_fields) ----
   const FIELD_TYPES = {
     upload: { icon: "📤", label: "Upload" },
@@ -417,14 +546,28 @@ function openProductForm(id) {
     }
     if (type === "dropdown") {
       const priced = !!(row?.option_prices && Object.keys(row.option_prices).length);
-      const optionsText = priced
-        ? (row.options || []).map(o => `${o} = ${row.option_prices[o] ?? ""}`).join("\n")
-        : (row?.options || []).join("\n");
+      const optionMrps = row?.option_mrps || {};
+      const optionImages = row?.option_images || {};
+      // Round-trips exactly the line syntax the parser below reads, so re-opening
+      // a saved field shows what was typed: "Label", "Label = Price",
+      // "Label = Price / WasPrice", any of them optionally suffixed with "@N" to
+      // point at this product's Nth photo.
+      const optionLine = (o) => {
+        const photo = optionImages[o];
+        const suffix = photo ? ` @${photo}` : "";
+        if (!priced) return `${o}${suffix}`;
+        const price = row.option_prices[o] ?? "";
+        const mrp = optionMrps[o];
+        return (mrp || mrp === 0) ? `${o} = ${price} / ${mrp}${suffix}` : `${o} = ${price}${suffix}`;
+      };
+      const optionsText = (row?.options || []).map(optionLine).join("\n");
       return `
         <div class="field-type-panel fp-dropdown">
           <label class="inline" style="font-weight:400;margin-bottom:6px;"><input type="checkbox" class="fr_priced" ${priced ? "checked" : ""}> This dropdown sets the price (e.g. quantity or size options each at their own price)</label>
           <label class="fr_options_label">Options (one per line)</label>
           <textarea class="fr_options" rows="3" placeholder="${priced ? "8 Photos = 130&#10;16 Photos = 200&#10;32 Photos = 250" : "4x6&#10;5x7&#10;Passport Size"}">${esc(optionsText)}</textarea>
+          <div class="form-hint fr_priced_hint" style="${priced ? "" : "display:none;"}">Add a struck-through &quot;was&quot; price by writing <b>Label = Price / WasPrice</b> — e.g. <b>16 Photos = 200 / 299</b>. It is shown on that option's tile on the product page and nowhere else; the customer is always charged the first number.</div>
+          <div class="form-hint">Optionally end any line with <b>@</b> and a photo number to show that photo when the option is picked — e.g. <b>9X9 = 1699 @2</b> shows photo 2. The number is the one printed on each tile in this product's <b>Photos &amp; Video</b> dialog; videos are not numbered and do not count. Leave <b>@</b> off and the gallery stays put, which is how every option behaves today. Re-ordering the photos re-numbers them, so check the tiles again afterwards.</div>
           <label class="inline" style="font-weight:400;"><input type="checkbox" class="fr_multi_select" ${row?.multi_select ? "checked" : ""} ${priced ? "disabled" : ""}> Allow selecting multiple options</label>
         </div>`;
     }
@@ -432,6 +575,9 @@ function openProductForm(id) {
       <div class="field-type-panel fp-text">
         <label>Placeholder (optional)</label>
         <input class="fr_placeholder" value="${esc(row?.placeholder || "")}" placeholder="e.g. Any special instructions?">
+        <label style="margin-top:8px;">Maximum characters the customer may type</label>
+        <input type="number" class="fr_max_length" min="1" max="5000" style="max-width:180px;"
+               value="${Number(row?.max_length) > 0 ? Number(row.max_length) : 500}">
       </div>`;
   }
 
@@ -460,11 +606,13 @@ function openProductForm(id) {
     const optionsBox = rowEl.querySelector(".fr_options");
     const multiSelect = rowEl.querySelector(".fr_multi_select");
     const label = rowEl.querySelector(".fr_options_label");
+    const pricedHint = rowEl.querySelector(".fr_priced_hint");
     if (!priced || !optionsBox) return;
     const sync = () => {
       const on = priced.checked;
-      optionsBox.placeholder = on ? "8 Photos = 130\n16 Photos = 200\n32 Photos = 250" : "4x6\n5x7\nPassport Size";
+      optionsBox.placeholder = on ? "8 Photos = 130 / 199\n16 Photos = 200\n32 Photos = 250 / 349" : "4x6\n5x7\nPassport Size";
       if (label) label.textContent = on ? "Options — one per line, as \"Label = Price\"" : "Options (one per line)";
+      if (pricedHint) pricedHint.style.display = on ? "" : "none";
       if (multiSelect) { multiSelect.disabled = on; if (on) multiSelect.checked = false; }
     };
     priced.addEventListener("change", sync);
@@ -485,7 +633,10 @@ function openProductForm(id) {
       options: field?.options || [],
       multi_select: field?.multi_select ?? false,
       placeholder: field?.placeholder || "",
+      max_length: Number(field?.max_length) > 0 ? Number(field.max_length) : 500,
       option_prices: field?.option_prices || null,
+      option_mrps: field?.option_mrps || null,
+      option_images: field?.option_images || null,
     };
     const div = document.createElement("div");
     div.className = "field-row";
@@ -563,29 +714,89 @@ function openProductForm(id) {
         options: [],
         multi_select: false,
       };
+      // The backend rejects these characters in a label/option/placeholder
+      // (schemas.py's _UNSAFE_TEXT_CHARS) because they get rendered into the
+      // storefront product page - caught here so staff see why, instead of a
+      // raw 422 from the API.
+      const UNSAFE = /["<>]/;
+      if (UNSAFE.test(label)) errors.push(`Field heading "${label}" cannot contain double quotes or angle brackets.`);
+      if (UNSAFE.test(field.help_text)) errors.push(`Help text for "${label}" cannot contain double quotes or angle brackets.`);
+      if (type === "text") {
+        field.placeholder = row.querySelector(".fr_placeholder")?.value.trim() || "";
+        field.max_length = Math.max(1, Math.min(5000, parseInt(row.querySelector(".fr_max_length")?.value || "500", 10) || 500));
+        if (UNSAFE.test(field.placeholder)) errors.push(`Placeholder for "${label}" cannot contain double quotes or angle brackets.`);
+      }
       if (type === "upload") {
         field.multiple = !!row.querySelector(".fr_upload_multiple")?.checked;
         field.max_files = field.multiple ? Math.max(2, Math.min(10, parseInt(row.querySelector(".fr_max_files")?.value || "3", 10))) : 1;
       } else if (type === "dropdown") {
-        const lines = (row.querySelector(".fr_options")?.value || "").split("\n").map(s => s.trim()).filter(Boolean);
+        const rawLines = (row.querySelector(".fr_options")?.value || "").split("\n").map(s => s.trim()).filter(Boolean);
         const priced = !!row.querySelector(".fr_priced")?.checked;
+        const option_images = {};
+        // "@N" at the very end of a line points that option at this product's Nth
+        // photo. Stripped off here, before anything else parses the line, so the
+        // suffix works the same on a priced line ("9X9 = 1699 / 1999 @2") and a
+        // plain one ("Red @3"). Anchored to the end and digits-only so an "@" in
+        // the middle of a label is left alone.
+        const lines = rawLines.map(line => {
+          const m = line.match(/\s*@\s*(\d+)\s*$/);
+          if (!m) return { line, photo: null };
+          const photo = parseInt(m[1], 10);
+          if (photo < 1) {
+            errors.push(`Dropdown field "${label}": the photo number in "${line}" must be 1 or more.`);
+            return { line: line.slice(0, m.index).trim(), photo: null };
+          }
+          return { line: line.slice(0, m.index).trim(), photo };
+        }).filter(entry => {
+          if (entry.line) return true;
+          // "@2" with nothing in front of it is a typo, not an option.
+          errors.push(`Dropdown field "${label}": a line has a photo number but no option name.`);
+          return false;
+        });
+        const rememberPhoto = (opt, photo) => { if (photo) option_images[opt] = photo; };
         if (priced) {
           const option_prices = {};
-          lines.forEach(line => {
+          const option_mrps = {};
+          lines.forEach(({ line, photo }) => {
             const eq = line.lastIndexOf("=");
             const opt = (eq === -1 ? line : line.slice(0, eq)).trim();
-            const price = eq === -1 ? NaN : Number(line.slice(eq + 1).trim());
-            if (!opt || Number.isNaN(price)) { errors.push(`Dropdown field "${label}": "${line}" should look like "Label = Price".`); return; }
+            // Everything after the "=" is "Price" or "Price / WasPrice". Split on
+            // the slash only here, never on the label side, so an option called
+            // "A4 / A5" keeps its name.
+            const [priceText, mrpText] = (eq === -1 ? "" : line.slice(eq + 1)).split("/");
+            const price = eq === -1 ? NaN : Number((priceText || "").trim());
+            if (!opt || Number.isNaN(price)) { errors.push(`Dropdown field "${label}": "${line}" should look like "Label = Price" (or "Label = Price / WasPrice").`); return; }
             field.options.push(opt);
             option_prices[opt] = price;
+            rememberPhoto(opt, photo);
+            if (mrpText !== undefined && mrpText.trim() !== "") {
+              const mrp = Number(mrpText.trim());
+              if (Number.isNaN(mrp)) {
+                errors.push(`Dropdown field "${label}": the was-price in "${line}" is not a number.`);
+              } else if (mrp <= price) {
+                // Caught here rather than silently dropped by the storefront (which
+                // hides a was-price that isn't above the real one) so the admin
+                // finds out now instead of wondering why it never appears.
+                errors.push(`Dropdown field "${label}": the was-price in "${line}" must be higher than the price.`);
+              } else {
+                option_mrps[opt] = mrp;
+              }
+            }
           });
           field.option_prices = option_prices;
+          field.option_mrps = Object.keys(option_mrps).length ? option_mrps : null;
           field.multi_select = false;
         } else {
-          field.options = lines;
+          field.options = lines.map(({ line }) => line);
+          lines.forEach(({ line, photo }) => rememberPhoto(line, photo));
           field.multi_select = !!row.querySelector(".fr_multi_select")?.checked;
         }
+        // Left null rather than {} when nothing is mapped, so a product that never
+        // used this reads exactly as it did before the feature existed.
+        field.option_images = Object.keys(option_images).length ? option_images : null;
         if (!field.options.length) errors.push(`Dropdown field "${label}" needs at least one option.`);
+        field.options.filter(o => UNSAFE.test(o)).forEach(o =>
+          errors.push(`Dropdown option "${o}" cannot contain double quotes or angle brackets.`));
       }
       input_fields.push(field);
     });
@@ -637,8 +848,9 @@ function openProductForm(id) {
       document.getElementById("formMsg").innerHTML = `<div class="msg error">${fieldErrors.map(esc).join("<br>")}</div>`;
       return;
     }
+    const categoryId = document.getElementById("f_category").value;
     const data = {
-      category_id: CURRENT_CATEGORY_ID,
+      category_id: categoryId,
       tier: document.getElementById("f_tier").value.trim() || null,
       title: document.getElementById("f_title").value.trim(),
       slug: document.getElementById("f_slug").value.trim(),
@@ -651,6 +863,7 @@ function openProductForm(id) {
       delivery_days: num(document.getElementById("f_delivery_days").value),
       address_change_window_hours: num(document.getElementById("f_addr_window").value),
       features: document.getElementById("f_features").value.split("\n").map(s => s.trim()).filter(Boolean),
+      search_keywords: document.getElementById("f_keywords").value.split(",").map(s => s.trim()).filter(Boolean),
       is_active: document.getElementById("f_active").checked,
       sort: parseInt(document.getElementById("f_sort").value || "0", 10),
       extra,
@@ -661,11 +874,26 @@ function openProductForm(id) {
       await withBusy(btn, p ? "Saving…" : "Creating…", () =>
         p ? Api.updateProduct(p.id, data) : Api.createProduct({ ...data, media: [] }));
       closeModal();
-      loadProdTable();
+      afterProductSaved(categoryId);
     } catch (err) {
       document.getElementById("formMsg").innerHTML = `<div class="msg error">${esc(err.message)}</div>`;
     }
   });
+}
+
+// After a create/save, land the admin on that section's product list — the
+// "Section" dropdown may not match whatever was selected in Products &
+// Packages (or that page may not even be open yet, if this form was opened
+// from the Categories page's "+ Add Service" / "+ Add Product" buttons).
+function afterProductSaved(categoryId) {
+  CURRENT_CATEGORY_ID = categoryId;
+  const catSelect = document.getElementById("catSelect");
+  if (catSelect) {
+    catSelect.value = categoryId;
+    loadProdTable();
+  } else {
+    location.hash = `#/products?cat=${categoryId}`;
+  }
 }
 
 async function removeProduct(id, btn) {
@@ -683,7 +911,7 @@ function openProductMedia(id) {
   // Categories tab and is scoped to whichever single page was selected there.
   const cat = (window._ALL_CATS || []).find(c => c.id === p.category_id);
   renderMediaModal({
-    title: `Photos — ${esc(p.title)}`,
+    title: `Photos &amp; Video — ${esc(p.title)}`,
     media: p.media,
     kind: "package",
     addFn: (data) => Api.addProductMedia(id, data),
@@ -697,36 +925,76 @@ function openProductMedia(id) {
 
 // ==================================================================== shared media modal
 
+// A product's gallery can hold short videos alongside its photos; a category
+// portfolio can't (the storefront renders those only as <img>, and the API
+// rejects a video there - see add_category_media in backend/app/routers/admin.py).
+// What the upload endpoint accepts is decided by the file's magic bytes, not this
+// attribute - `accept` only filters the OS file picker.
+const MEDIA_VIDEO_ACCEPT = "video/mp4,video/webm,video/quicktime";
+const MEDIA_VIDEO_EXT = /\.(mp4|webm|mov|m4v)(\?|#|$)/i;
+// Must match MAX_VIDEO_SIZE in backend/app/services/media.py. Like the item cap
+// above, this is a UX nicety - the backend is what actually enforces it.
+const MAX_VIDEO_UPLOAD_BYTES = 25 * 1024 * 1024;
+const MEDIA_THUMB_FALLBACK = "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2290%22 height=%2290%22><rect width=%2290%22 height=%2290%22 fill=%22%23e8e0d8%22/></svg>";
+
+// A row's own media_type is authoritative once it has been through the API; the
+// extension check is the fallback for a URL the admin has only just pasted.
+function isVideoMedia(m) {
+  if (!m) return false;
+  if (m.media_type) return m.media_type === "video";
+  return MEDIA_VIDEO_EXT.test(m.url || "");
+}
+
+function mediaTypeForUrl(url) {
+  return MEDIA_VIDEO_EXT.test(url || "") ? "video" : "image";
+}
+
+// One gallery tile's inner markup. preload="metadata" on purpose: a modal listing
+// ten of these should fetch ten headers, not ten whole clips.
+function mediaThumbMarkup(m) {
+  if (isVideoMedia(m)) {
+    return `<video src="${esc(mediaUrl(m.url))}" muted playsinline preload="metadata"></video>
+      <span class="media-video-badge" title="Video">▶</span>`;
+  }
+  return `<img src="${esc(mediaUrl(m.url))}" onerror="this.src='${MEDIA_THUMB_FALLBACK}'">`;
+}
+
 function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange, categoryId, pageId, pageSlug, categorySlug }) {
   // MAX_MEDIA_PER_ENTITY must match backend/app/routers/admin.py's
   // MAX_MEDIA_PER_ENTITY - this is only a UX nicety (blocking/trimming
   // selections before they hit the network); the backend is what actually
   // enforces the cap, since this modal has three independent add paths
   // (upload, library picker, add-by-URL) that all need to agree on the count.
-  const MAX_MEDIA_PER_ENTITY = 5;
+  const MAX_MEDIA_PER_ENTITY = 10;
+  // Videos share the product's one 10-item gallery budget rather than getting a
+  // slot of their own - the storefront shows them in the same thumbnail rail, so
+  // the cap that keeps that rail sane has to cover both.
+  const allowVideo = kind === "package";
+  const ITEMS = allowVideo ? "photos/videos" : "photos";
   const mediaCountNow = () => document.getElementById("mediaList").querySelectorAll(".media-item").length;
   const remainingSlots = () => Math.max(0, MAX_MEDIA_PER_ENTITY - mediaCountNow());
   const updateCountLabel = () => {
     const label = document.getElementById("mediaCountLabel");
-    if (label) label.textContent = `${mediaCountNow()} of ${MAX_MEDIA_PER_ENTITY} photos used`;
+    if (label) label.textContent = `${mediaCountNow()} of ${MAX_MEDIA_PER_ENTITY} ${ITEMS} used`;
   };
 
   openModal(`
     <h2>${title}</h2>
     <div id="formMsg"></div>
-    <p id="mediaCountLabel" style="color:var(--text-dim);font-size:12px;margin:0 0 6px;">${media.length} of ${MAX_MEDIA_PER_ENTITY} photos used</p>
-    ${media.length > 1 ? `<p style="color:var(--text-dim);font-size:12px;margin:0 0 6px;">Drag photos to reorder — the first one is used as the main/cover image.</p>` : ""}
+    <p id="mediaCountLabel" style="color:var(--text-dim);font-size:12px;margin:0 0 6px;">${media.length} of ${MAX_MEDIA_PER_ENTITY} ${ITEMS} used</p>
+    ${media.length > 1 ? `<p style="color:var(--text-dim);font-size:12px;margin:0 0 6px;">Drag to reorder — the first one is used as the main/cover image${allowVideo ? ", so keep a photo first (a video can't be a cover)" : ""}.</p>` : ""}
     <div class="media-list" id="mediaList">
       ${media.map((m, i) => `
-        <div class="media-item${i === 0 ? " is-main" : ""}" draggable="true" data-id="${esc(m.id)}">
-          <img src="${esc(mediaUrl(m.url))}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2290%22 height=%2290%22><rect width=%2290%22 height=%2290%22 fill=%22%23e8e0d8%22/></svg>'">
+        <div class="media-item${i === 0 ? " is-main" : ""}${isVideoMedia(m) ? " is-video" : ""}" draggable="true" data-id="${esc(m.id)}">
+          ${allowVideo ? `<span class="media-photo-no" title="Photo number — end a dropdown option with @ and this number to show this photo when that option is picked"></span>` : ""}
+          ${mediaThumbMarkup(m)}
           <button title="Remove" onclick="removeMedia('${m.id}', this)">×</button>
           ${m.alt ? `<div class="cap">${esc(m.alt)}</div>` : ""}
-        </div>`).join("") || `<div style="color:var(--text-dim);font-size:13px;">No photos yet.</div>`}
+        </div>`).join("") || `<div style="color:var(--text-dim);font-size:13px;">No ${ITEMS} yet.</div>`}
     </div>
     <form id="mediaUploadForm" style="margin-top:16px;">
-      <label>Upload photos <span class="form-hint">(up to 5 total per product/category — choose your files, then click Upload)</span></label>
-      <input type="file" id="m_file" accept="image/*" multiple>
+      <label>Upload ${ITEMS} <span class="form-hint">(up to ${MAX_MEDIA_PER_ENTITY} total per product/category — choose your files, then click Upload${allowVideo ? ". Videos: MP4, WebM or MOV, up to 25MB each" : ""})</span></label>
+      <input type="file" id="m_file" accept="${allowVideo ? `image/*,${MEDIA_VIDEO_ACCEPT}` : "image/*"}" multiple>
       <div id="m_fileChosenList" style="color:var(--text-dim);font-size:12px;margin:6px 0;"></div>
       <button type="button" class="btn" id="m_fileUploadBtn" disabled>Upload</button>
       <span id="mediaUploadStatus" style="color:var(--text-dim);font-size:12px;"></span>
@@ -734,9 +1002,9 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
     <p style="color:var(--text-dim);font-size:12px;margin:12px 0 4px;">— or choose from the Media Library —</p>
     <button type="button" class="btn secondary" id="openLibraryPickerBtn">📁 Choose from Media Library</button>
     <div id="mediaLibraryPicker" style="display:none;margin-top:10px;"></div>
-    <p style="color:var(--text-dim);font-size:12px;margin:14px 0 4px;">— or paste image link(s) instead —</p>
+    <p style="color:var(--text-dim);font-size:12px;margin:14px 0 4px;">— or paste ${allowVideo ? "image/video" : "image"} link(s) instead —</p>
     <form id="mediaForm">
-      <label>Image URL(s) <span class="form-hint">(paste one, or several separated by commas)</span></label><input id="m_url" placeholder="https://pub-xxxx.r2.dev/one.jpg, https://pub-xxxx.r2.dev/two.jpg">
+      <label>${allowVideo ? "Image/video" : "Image"} URL(s) <span class="form-hint">(paste one, or several separated by commas${allowVideo ? " — a .mp4/.webm/.mov link is saved as a video" : ""})</span></label><input id="m_url" placeholder="https://pub-xxxx.r2.dev/one.jpg, https://pub-xxxx.r2.dev/two.jpg">
       <label>Caption ${kind === "portfolio" ? "(shown under the photo)" : "(optional)"} <span class="form-hint">${kind === "portfolio" ? "" : "— applied to every URL above if you pasted more than one"}</span></label><input id="m_alt">
       <div class="modal-actions">
         <button type="button" class="btn secondary" onclick="closeModal()">Close</button>
@@ -755,16 +1023,23 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
     let files = Array.from(e.target.files || []);
     const remaining = remainingSlots();
     if (remaining <= 0) {
-      formMsg.innerHTML = `<div class="msg error">This already has the maximum of ${MAX_MEDIA_PER_ENTITY} photos - remove one before adding more.</div>`;
+      formMsg.innerHTML = `<div class="msg error">This already has the maximum of ${MAX_MEDIA_PER_ENTITY} ${ITEMS} - remove one before adding more.</div>`;
       e.target.value = "";
       files = [];
     } else if (files.length > remaining) {
-      formMsg.innerHTML = `<div class="msg error">You picked ${files.length} photos, but only ${remaining} slot${remaining === 1 ? "" : "s"} left (max ${MAX_MEDIA_PER_ENTITY} total) - only the first ${remaining} will be uploaded.</div>`;
+      formMsg.innerHTML = `<div class="msg error">You picked ${files.length} files, but only ${remaining} slot${remaining === 1 ? "" : "s"} left (max ${MAX_MEDIA_PER_ENTITY} total) - only the first ${remaining} will be uploaded.</div>`;
       files = files.slice(0, remaining);
+    }
+    // Caught here rather than after a 25MB round trip that the backend would only
+    // then reject - the file size is known the moment it is picked.
+    const oversized = files.filter(f => f.type.startsWith("video/") && f.size > MAX_VIDEO_UPLOAD_BYTES);
+    if (oversized.length) {
+      formMsg.innerHTML = `<div class="msg error">${oversized.map(f => esc(f.name)).join(", ")} — video${oversized.length === 1 ? " is" : "s are"} over the ${MAX_VIDEO_UPLOAD_BYTES / (1024 * 1024)}MB limit. Trim or re-export shorter/smaller and try again.</div>`;
+      files = files.filter(f => !oversized.includes(f));
     }
     chosenFiles = files;
     fileChosenList.textContent = files.length
-      ? `${files.length} photo${files.length === 1 ? "" : "s"} chosen: ${files.map(f => f.name).join(", ")}`
+      ? `${files.length} file${files.length === 1 ? "" : "s"} chosen: ${files.map(f => f.name).join(", ")}`
       : "";
     fileUploadBtn.disabled = files.length === 0;
   });
@@ -785,7 +1060,7 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
     // Sequential, not Promise.all - each is its own real network upload (not
     // just a fast DB write like the multi-select library picker below), so
     // running them in parallel would fight over the same connection/bandwidth
-    // with no way to show a meaningful "N of 5" progress for any single one.
+    // with no way to show a meaningful "N of {MAX_MEDIA_PER_ENTITY}" progress for any single one.
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const label = files.length > 1 ? `Uploading ${i + 1} of ${files.length}: ${file.name}` : `Uploading ${file.name}`;
@@ -802,21 +1077,26 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
         const uploaded = await Api.uploadMediaWithProgress(fd, (pct) => {
           status.textContent = `${label}… ${pct}%`;
         });
-        const added = await addFn({ url: uploaded.url, alt: uploaded.alt || "", kind, sort: media.length + i });
+        // media_type comes back from the upload endpoint, which decided it from the
+        // file's actual magic bytes - trusted over anything guessed from the name.
+        const mediaType = uploaded.media_type || mediaTypeForUrl(uploaded.url);
+        const added = await addFn({ url: uploaded.url, alt: uploaded.alt || "", kind, media_type: mediaType, sort: media.length + i });
         // Append the new photo straight into the grid instead of closing the
         // modal after every single file - previously the admin had to reopen
         // this same "Photos" dialog from scratch for each additional photo.
         const item = document.createElement("div");
-        item.className = "media-item";
+        item.className = `media-item${mediaType === "video" ? " is-video" : ""}`;
         item.draggable = true;
         item.dataset.id = (added && added.id) || "";
         item.innerHTML = `
-          <img src="${esc(mediaUrl(uploaded.url))}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2290%22 height=%2290%22><rect width=%2290%22 height=%2290%22 fill=%22%23e8e0d8%22/></svg>'">
+          ${allowVideo ? `<span class="media-photo-no"></span>` : ""}
+          ${mediaThumbMarkup({ url: uploaded.url, media_type: mediaType })}
           <button title="Remove" onclick="removeMedia('${(added && added.id) || ""}', this)">×</button>
         `;
         listEl.appendChild(item);
-        media.push({ id: added && added.id, url: uploaded.url, alt: uploaded.alt || "" });
+        media.push({ id: added && added.id, url: uploaded.url, alt: uploaded.alt || "", media_type: mediaType });
         refreshMainBadge(listEl);
+        refreshPhotoNumbers(listEl);
         updateCountLabel();
       } catch (err) {
         failures.push(`${file.name}: ${err.message}`);
@@ -829,7 +1109,7 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
     fileChosenList.textContent = "";
     fileUploadBtn.disabled = true;
     if (failures.length) {
-      formMsg.innerHTML = `<div class="msg error">${failures.length} of ${files.length} photo(s) failed to upload:<br>${failures.map(esc).join("<br>")}</div>`;
+      formMsg.innerHTML = `<div class="msg error">${failures.length} of ${files.length} file(s) failed to upload:<br>${failures.map(esc).join("<br>")}</div>`;
     }
     // Left open on purpose (unlike the single-photo flow before) so the admin
     // can see every photo they just added and keep going - afterChange()
@@ -842,12 +1122,16 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
     formMsg.innerHTML = "";
     let urls = document.getElementById("m_url").value.split(",").map(u => u.trim()).filter(Boolean);
     if (!urls.length) {
-      formMsg.innerHTML = `<div class="msg error">Enter an image URL, or use "Choose Files" / the Media Library above instead.</div>`;
+      formMsg.innerHTML = `<div class="msg error">Enter a${allowVideo ? "n image or video" : "n image"} URL, or use "Choose Files" / the Media Library above instead.</div>`;
+      return;
+    }
+    if (!allowVideo && urls.some(u => mediaTypeForUrl(u) === "video")) {
+      formMsg.innerHTML = `<div class="msg error">Videos can only be added to a product's photos, not a category portfolio.</div>`;
       return;
     }
     const remaining = remainingSlots();
     if (remaining <= 0) {
-      formMsg.innerHTML = `<div class="msg error">This already has the maximum of ${MAX_MEDIA_PER_ENTITY} photos - remove one before adding more.</div>`;
+      formMsg.innerHTML = `<div class="msg error">This already has the maximum of ${MAX_MEDIA_PER_ENTITY} ${ITEMS} - remove one before adding more.</div>`;
       return;
     }
     if (urls.length > remaining) {
@@ -860,7 +1144,9 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
     await withBusy(btn, "Adding…", async () => {
       for (let i = 0; i < urls.length; i++) {
         try {
-          await addFn({ url: urls[i], alt, kind, sort: media.length + i });
+          // A pasted link never went through the upload endpoint, so the extension
+          // is all there is to go on - hence the .mp4/.webm/.mov hint in the label.
+          await addFn({ url: urls[i], alt, kind, media_type: mediaTypeForUrl(urls[i]), sort: media.length + i });
         } catch (err) {
           failures.push(`${urls[i]}: ${err.message}`);
         }
@@ -876,13 +1162,17 @@ function renderMediaModal({ title, media, kind = "portfolio", addFn, afterChange
   });
 
   initMediaDragReorder(document.getElementById("mediaList"));
+  refreshPhotoNumbers(document.getElementById("mediaList"));
 
   // ---- Choose from Media Library ----
   let libraryLoaded = false;
   document.getElementById("openLibraryPickerBtn").addEventListener("click", async () => {
     const picker = document.getElementById("mediaLibraryPicker");
     const opening = picker.style.display === "none";
-    picker.style.display = opening ? "block" : "none";
+    // "" not "block": the stylesheet lays this out as a flex column so only the
+    // tile grid scrolls (see #mediaLibraryPicker in admin.css), and an inline
+    // display would override that.
+    picker.style.display = opening ? "" : "none";
     if (opening && !libraryLoaded) {
       libraryLoaded = true;
       await loadMediaLibraryPicker(picker, kind, media, addFn, afterChange, { categoryId, pageId, MAX_MEDIA_PER_ENTITY, remainingSlots });
@@ -909,10 +1199,15 @@ async function loadMediaLibraryPicker(picker, kind, media, addFn, afterChange, {
   let activeScope = scopes[0].key;
   const cache = {}; // scope key -> fetched items, so switching tabs back and forth doesn't re-fetch
 
+  // A category portfolio can't take a video (the API rejects it), so don't offer
+  // one here - the product picker shows the full library, videos included.
+  const allowVideo = kind === "package";
+
   const fetchScope = async (scopeKey) => {
     if (cache[scopeKey]) return cache[scopeKey];
     const args = scopeKey === "category" ? { categoryId } : scopeKey === "page" ? { pageId } : {};
-    const items = await Api.mediaLibrary(args);
+    const all = await Api.mediaLibrary(args);
+    const items = allowVideo ? all : all.filter(m => !isVideoMedia(m));
     cache[scopeKey] = items;
     return items;
   };
@@ -950,7 +1245,7 @@ async function loadMediaLibraryPicker(picker, kind, media, addFn, afterChange, {
       ${renderTabs()}
       <input type="text" id="libraryPickerSearch" placeholder="Search by caption…" style="margin-bottom:8px;">
       <div class="media-picker-grid" id="libraryPickerGrid"></div>
-      <div id="libraryPickerActions" style="display:flex;align-items:center;gap:10px;margin-top:10px;">
+      <div id="libraryPickerActions" style="display:flex;align-items:center;gap:10px;">
         <span id="libraryPickerCount" style="font-size:12px;color:var(--text-dim);">0 selected</span>
         <button type="button" class="btn" id="libraryPickerAddBtn" disabled>Add Selected</button>
       </div>
@@ -962,7 +1257,7 @@ async function loadMediaLibraryPicker(picker, kind, media, addFn, afterChange, {
     const updateActionBar = () => {
       countEl.textContent = `${selectedIds.size} selected`;
       addBtn.disabled = selectedIds.size === 0;
-      addBtn.textContent = selectedIds.size > 1 ? `Add ${selectedIds.size} Photos` : "Add Selected";
+      addBtn.textContent = selectedIds.size > 1 ? `Add ${selectedIds.size} Items` : "Add Selected";
     };
 
     const renderGrid = (filter) => {
@@ -970,8 +1265,10 @@ async function loadMediaLibraryPicker(picker, kind, media, addFn, afterChange, {
       const filtered = q ? items.filter(m => (m.alt || "").toLowerCase().includes(q)) : items;
       const grid = document.getElementById("libraryPickerGrid");
       grid.innerHTML = filtered.map(m => `
-        <button type="button" class="media-picker-tile${selectedIds.has(m.id) ? " selected" : ""}" title="${esc(m.alt || "Use this photo")}" data-id="${m.id}" style="position:relative;${selectedIds.has(m.id) ? "outline:3px solid var(--accent,#c0392b);outline-offset:-3px;" : ""}">
-          <img src="${esc(mediaUrl(m.thumb_url || m.url))}" loading="lazy" onerror="this.src='${esc(mediaUrl(m.url))}'">
+        <button type="button" class="media-picker-tile${selectedIds.has(m.id) ? " selected" : ""}" title="${esc(m.alt || (isVideoMedia(m) ? "Use this video" : "Use this photo"))}" data-id="${m.id}" style="position:relative;${selectedIds.has(m.id) ? "outline:3px solid var(--accent,#c0392b);outline-offset:-3px;" : ""}">
+          ${isVideoMedia(m)
+            ? `<video src="${esc(mediaUrl(m.url))}" muted playsinline preload="metadata"></video><span class="media-video-badge" title="Video">▶</span>`
+            : `<img src="${esc(mediaUrl(m.thumb_url || m.url))}" loading="lazy" onerror="this.src='${esc(mediaUrl(m.url))}'">`}
           ${selectedIds.has(m.id) ? `<span class="media-picker-check" style="position:absolute;top:4px;right:4px;background:var(--accent,#c0392b);color:#fff;border-radius:50%;width:20px;height:20px;font-size:13px;line-height:20px;">✓</span>` : ""}
         </button>
       `).join("") || `<div style="color:var(--text-dim);font-size:12px;">No matches.</div>`;
@@ -1013,7 +1310,8 @@ async function loadMediaLibraryPicker(picker, kind, media, addFn, afterChange, {
       // multi-select keeps a predictable carousel order instead of a race.
       for (let i = 0; i < chosen.length; i++) {
         try {
-          await addFn({ url: chosen[i].url, alt: chosen[i].alt || "", kind, sort: media.length + i });
+          await addFn({ url: chosen[i].url, alt: chosen[i].alt || "", kind,
+                        media_type: isVideoMedia(chosen[i]) ? "video" : "image", sort: media.length + i });
         } catch (err) {
           failures.push(chosen[i]);
         }
@@ -1052,7 +1350,7 @@ async function removeMedia(id, btnEl) {
     await withBusy(btnEl, "×", () => Api.deleteMedia(id));
     const listEl = btnEl.closest(".media-list");
     btnEl.closest(".media-item").remove();
-    if (listEl) refreshMainBadge(listEl);
+    if (listEl) { refreshMainBadge(listEl); refreshPhotoNumbers(listEl); }
   } catch (err) { alert(err.message); }
 }
 
@@ -1061,6 +1359,75 @@ async function removeMedia(id, btnEl) {
 // which photo is first.
 function refreshMainBadge(listEl) {
   listEl.querySelectorAll(".media-item").forEach((el, i) => el.classList.toggle("is-main", i === 0));
+}
+
+// Stamps each tile with the number an option's "@N" suffix refers to (see the
+// dropdown field's hint). Videos are skipped rather than numbered, because the
+// storefront gallery shows every photo before any video - so "@2" has to mean
+// the 2nd photo however the two are interleaved in this grid. Re-run after every
+// append/remove/drag-reorder, or the numbers describe the previous order.
+function refreshPhotoNumbers(listEl) {
+  if (!listEl) return;
+  let n = 0;
+  listEl.querySelectorAll(".media-item").forEach((el) => {
+    const badge = el.querySelector(".media-photo-no");
+    if (!badge) return;
+    if (el.classList.contains("is-video")) {
+      badge.textContent = "";
+      badge.style.display = "none";
+      return;
+    }
+    badge.textContent = String(++n);
+    badge.style.display = "";
+  });
+}
+
+// Native HTML5 drag-and-drop row reordering for a <tbody> - the Categories
+// and Products & Packages tables' "Sort" column used to mean typing a number
+// and guessing; dragging the ⠿ handle up/down is the same "move on drop, not
+// dragover" mechanics as initMediaDragReorder below (relocating the dragged
+// node mid-drag can make a browser treat the source as detached and cancel
+// the gesture), just keyed on row top/bottom instead of tile left/right.
+// Calls onReorder(ids) with every row's data-id, top to bottom, once a drop
+// actually moves something - the caller persists it and repaints from the
+// server's response, so this never needs to touch the underlying data array.
+function initTableRowDragReorder(tbodyEl, onReorder) {
+  if (!tbodyEl) return;
+  let draggingEl = null;
+
+  tbodyEl.addEventListener("dragstart", (e) => {
+    const row = e.target.closest("tr[draggable='true']");
+    if (!row) return;
+    draggingEl = row;
+    row.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", row.dataset.id || "");
+  });
+
+  tbodyEl.addEventListener("dragover", (e) => {
+    if (!draggingEl) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  });
+
+  tbodyEl.addEventListener("drop", (e) => {
+    e.preventDefault();
+    if (!draggingEl) return;
+    const target = e.target.closest("tr");
+    if (target && target !== draggingEl) {
+      const box = target.getBoundingClientRect();
+      const after = e.clientY > box.top + box.height / 2;
+      if (after) target.after(draggingEl); else target.before(draggingEl);
+    }
+  });
+
+  tbodyEl.addEventListener("dragend", () => {
+    if (!draggingEl) return;
+    draggingEl.classList.remove("dragging");
+    draggingEl = null;
+    const ids = Array.from(tbodyEl.querySelectorAll("tr[data-id]")).map(row => row.dataset.id);
+    onReorder(ids);
+  });
 }
 
 // Native HTML5 drag-and-drop reordering for a Photos modal's thumbnail grid.
@@ -1127,6 +1494,7 @@ function initMediaDragReorder(listEl) {
     draggingEl = null;
     clearOver();
     refreshMainBadge(listEl);
+    refreshPhotoNumbers(listEl);
     const ids = Array.from(listEl.querySelectorAll(".media-item")).map(el => el.dataset.id).filter(Boolean);
     if (!ids.length) return;
     try {

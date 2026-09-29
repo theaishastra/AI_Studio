@@ -42,6 +42,9 @@ async function renderSettings() {
   view.innerHTML = `<header class="page-head"><h1>Settings</h1></header><div id="settingsWrap">${LOADING}</div>`;
   const all = await Api.allSettings();
   const wrap = document.getElementById("settingsWrap");
+  // Gone if the admin navigated to another section while allSettings() was in flight -
+  // the route they moved to owns the view now, so there is nothing to render into.
+  if (!wrap) return;
   const isColor = (f) => f.name === "primary_color" || f.name === "accent_color";
 
   wrap.innerHTML = SETTINGS_PANELS.map(panel => `

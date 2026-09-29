@@ -35,7 +35,7 @@
 }
 
 .pf-text-input,
-.pf-dropdown-input {
+.pf-dropdown-input:not(.pf-choice-value) {
   border: 1.5px solid #e6d7dd;
   border-radius: 8px;
   padding: 10px 12px;
@@ -48,9 +48,96 @@
 }
 
 .pf-text-input:focus,
-.pf-dropdown-input:focus {
+.pf-dropdown-input:not(.pf-choice-value):focus {
   outline: none;
   border-color: #b3175a;
+}
+
+/* ---------- dropdown rendered as a grid of variant tiles ----------
+   A dropdown's options here are variants a shopper compares side by side (size,
+   shape, quantity), usually each at its own price, so they're laid out as
+   tiles rather than hidden inside a native select. The select itself still
+   exists as the value holder and is taken out of layout entirely - see
+   renderChoiceControl() in js/shared/product-fields.js. */
+
+.pf-choice-value {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* The chosen option echoed beside the label ("Item Shape: PS-027") - the one
+   affordance a closed <select> gave for free. The separator lives here so it
+   disappears along with the value while nothing is selected. */
+.pf-choice-current {
+  font-weight: 700;
+  color: #5c0930;
+}
+
+.pf-choice-current:not(:empty)::before {
+  content: ': ';
+  color: #241a20;
+}
+
+.pf-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pf-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 96px;
+  padding: 8px 12px;
+  border: 1.5px solid #e6d7dd;
+  border-radius: 8px;
+  background: #fff;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.pf-choice:hover {
+  border-color: #b3175a;
+}
+
+.pf-choice:focus-visible {
+  outline: 2px solid #b3175a;
+  outline-offset: 2px;
+}
+
+.pf-choice.is-selected {
+  border-color: #5c0930;
+  border-width: 2px;
+  /* Compensate for the thicker border so a tile does not shift its neighbours
+     when it becomes selected. */
+  padding: 7.5px 11.5px;
+  box-shadow: 0 0 0 1px rgba(92, 9, 48, .12);
+}
+
+.pf-choice-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #241a20;
+  line-height: 1.3;
+}
+
+.pf-choice-price {
+  font-size: 12.5px;
+  color: #241a20;
+}
+
+.pf-choice-mrp {
+  font-size: 11px;
+  color: #8a7688;
+  text-decoration: line-through;
 }
 
 .pf-upload-input {
@@ -128,7 +215,10 @@
 }
 
 .pf-field-error .pf-text-input,
-.pf-field-error .pf-dropdown-input,
-.pf-field-error .pf-upload-btn {
+.pf-field-error .pf-dropdown-input:not(.pf-choice-value),
+.pf-field-error .pf-upload-btn,
+/* The select a tile grid writes to is invisible, so an unanswered required
+   dropdown has to be flagged on the tiles themselves. */
+.pf-field-error .pf-choice {
   border-color: #d1373f;
 }

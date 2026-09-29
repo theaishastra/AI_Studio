@@ -509,81 +509,6 @@ body.gifts-module-route:not(.gifts-view-category) .header-sticky-wrap {
   display: none !important;
 }
 
-/* ================= MOBILE PROMO SLIDER (home-page style hero carousel) ================= */
-
-@media (max-width: 767px) {
-  .promo-hero-slider {
-    display: block;
-    width: 100%;
-    margin: 0 0 16px;
-  }
-
-  .promo-hero-window {
-    position: relative;
-    border-radius: 18px;
-    overflow: hidden;
-    box-shadow: 0 10px 26px rgba(92, 9, 48, .12);
-  }
-
-  .promo-hero-track {
-    display: flex;
-    width: 600%;
-    transition: transform .7s cubic-bezier(.65, 0, .35, 1);
-  }
-
-  .promo-hero-slide {
-    position: relative;
-    width: 16.6667%;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-    height: 150px;
-  }
-
-  .promo-hero-link {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    position: relative;
-  }
-
-  .promo-hero-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-  }
-
-  .promo-hero-dots {
-    position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 6px;
-    z-index: 4;
-  }
-
-  .promo-hero-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, .6);
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    transition: all .25s ease;
-  }
-
-  .promo-hero-dot.active {
-    width: 16px;
-    border-radius: 4px;
-    background: #fff;
-  }
-}
 
 .hero {
   width: min(1400px, calc(100% - 56px));
@@ -7362,7 +7287,7 @@ body.gifts-module-route .details-page.container {
 
 /* Mobile: this "narrower centered card on a gray backdrop" treatment is a
    desktop modal pattern borrowed from corporate.html - every other mobile
-   page on the site (packages-grid, promo-hero-slider, etc.) goes edge to
+   page on the site (packages-grid, category-hero, etc.) goes edge to
    edge with small uniform padding instead. Left as the unconditional 40px
    inset above, the product page reads as a cramped column with unused
    space beside it rather than using the full phone screen. */
@@ -7491,10 +7416,11 @@ body.gifts-module-route #detailBuyNow:active {
   }
 }
 
-@media (min-width: 769px) {
+/* 1024px, matching the product-view stack/two-column breakpoint below and in
+   corporate.css / studio.css, so the whole product view flips at one width. */
+@media (min-width: 1024px) {
   body.gifts-module-route .details-page {
-    /* Breadcrumb strip is hidden above 768px - claim back its vertical
-       space instead of leaving a gap where it used to sit. */
+    /* Reclaim the vertical space the breadcrumb strip would otherwise leave. */
     padding-top: 6px;
   }
 }
@@ -7591,16 +7517,77 @@ body.gifts-module-route .gallery-main {
   cursor: zoom-in;
 }
 
-body.gifts-module-route .gallery-main img {
+body.gifts-module-route .gallery-main img,
+body.gifts-module-route .gallery-main video {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+body.gifts-module-route .gallery-main img {
   transition: transform .18s ease;
   transform-origin: center;
 }
 
 body.gifts-module-route .gallery-main.zoomed img {
   transform: scale(1.75);
+}
+
+/* A product's gallery can end with a short video the admin attached. It shares
+   the square stage with the photos (contain, so a portrait clip isn't cropped)
+   but sits on black, having no transparent edges to blend into the card. */
+body.gifts-module-route .gallery-main video {
+  background: #000;
+}
+
+/* Click-to-zoom is suppressed in JS while a clip is on the stage (it would land
+   on the player's controls); drop the zoom-in cursor so it doesn't invite it. */
+body.gifts-module-route .gallery-main.showing-video {
+  cursor: default;
+}
+
+body.gifts-module-route .gallery-thumb-video {
+  position: relative;
+  background: #000;
+  overflow: hidden;
+}
+
+body.gifts-module-route .gallery-thumb-video video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+}
+
+body.gifts-module-route .gallery-thumb-play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* A bare glyph only read against the black box a video thumbnail used to be;
+   now that one paints a real first frame it needs its own backing to stay
+   legible on a bright one. */
+body.gifts-module-route .gallery-thumb-play::before {
+  content: '\25B6';
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding-left: 2px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .55);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
 }
 
 body.gifts-module-route .gallery-arrow-btn {
@@ -8251,6 +8238,26 @@ body.gifts-module-route .gift-accordion-content > * {
 body.gifts-module-route .gift-accordion-item.is-open .gift-accordion-content {
   grid-template-rows: 1fr;
   padding-bottom: 14px;
+}
+
+body.gifts-module-route .gift-highlights {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+body.gifts-module-route .gift-highlights li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+body.gifts-module-route .gift-highlights li::before {
+  content: "✓";
+  color: #5C0930;
+  font-weight: 900;
+  font-size: 13px;
 }
 
 body.gifts-module-route .purchase-actions {
@@ -9026,8 +9033,31 @@ body.gifts-module-route .related-offer {
     position: static;
   }
 
+
+  body.gifts-module-route .related-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.gifts-module-route .footer-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* Product-view layout: stacks below 1024px, two columns at or above it - the
+   SAME breakpoint corporate.css uses for .modal-grid and studio.css for
+   .preview-scroll, so all three product views change shape at one width.
+   These rules used to sit in the max-width:768px block above. That left 769px-
+   1023px on the desktop grid, whose own minimum is 420px + 390px + 28px gap =
+   838px - so a tablet in that range scrolled sideways. Stacking to 1024px fixes
+   that and makes the three views consistent in one change. */
+@media (max-width: 1023px) {
   body.gifts-module-route .details-main {
     grid-template-columns: 1fr;
+    /* The title block is the first thing under the breadcrumb now, so this
+       row carries the page's top spacing rather than the gallery. */
+    gap: 14px;
+    padding: 10px 0 32px;
   }
 
   /* Single-column grid now - drop the desktop explicit column/row placement
@@ -9039,6 +9069,40 @@ body.gifts-module-route .related-offer {
   body.gifts-module-route .details-buy-card {
     grid-column: auto;
     grid-row: auto;
+  }
+
+  /* Mobile reading order: product NAME first, then the gallery, then the
+     price/personalise/buy card. The DOM can't give us this - desktop needs
+     the gallery as column 1 spanning both rows, so it has to come first in
+     source order. `order` reorders grid items during auto-placement, which
+     is exactly what the single-column grid above does.
+     This is also the order every mobile storefront uses: you read what the
+     thing IS before you look at pictures of it. */
+  body.gifts-module-route .details-copy {
+    order: 1;
+  }
+
+  body.gifts-module-route .details-gallery {
+    order: 2;
+  }
+
+  body.gifts-module-route .details-buy-card {
+    order: 3;
+  }
+
+  /* These product names are long SEO strings (150+ characters, several
+     "|"-separated clauses). At the desktop floor of 28px Georgia that wraps
+     to eight lines and fills a phone screen on its own, pushing the image
+     and the price below the fold. Smaller and tighter here so the name,
+     the image and the price all land in the first screenful. */
+  body.gifts-module-route .details-copy h1 {
+    margin: 5px 0 4px;
+    font-size: 20px;
+    line-height: 1.3;
+  }
+
+  body.gifts-module-route .details-copy .eyebrow {
+    font-size: 11px;
   }
 
   body.gifts-module-route .details-gallery,
@@ -9077,17 +9141,6 @@ body.gifts-module-route .related-offer {
   body.gifts-module-route .details-customizer-grid {
     grid-template-columns: 1fr;
   }
-
-  body.gifts-module-route .related-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  body.gifts-module-route .footer-row {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  body.gifts-module-route
 }
 
 @media (max-width: 575px) {
@@ -9097,6 +9150,13 @@ body.gifts-module-route .related-offer {
 
   body.gifts-module-route main.container {
     width: 100%;
+  }
+
+  /* The gallery's gray frame costs 32px of the image's width, ~9% of a 360px
+     screen. */
+  body.gifts-module-route .details-gallery {
+    padding: 10px;
+    border-radius: 12px;
   }
 
   body.gifts-module-route .nav {
@@ -9507,8 +9567,12 @@ body.gifts-module-route .related-offer {
     min-height: 72px;
   }
 
+  /* Was clamp(30px, 10vw, 42px), which resolved to ~39px on a 390px phone -
+     BIGGER than the 28px desktop floor, and the reason a long product name
+     filled the screen before the image or price came into view. Phones get
+     the smallest title, not the largest. */
   body.gifts-module-route .details-copy h1 {
-    font-size: clamp(30px, 10vw, 42px);
+    font-size: 18px;
   }
 
   body.gifts-module-route .details-customizer {
@@ -14014,6 +14078,13 @@ html body.gifts-view-category .pkg-card {
   position: relative;
 }
 
+/* Search matches sort to the top of the grid instead of hiding everything else -
+   this border is the only other visual cue distinguishing them from the (still
+   visible) rest of the category once "Best Match" scrolls out of view. */
+html body.gifts-view-category .pkg-card.search-match {
+  border: 2px solid var(--orange, #F97316);
+}
+
 html body.gifts-view-category .pkg-image-wrap {
   position: relative;
 }
@@ -14366,3 +14437,272 @@ html body.gifts-view-category .sidebar {
   }
 }
 
+
+/* ==========================================================================
+   Static before/after showcase (category view, directly under
+   #categoryHeroBanner). Purely promotional - no admin data behind it.
+
+   Both layers are the same absolutely-positioned box with the same
+   object-fit, so the clip-path wipe lines up pixel for pixel. The frame's
+   aspect ratio comes from --gc-ratio, which initGiftCompareShowcase() sets
+   from the real image's natural size once it loads; the literal below is
+   only the placeholder used until then, so the block never jumps height and
+   never letterboxes on either a phone or a wide desktop.
+   ========================================================================== */
+.gift-compare {
+  margin: 0 0 24px;
+}
+
+.gift-compare-head {
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+/* This whole view sits on the maroon page background (#5C0930, see the "Page
+   Background & Shell" block above), so the head text follows .category-header's
+   treatment - white title, translucent-white body - rather than the --ink /
+   --muted tokens, which are for the light product pages and disappear here. */
+.gift-compare-eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--pink-soft);
+}
+
+.gift-compare-head h2 {
+  margin: 6px 0 4px;
+  font-size: clamp(17px, 2vw, 21px);
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.25;
+}
+
+.gift-compare-head p {
+  margin: 0;
+  font-size: clamp(12px, 1.4vw, 14px);
+  color: rgba(255, 255, 255, .78);
+}
+
+.gift-compare-frame {
+  --gc-position: 50%;
+  /* The showcase images' real size (1672x941, 16:9). JS overwrites this from
+     naturalWidth/naturalHeight once loaded, so if the images are ever swapped
+     for a different crop this stays correct - but matching them here means no
+     height jump between first paint and that swap. */
+  --gc-ratio: 1672 / 941;
+  position: relative;
+  width: 100%;
+  /* 16:9 across the full ~1300px content column would be a 730px-tall wall
+     under the hero. Capped well below that so this stays a showcase strip
+     rather than a second hero - 560px wide lands it at ~315px tall on desktop.
+     Below this width (tablet/phone) it just goes full-bleed. */
+  max-width: 560px;
+  margin-inline: auto;
+  aspect-ratio: var(--gc-ratio);
+  border-radius: 20px;
+  overflow: hidden;
+  background: #F3DDC8;
+  box-shadow: var(--shadow);
+  cursor: ew-resize;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  user-select: none;
+}
+
+.gift-compare-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.gift-compare-layer.after {
+  z-index: 1;
+}
+
+.gift-compare-layer.before {
+  z-index: 2;
+  clip-path: inset(0 calc(100% - var(--gc-position)) 0 0);
+}
+
+.gift-compare-layer img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* contain, not cover: the frame already matches the image's real ratio once
+     loaded, so nothing letterboxes - but on the short-screen fallback below
+     (where min-height wins over the ratio) this is what keeps the products
+     whole instead of cropping their tops off. */
+  object-fit: contain;
+  object-position: center;
+  pointer-events: none;
+}
+
+.gift-compare-tag {
+  position: absolute;
+  z-index: 7;
+  top: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .92);
+  color: var(--ink);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  box-shadow: 0 3px 10px rgba(11, 27, 51, .1);
+  pointer-events: none;
+}
+
+.gift-compare-tag.before {
+  left: 12px;
+}
+
+.gift-compare-tag.after {
+  right: 12px;
+}
+
+.gift-compare-divider {
+  position: absolute;
+  z-index: 8;
+  top: 0;
+  bottom: 0;
+  left: var(--gc-position);
+  width: 2px;
+  background: rgba(255, 255, 255, .96);
+  transform: translateX(-1px);
+  box-shadow: 0 0 0 1px rgba(11, 27, 51, .12);
+  pointer-events: none;
+}
+
+.gift-compare-handle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, .94);
+  border: 1px solid rgba(11, 27, 51, .22);
+  color: var(--pink);
+  font-size: 15px;
+  font-weight: 900;
+  white-space: nowrap;
+  box-shadow: 0 5px 16px rgba(11, 27, 51, .2);
+}
+
+/* The real drag target for keyboard/AT users - invisible, but covers the frame
+   so arrow keys move the wipe. Pointer drags are handled on the frame itself. */
+.gift-compare-range {
+  position: absolute;
+  z-index: 10;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+  touch-action: pan-y;
+}
+
+.gift-compare-frame:focus-within {
+  box-shadow: 0 0 0 3px rgba(140, 29, 64, .28), var(--shadow);
+}
+
+/* Desktop: centred on its own, the frame left a wide band of empty maroon down
+   both sides - the content column is ~1100-1300px and the image is capped well
+   below that on purpose, so it can't get taller. Move the head into that gap
+   instead and run the two side by side, which fills the row without adding a
+   single pixel of height. Below this width it stays stacked and centred. */
+@media (min-width: 900px) {
+  .gift-compare {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) minmax(0, 1.8fr);
+    gap: 36px;
+    align-items: center;
+  }
+
+  .gift-compare-head {
+    text-align: left;
+    margin-bottom: 0;
+  }
+
+  /* There's room for a proper headline once it isn't sharing a line width with
+     the image - the small size only existed to stop it wrapping badly above it. */
+  .gift-compare-head h2 {
+    font-size: clamp(22px, 2.2vw, 29px);
+    line-height: 1.2;
+    margin: 8px 0 8px;
+  }
+
+  .gift-compare-head p {
+    font-size: 15px;
+    max-width: 38ch;
+  }
+
+  .gift-compare-frame {
+    max-width: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .gift-compare {
+    margin-bottom: 16px;
+  }
+
+  .gift-compare-head {
+    margin-bottom: 10px;
+  }
+
+  /* On a phone the title wraps to two lines and the sub-line to two more,
+     which pushes the image itself most of the way off screen. Trim both so
+     the head stays a caption above the slider rather than a block of its own. */
+  .gift-compare-eyebrow {
+    font-size: 10px;
+    letter-spacing: 1.1px;
+  }
+
+  .gift-compare-head h2 {
+    font-size: 16px;
+    margin: 4px 0 3px;
+  }
+
+  .gift-compare-head p {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .gift-compare-frame {
+    /* 16:9 clears this at any real phone width (360px -> 202px); it only
+       matters on a very narrow viewport, where the handle and the two labels
+       would otherwise have no room. The images letterbox inside it rather than
+       cropping (object-fit:contain above). */
+    min-height: 168px;
+    border-radius: 16px;
+  }
+
+  .gift-compare-handle {
+    width: 36px;
+    height: 36px;
+    font-size: 12px;
+  }
+
+  .gift-compare-tag {
+    top: 8px;
+    padding: 5px 8px;
+    font-size: 8px;
+  }
+
+  .gift-compare-tag.before {
+    left: 8px;
+  }
+
+  .gift-compare-tag.after {
+    right: 8px;
+  }
+}

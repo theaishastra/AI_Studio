@@ -22,6 +22,11 @@ async function renderCustomers() {
 async function loadCustomers(q, page = 1) {
   const wrap = document.getElementById("customersWrap");
   const res = await Api.customers(q, page);
+  // The container is captured before the await above; a staff member who navigates
+  // to another section while this request is in flight leaves it detached from the
+  // document, and writing to it then throws an uncaught TypeError. Nothing is left
+  // half-rendered by bailing out - the route they moved to owns the view now.
+  if (!wrap) return;
   wrap._lastQuery = q;
   wrap._lastPage = res.page || page;
   if (!res.items.length) {

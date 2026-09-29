@@ -73,6 +73,22 @@ def cld_optimize(url: str | None) -> str | None:
     return get_or_create_thumbnail(url) or url
 
 
+def split_media(media) -> tuple[list[str], list[str]]:
+    """Splits one product's media rows into (image urls, video urls).
+
+    Every storefront surface wants the images on their own: a card thumbnail, a
+    hero, an OG image and the homepage all take `images[0]`, and a video landing
+    first in that list would leave them pointing at an MP4. So `images` stays
+    exactly what it has always been, and videos are handed back separately for the
+    product detail gallery (the only place that plays one) to append.
+
+    Image URLs go through cld_optimize() as before; video URLs do not - that runs
+    Pillow, which can't open an MP4, and there is no transcoding step in this app."""
+    images = [cld_optimize(m.url) for m in media if m.media_type != "video"]
+    videos = [m.url for m in media if m.media_type == "video"]
+    return images, videos
+
+
 def format_price(product: Product) -> str:
     """Most products show a real price; a quote-based service (equipment add-ons like
     Drone/Traditional Videography) is flagged with extra.price_on_request instead of
@@ -198,6 +214,9 @@ def _build_page_bundle(page_slug: str, db: Session) -> dict:
         # Platinum) but silently collided for flat multi-product categories with no
         # real tier (studio/corporate/gifts), where every product shares an empty
         # tier and would otherwise overwrite each other's images under one key.
+        # Split once per product here rather than in the dict literal below, which
+        # would otherwise walk p.media twice per product on every cache rebuild.
+        product_media = {p.id: split_media(p.media) for p in active_products}
         packages[c.slug] = [
             {
                 "id": p.id,
@@ -207,13 +226,17 @@ def _build_page_bundle(page_slug: str, db: Session) -> dict:
                 "price": format_price(p),
                 "mrp": format_inr(p.mrp) if p.mrp else None,
                 "feat": p.features or [],
-                "images": [cld_optimize(m.url) for m in p.media],
+                "images": product_media[p.id][0],
+                # Short product clips an admin attached alongside the photos. Only the
+                # product detail gallery renders these - cards/heroes stay images-only.
+                "videos": product_media[p.id][1],
                 "rating": ratings.get(p.id),
                 "extra": p.extra or {},
                 "input_fields": p.input_fields or [],
                 "delivery_days": p.delivery_days,
                 "type": p.type,
                 "stock": p.stock,
+                "search_keywords": p.search_keywords or [],
             }
             for p in active_products
         ]
@@ -262,6 +285,7 @@ def get_product(product_id: str, db: Session = Depends(get_db)):
 
     category = product.category
     package_media = sorted([m for m in product.media if m.kind == "package"], key=lambda m: m.sort)
+    package_images, package_videos = split_media(package_media)
     return {
         "id": product.id,
         "category": {"id": category.slug, "name": category.name, "icon": category.icon or ""},
@@ -271,13 +295,15 @@ def get_product(product_id: str, db: Session = Depends(get_db)):
         "price": format_price(product),
         "mrp": format_inr(product.mrp) if product.mrp else None,
         "feat": product.features or [],
-        "images": [cld_optimize(m.url) for m in package_media],
+        "images": package_images,
+        "videos": package_videos,
         "rating": round(float(avg_rating), 1) if avg_rating else None,
         "extra": product.extra or {},
         "input_fields": product.input_fields or [],
         "delivery_days": product.delivery_days,
         "type": product.type,
         "stock": product.stock,
+        "search_keywords": product.search_keywords or [],
     }
 
 
@@ -324,7 +350,7 @@ def warm_catalog_cache() -> None:
     try:
         warm_db = SessionLocal()
         try:
-            urls = [r[0] for r in warm_db.query(Media.url).all()]
+            urls = [r[0] for r in warm_db.query(Media.url).filter(Media.media_type != "video").all()]
             for thumb, hero in warm_db.query(Category.thumb_image_url, Category.hero_image_url).all():
                 urls += [u for u in (thumb, hero) if u]
         finally:
@@ -399,7 +425,9 @@ def public_homepage(db: Session = Depends(get_db)):
         "products": [
             {
                 "id": p.id, "title": p.title,
-                "image": cld_optimize(p.media[0].url) if p.media else None,
+                # First *image*, not first media row - a product whose gallery leads
+                # with a video would otherwise put an MP4 in this homepage card's <img>.
+                "image": next((cld_optimize(m.url) for m in p.media if m.media_type != "video"), None),
                 "price": float(p.price),
             }
             for p in ordered_prods
@@ -451,7 +479,9 @@ def public_products(
                 "id": p.id, "title": p.title, "slug": p.slug,
                 "description": p.description or "",
                 "price": float(p.price), "mrp": float(p.mrp) if p.mrp else None,
-                "images": [cld_optimize(m.url) for m in p.media],
+                # Images only: every consumer of this endpoint (nav search results,
+                # wishlist tiles, cross-page card grids) renders images[0] as an <img>.
+                "images": [cld_optimize(m.url) for m in p.media if m.media_type != "video"],
                 "category_id": p.category_id,
                 "category_slug": p.category.slug if p.category else None,
                 "category_name": p.category.name if p.category else None,
@@ -459,6 +489,7 @@ def public_products(
                 # belongs under - needed by any page-agnostic search (nav search dropdown,
                 # catalog.html) to link back to the right place / category filter.
                 "page_slug": p.category.page.slug if p.category and p.category.page else None,
+                "search_keywords": p.search_keywords or [],
             }
             for p in rows
         ]

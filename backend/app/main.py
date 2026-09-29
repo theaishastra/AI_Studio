@@ -12,12 +12,13 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
-from sqlalchemy.exc import DataError
+from sqlalchemy.exc import DataError, OperationalError
+from sqlalchemy.exc import TimeoutError as PoolTimeoutError
 from starlette.responses import Response
 from starlette.types import Scope
 
 from .config import get_settings
-from .database import Base, engine
+from .database import Base, SessionLocal, engine
 from .migrations import (
     backfill_address_snapshots, backfill_corporate_engraving_fields,
     backfill_gifts_personalisation_fields, backfill_requires_photo_upload_fields,
@@ -25,9 +26,11 @@ from .migrations import (
     run_constraint_migrations, run_index_migrations,
 )
 from .routers import (
-    addresses, admin, auth, bookings, cart, catalog, contact, notifications, orders, payments, wishlist,
+    addresses, admin, auth, bookings, cart, catalog, contact, notifications, orders, payments,
+    uploads, wishlist,
 )
 from .routers.orders import expire_stale_reservations
+from .services.retention import purge_due_artwork
 from .services.storage import ensure_storage_ready
 
 settings = get_settings()
@@ -64,6 +67,45 @@ async def _reservation_sweep_loop():
             logger.warning("Reservation sweep failed", exc_info=True)
 
 
+# Customer artwork is deleted on a date, not on an interval, so this only has to
+# run often enough that a due file goes within a day of becoming due. Six hours
+# gives four attempts a day - enough that a restart or a transient R2 failure
+# doesn't delay a deletion past its date, without querying for nothing all day.
+ARTWORK_SWEEP_INTERVAL_SECONDS = 6 * 60 * 60
+
+
+async def _artwork_retention_sweep_loop():
+    """Deletes customer-uploaded order artwork whose retention window has passed
+    (see services/retention.py for the policy). Same single-instance assumption
+    as the reservation sweep above; running it twice would be harmless anyway,
+    since deleting an already-deleted object is treated as success.
+
+    Runs once shortly after startup rather than waiting a full interval, so a
+    server that restarts daily still sweeps - and so a backlog left by a server
+    that was off for a while clears promptly. A failure is logged and waits for
+    the next interval: a missed sweep delays a deletion, it doesn't lose data."""
+    await asyncio.sleep(120)  # let startup finish first; this is not urgent work
+    while True:
+        try:
+            result = await run_in_threadpool(_run_artwork_sweep)
+            if result.get("purged") or result.get("failed"):
+                logger.info(
+                    "Artwork retention sweep: %d deleted, %d failed",
+                    result.get("purged", 0), result.get("failed", 0),
+                )
+        except Exception:
+            logger.warning("Artwork retention sweep failed", exc_info=True)
+        await asyncio.sleep(ARTWORK_SWEEP_INTERVAL_SECONDS)
+
+
+def _run_artwork_sweep() -> dict:
+    db = SessionLocal()
+    try:
+        return purge_due_artwork(db)
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
@@ -79,10 +121,12 @@ async def lifespan(app: FastAPI):
     ensure_storage_ready()
     catalog.warm_catalog_cache()
     sweep_task = asyncio.create_task(_reservation_sweep_loop())
+    artwork_task = asyncio.create_task(_artwork_retention_sweep_loop())
     yield
-    sweep_task.cancel()
-    with contextlib.suppress(asyncio.CancelledError):
-        await sweep_task
+    for task in (sweep_task, artwork_task):
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
 
 
 app = FastAPI(
@@ -128,6 +172,44 @@ async def data_error_handler(request: Request, exc: DataError):
     return JSONResponse(status_code=400, content={"detail": "Invalid identifier"})
 
 
+def _service_unavailable(request: Request, exc: Exception, reason: str) -> JSONResponse:
+    # Neither of the two conditions below is a bug in the request, and neither is
+    # permanent, so neither may surface to a customer mid-checkout as a bare 500
+    # with no guidance. 503 + Retry-After says "try again shortly", which is both
+    # accurate and what a browser/proxy/monitor already knows how to act on.
+    # Logged at error level because a sustained run of these is a capacity
+    # problem worth alerting on.
+    logger.error("Database %s for %s %s", reason, request.method, request.url.path, exc_info=True)
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "The service is briefly unavailable. Please try again in a moment."},
+        headers={"Retry-After": "5"},
+    )
+
+
+@app.exception_handler(OperationalError)
+async def operational_error_handler(request: Request, exc: OperationalError):
+    # The database was unreachable or refused the connection outright - most often
+    # the hosted pooler's client limit being hit (EMAXCONNSESSION; see
+    # database.py's pool sizing comment), otherwise a transient network blip.
+    return _service_unavailable(request, exc, "unavailable")
+
+
+@app.exception_handler(PoolTimeoutError)
+async def pool_timeout_handler(request: Request, exc: PoolTimeoutError):
+    """Every connection in this process's own pool was busy and none freed up
+    within pool_timeout, so SQLAlchemy gave up waiting.
+
+    This needs its own handler because sqlalchemy.exc.TimeoutError is NOT a
+    subclass of OperationalError - they share only SQLAlchemyError - so the
+    handler above never saw it. The two failure modes look identical to a
+    customer but are genuinely different: OperationalError means the pooler
+    refused us a connection, this means we were rate-limited by our own pool
+    while under more concurrent load than it is sized for. Both are transient
+    and both deserve a 503 rather than a 500."""
+    return _service_unavailable(request, exc, "pool exhausted")
+
+
 app.include_router(auth.router)
 app.include_router(catalog.router)
 app.include_router(catalog.reviews_router)
@@ -139,6 +221,7 @@ app.include_router(wishlist.router)
 app.include_router(notifications.router)
 app.include_router(orders.router)
 app.include_router(payments.router)
+app.include_router(uploads.router)
 app.include_router(admin.router)
 
 if ADMIN_DIR.exists():

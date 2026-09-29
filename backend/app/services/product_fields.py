@@ -19,6 +19,15 @@ def _field_value_errors(field: dict, value) -> list[str]:
     if ftype == "text":
         if not isinstance(value, str):
             return [f'"{label}" must be text']
+        # Bounded so a single answer can't be an unbounded blob: it's stored on
+        # the order item and re-serialized into every order list/detail response
+        # that includes that item for the life of the order. Default matches
+        # ProductInputFieldIn.max_length's own default, so a field saved before
+        # that setting existed still gets a ceiling.
+        max_length = field.get("max_length")
+        max_length = int(max_length) if isinstance(max_length, (int, float)) and max_length > 0 else 500
+        if len(value) > max_length:
+            return [f'"{label}" must be {max_length} characters or fewer']
         return []
 
     if ftype == "dropdown":

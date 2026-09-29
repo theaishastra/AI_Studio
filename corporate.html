@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.trycloudflare.com http://127.0.0.1:8000 https://api.razorpay.com https://lumberjack.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com; object-src 'none'; base-uri 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' data: https:; connect-src 'self' https://*.trycloudflare.com http://127.0.0.1:8000 https://api.razorpay.com https://lumberjack.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com; object-src 'none'; base-uri 'self';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Corporate Gifts &amp; Hampers - Sai Kumar Digital Lab &amp; Studio</title>
   <!-- Google Fonts -->
@@ -13,9 +13,11 @@
     href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800;900&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="css/shared/mobile-nav-extra.css">
-  <link rel="stylesheet" href="css/shared/product-fields.css">
+  <link rel="stylesheet" href="css/shared/product-fields.css?v=3">
   <link rel="stylesheet" href="css/shared/site-chrome.css">
-  <link rel="stylesheet" href="css/corporate.css?v=1788785608398">
+  <link rel="stylesheet" href="css/corporate.css?v=1790000000002">
+  <!-- Shared product-view rules. MUST stay after the page stylesheet above: it wins on source order. -->
+  <link rel="stylesheet" href="css/shared/product-view.css?v=1">
   <style>
     /* Keep the Corporate product information column as one continuous surface. */
     .product-detail-modal .modal-info-col {
@@ -391,50 +393,6 @@
     </div><!-- end .sidebar-wrap -->
 
   <main class="main main-wrapper" id="mainContent">
-
-  <!-- ================= MOBILE PROMO SLIDER ================= -->
-  <div class="promo-hero-slider">
-    <div class="promo-hero-window">
-      <div class="promo-hero-track" id="corporatePromoTrack">
-        <div class="promo-hero-slide" aria-hidden="true">
-          <a href="corporate.html" class="promo-hero-link" tabindex="-1">
-            <img class="promo-hero-img" src="https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/corporate_gifting_banner_1300x430.png" alt="" loading="lazy">
-          </a>
-        </div>
-        <div class="promo-hero-slide">
-          <a href="photography.html" class="promo-hero-link" aria-label="Explore Photography">
-            <img loading="lazy" class="promo-hero-img" src="https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/photography_banner_1300x430.png" alt="Photography">
-          </a>
-        </div>
-        <div class="promo-hero-slide">
-          <a href="gifts.html" class="promo-hero-link" aria-label="Explore Customised Gift Shop">
-            <img class="promo-hero-img" src="https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/personalized_gifts_shop_now_FINAL_1300x430.png" alt="Customised Gift Shop" loading="lazy">
-          </a>
-        </div>
-        <div class="promo-hero-slide">
-          <a href="studio.html" class="promo-hero-link" aria-label="Explore Studio Services">
-            <img class="promo-hero-img" src="https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/prints_lamination_shop_now_1300x430.png" alt="Studio Services" loading="lazy">
-          </a>
-        </div>
-        <div class="promo-hero-slide">
-          <a href="corporate.html" class="promo-hero-link" aria-label="Explore Corporate Gifts">
-            <img class="promo-hero-img" src="https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/corporate_gifting_banner_1300x430.png" alt="Corporate Gifts" loading="lazy">
-          </a>
-        </div>
-        <div class="promo-hero-slide" aria-hidden="true">
-          <a href="photography.html" class="promo-hero-link" tabindex="-1">
-            <img class="promo-hero-img" src="https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/photography_banner_1300x430.png" alt="" loading="lazy">
-          </a>
-        </div>
-      </div>
-      <div class="promo-hero-dots" id="corporatePromoDots">
-        <button class="promo-hero-dot active" data-i="0" aria-label="Photography slide"></button>
-        <button class="promo-hero-dot" data-i="1" aria-label="Customised Gift Shop slide"></button>
-        <button class="promo-hero-dot" data-i="2" aria-label="Studio Services slide"></button>
-        <button class="promo-hero-dot" data-i="3" aria-label="Corporate Gifts slide"></button>
-      </div>
-    </div>
-  </div>
 
   <!-- ================= PREMIUM HERO SLIDER ================= -->
   <section class="hero-zone" id="heroZone">
@@ -1737,6 +1695,19 @@
       <div class="detail-scroll">
       <div class="modal-grid">
 
+        <!-- Breadcrumb + product name. Its own block, a sibling of the gallery and
+             the buy column rather than the first thing inside the buy column, so the
+             name can sit above the images on mobile and beside them on desktop -
+             the same structure gifts.html's .details-copy has. Matching the three
+             product views means matching this. IDs are unchanged, so js/corporate.js
+             still finds #modalProductTitle / #modalBreadcrumbName. -->
+        <div class="modal-title-block">
+          <p class="modal-breadcrumb"><span class="breadcrumb-link">Home</span> / <span class="breadcrumb-link">Corporate Gifts</span> / <span id="modalBreadcrumbName">Product</span></p>
+          <div class="modal-info-header">
+            <h2 class="modal-product-title" id="modalProductTitle">Modern Minimalist Gift Set</h2>
+          </div>
+        </div>
+
         <!-- Gallery Left Column -->
         <div class="modal-gallery-col">
           <div class="modal-gallery-thumbs" id="modalThumbsContainer">
@@ -1744,6 +1715,11 @@
           </div>
           <div class="modal-gallery-main">
             <img loading="lazy" id="modalMainImg" src="" alt="Product View">
+            <!-- Shown in place of the image above when the selected gallery item is a
+                 video an admin attached to this product (see setModalMainImg in
+                 js/corporate.js). Kept as a sibling rather than swapping the <img>'s
+                 tag so the arrows/wishlist/share buttons stay put across both. -->
+            <video id="modalMainVideo" class="modal-gallery-video" controls playsinline preload="metadata" style="display:none;"></video>
             <button class="gallery-arrow-btn prev" onclick="navigateModalGallery(-1)">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                 <path fill-rule="evenodd"
@@ -1774,11 +1750,6 @@
 
         <!-- Info Right Column -->
         <div class="modal-info-col">
-          <p class="modal-breadcrumb"><span class="breadcrumb-link">Home</span> / <span class="breadcrumb-link">Corporate Gifts</span> / <span id="modalBreadcrumbName">Product</span></p>
-          <div class="modal-info-header">
-            <h2 class="modal-product-title" id="modalProductTitle">Modern Minimalist Gift Set</h2>
-          </div>
-
           <div class="modal-price-row">
             <span class="modal-price" id="modalProductPrice">₹1,299</span>
             <span class="stock-badge" id="modalStockBadge">In stock</span>
@@ -1834,6 +1805,14 @@
         </div>
 
       </div>
+
+      <section class="related-section" id="modalRelatedSection" aria-labelledby="modalRelatedTitle">
+        <div class="related-heading">
+          <div><span class="eyebrow">More to explore</span><h2 id="modalRelatedTitle">You May Also Like</h2></div>
+          <p>Similar corporate gifts from our collection.</p>
+        </div>
+        <div class="related-grid" id="modalRelatedProducts"></div>
+      </section>
       </div>
 
     </div>
@@ -2055,19 +2034,20 @@
   </div>
 
   <script src="js/shared/loading-ui.js"></script>
-  <script src="js/shared/product-fields.js"></script>
+  <script src="js/shared/product-fields.js?v=4"></script>
   <script src="js/shared/thumb-map.js"></script>
   <script src="js/shared/api-config.js"></script>
   <script src="js/shared/cart-core.js"></script>
   <script src="js/shared/cart-ui.js"></script>
-  <script src="js/corporate.js?v=3"></script>
+  <script src="js/shared/product-media.js"></script>
+  <script src="js/corporate.js?v=6"></script>
   <script src="js/shared/home-nav.js" defer></script>
   <script src="js/shared/customer-api.js"></script>
   <script src="js/shared/auth-modal.js" defer></script>
   <script src="js/shared/chatbot.js" defer></script>
 <!-- Mobile Header Gap Fix: dynamically sets body padding-top = actual fixed header height -->
   <script src="js/corporate-3.js"></script>
-  <script src="js/shared/search.js?v=2" defer></script>
+  <script src="js/shared/search.js?v=10" defer></script>
   <script src="js/shared/bottom-nav.js"></script>
   <script src="js/shared/wishlist-menu.js"></script>
 </body>

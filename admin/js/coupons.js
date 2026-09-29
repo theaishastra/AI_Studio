@@ -14,6 +14,11 @@ async function loadCoupons() {
   const wrap = document.getElementById("couponWrap");
   const coupons = await Api.coupons();
   window._COUPONS_CACHE = coupons;
+  // The container is captured before the await above; a staff member who navigates
+  // to another section while this request is in flight leaves it detached from the
+  // document, and writing to it then throws an uncaught TypeError. Nothing is left
+  // half-rendered by bailing out - the route they moved to owns the view now.
+  if (!wrap) return;
   if (!coupons.length) {
     wrap.innerHTML = `<div class="empty-state">No coupons yet.</div>`;
     return;

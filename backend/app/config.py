@@ -16,6 +16,15 @@ class Settings(BaseSettings):
     secret_key: str = "dev-secret-change-me"
     access_token_minutes: int = 60 * 12
 
+    # SQLAlchemy connection pool sizing - see database.py for why the total
+    # (db_pool_size + db_max_overflow) must stay below the hosted pooler's own
+    # client limit rather than matching it. Overridable per deployment so a
+    # host with a larger limit (or the transaction-mode pooler on port 6543)
+    # can raise it without a code change.
+    db_pool_size: int = 3
+    db_max_overflow: int = 7
+    db_pool_timeout_seconds: int = 20
+
     # Not used by the app yet — kept for future Supabase Storage/Auth API calls,
     # as opposed to database_url which is the direct Postgres connection we use today.
     supabase_url: str = ""

@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.trycloudflare.com http://127.0.0.1:8000 https://api.razorpay.com https://lumberjack.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com; object-src 'none'; base-uri 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' data: https:; connect-src 'self' https://*.trycloudflare.com http://127.0.0.1:8000 https://api.razorpay.com https://lumberjack.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com; object-src 'none'; base-uri 'self';">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Personalised gifts from Sai Kumar Digital Lab & Studio">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,9 +11,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Be+Vietnam+Pro:wght@400;500;600;700&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/shared/mobile-nav-extra.css">
-  <link rel="stylesheet" href="css/shared/product-fields.css">
+  <link rel="stylesheet" href="css/shared/product-fields.css?v=3">
   <link rel="stylesheet" href="css/shared/site-chrome.css">
-  <link rel="stylesheet" href="css/gifts.css?v=1788880000001">
+  <link rel="stylesheet" href="css/gifts.css?v=1790000000003">
+  <!-- Shared product-view rules. MUST stay after the page stylesheet above: it wins on source order. -->
+  <link rel="stylesheet" href="css/shared/product-view.css?v=1">
 </head>
 
 <body>
@@ -782,15 +784,16 @@
   <script src="js/shared/api-config.js"></script>
   <script src="js/shared/customer-api.js"></script>
   <script src="js/shared/thumb-map.js"></script>
-  <script src="js/shared/product-fields.js"></script>
+  <script src="js/shared/product-fields.js?v=4"></script>
   <script src="js/shared/cart-core.js"></script>
   <script src="js/shared/cart-ui.js"></script>
-  <script src="js/gifts.js?v=1"></script>
+  <script src="js/shared/product-media.js"></script>
+  <script src="js/gifts.js?v=5"></script>
   <script src="js/gifts-2.js"></script>
   <script src="js/shared/bottom-nav.js"></script>
   <script src="js/shared/home-nav.js" defer></script>
   <script src="js/shared/auth-modal.js" defer></script>
-  <script src="js/shared/search.js?v=2" defer></script>
+  <script src="js/shared/search.js?v=10" defer></script>
   <script src="js/shared/wishlist-menu.js"></script>
 </body>
 

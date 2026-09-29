@@ -789,6 +789,13 @@ body {
   width: 100%;
 }
 
+/* Search matches sort to the top of the grid instead of hiding everything else -
+   this border is the only other visual cue distinguishing them from the (still
+   visible) rest of the catalog once "Best Match" scrolls out of view. */
+.pkg-card.search-match {
+  border: 2px solid var(--orange, #F97316);
+}
+
 .pkg-card:hover {
   box-shadow: var(--shadow-elevated);
   transform: translateY(-3px);
@@ -961,6 +968,49 @@ body {
   gap: 32px;
 }
 
+/* "You May Also Like" - product-detail modal, full-width row below the gallery/info grid */
+.related-section {
+  max-width: 1240px;
+  margin: 8px auto 0;
+  padding: 8px 20px 24px;
+}
+.related-section .related-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.related-section .related-heading h2 {
+  margin: 4px 0 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+.related-section .related-heading p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+}
+.related-section .eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #A67C1E;
+}
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .related-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 560px) {
+  .related-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
+
 /* --- Gallery Column: light-gray frame + white inner image card --- */
 .modal-gallery-col {
   display: flex;
@@ -1080,6 +1130,58 @@ body {
   object-fit: cover;
 }
 
+/* A product's gallery can end with a short video the admin attached. The main
+   stage keeps the same box as the photo it replaces (contain, so a portrait clip
+   isn't cropped) on black, since a video has no transparent padding to blend. */
+.modal-gallery-main video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+  display: block;
+}
+
+.thumb-btn-video {
+  position: relative;
+  background: #000;
+}
+
+.thumb-btn-video video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+.thumb-play-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* A bare glyph only read against the black box a video thumbnail used to be;
+   now that one paints a real first frame it needs its own backing to stay
+   legible on a bright one. */
+.thumb-play-badge::before {
+  content: '\25B6';
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding-left: 2px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .55);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+}
+
 /* --- Info Column --- */
 .modal-info-col {
   padding: 0;
@@ -1095,13 +1197,29 @@ body {
   color: #2563EB;
 }
 
+/* Shared product-view type ramp: phone 18 -> tablet 20 -> desktop 25, the same
+   steps gifts.css applies to .details-copy h1. Was a flat 25px at every width,
+   which on a phone turned a long multi-clause product name into a wall of text
+   above everything else. Typeface stays per page; the scale is what's shared. */
 .modal-product-title {
   font-family: 'Poppins', 'Inter', sans-serif;
-  font-size: 25px;
+  font-size: 18px;
   font-weight: 800;
   color: #111827;
   line-height: 1.3;
   margin-bottom: 8px;
+}
+
+@media (min-width: 576px) {
+  .modal-product-title {
+    font-size: 20px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .modal-product-title {
+    font-size: 25px;
+  }
 }
 
 .modal-rating-bar {
@@ -1642,16 +1760,39 @@ body {
     padding: 14px 40px;
   }
 
+  /* Grid rather than flex-row now that the product name is its own block: the
+     gallery holds column 1 across both rows, with the name above the buy column
+     in column 2. Three flex children would instead have laid out as three
+     side-by-side columns. Same 2x2 arrangement gifts.css uses for .details-main,
+     which is the point - all three product views share one layout. */
   .modal-grid {
-    flex-direction: row;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: 45% minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    align-items: start;
+    column-gap: 32px;
+    /* Base .modal-grid sets gap:32px for the mobile stack; the name should sit
+       tight above the price on desktop, not 32px clear of it. */
+    row-gap: 0;
     padding: 32px 40px;
   }
 
+  .modal-title-block {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
   .modal-gallery-col {
-    flex: 0 0 45%;
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    /* Still a flex container for its own thumb rail + main image. */
     flex-direction: row;
     gap: 12px;
+  }
+
+  .modal-info-col {
+    grid-column: 2;
+    grid-row: 2;
   }
 
   .modal-gallery-thumbs {
@@ -11535,93 +11676,3 @@ html body .sidebar-wrap .sidebar-title,
   }
 }
 
-/* ================= MOBILE PROMO SLIDER (home-page style hero carousel) ================= */
-
-@media (max-width: 767px) {
-  .promo-hero-slider {
-    display: block;
-    width: 100%;
-    margin: 0 0 16px;
-  }
-
-  .promo-hero-window {
-    position: relative;
-    border-radius: 18px;
-    overflow: hidden;
-    box-shadow: 0 10px 26px rgba(92, 9, 48, .12);
-  }
-
-  .promo-hero-window::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 42px;
-    background: linear-gradient(to top, rgba(0, 0, 0, .38), rgba(0, 0, 0, 0));
-    pointer-events: none;
-    z-index: 3;
-  }
-
-  .promo-hero-track {
-    display: flex;
-    width: 600%;
-    transition: transform .7s cubic-bezier(.65, 0, .35, 1);
-  }
-
-  .promo-hero-slide {
-    position: relative;
-    width: 16.6667%;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-    height: 150px;
-  }
-
-  .promo-hero-link {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    position: relative;
-  }
-
-  .promo-hero-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-  }
-
-  .promo-hero-dots {
-    position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 6px;
-    z-index: 4;
-  }
-
-  .promo-hero-dot {
-    width: 6px;
-    height: 6px;
-    min-width: 0;
-    min-height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, .6);
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    transition: all .25s ease;
-    box-shadow: 0 0 2px rgba(0, 0, 0, .5);
-  }
-
-  .promo-hero-dot.active {
-    width: 16px;
-    border-radius: 4px;
-    background: #fff;
-  }
-}

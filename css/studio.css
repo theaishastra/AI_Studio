@@ -1002,6 +1002,13 @@ body {
   position: relative;
 }
 
+/* Search matches sort to the top of the grid instead of hiding everything else -
+   this border is the only other visual cue distinguishing them from the (still
+   visible) rest of the catalog once "Best Match" scrolls out of view. */
+.pkg-card.search-match {
+  border: 2px solid var(--orange, #F97316);
+}
+
 .pkg-image-wrap {
   position: relative;
 }
@@ -1594,6 +1601,49 @@ body {
   flex: 1;
 }
 
+/* "You May Also Like" - product preview modal, full-width row below the gallery/info */
+.related-section {
+  max-width: 1240px;
+  margin: 8px auto 0;
+  padding: 8px 20px 24px;
+}
+.related-section .related-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.related-section .related-heading h2 {
+  margin: 4px 0 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+.related-section .related-heading p {
+  margin: 0;
+  color: var(--gray-500, #64748b);
+  font-size: 14px;
+}
+.related-section .eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--primary, #A67C1E);
+}
+.related-section .related-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .related-section .related-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 560px) {
+  .related-section .related-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
+
 /* --- Image Gallery (swipeable slides on mobile, with dot indicators) --- */
 .preview-gallery {
   display: flex;
@@ -1694,6 +1744,56 @@ body {
   border-color: #5C0930;
 }
 
+/* A product's gallery can end with a short video the admin attached. The slide
+   itself is a <video> carrying .preview-slide, so it already inherits the slide
+   box above; the thumbnail can't be - an <img>'s object-fit has no effect on a
+   <span>, so the crop moves to the inner <video> and the wrapper just provides
+   the frame and the play badge's positioning context. */
+.preview-thumb-video {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: #000;
+}
+
+.preview-thumb-video video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+.preview-thumb-play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.preview-thumb-play::before {
+  content: '\25B6';
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding-left: 2px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .55);
+  color: #fff;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.preview-slide-video {
+  background: #000;
+  object-fit: contain;
+}
+
 /* --- Delivery Info Card (address, ETA, fulfilled-by note) --- */
 .preview-delivery-card {
   background: #fff;
@@ -1760,19 +1860,29 @@ body {
   text-decoration: underline;
 }
 
-.preview-info h2 {
-  font-size: 16px;
+/* The product name moved out of .preview-info into its own .preview-title-block
+   (see studio.html), so this is retargeted - as ".preview-info h2" it would no
+   longer match anything and the name would fall back to the browser's default
+   h2. The block carries .preview-info's horizontal padding so the name still
+   lines up with the price and options below it.
+   Shared product-view type ramp: phone 18 -> tablet 20 -> desktop 24, the same
+   steps corporate's .modal-product-title and the gifts page use. */
+.preview-title-block {
+  padding: 4px 16px 0;
+}
+
+.preview-title-block h2 {
+  font-size: 18px;
   font-weight: 800;
   color: #111;
   line-height: 1.35;
   margin-bottom: 6px;
 }
 
-.preview-subtitle {
-  font-size: 12.5px;
-  color: var(--gray-600);
-  line-height: 1.5;
-  margin-bottom: 14px;
+@media (min-width: 576px) {
+  .preview-title-block h2 {
+    font-size: 20px;
+  }
 }
 
 .preview-price-row {
@@ -2111,16 +2221,45 @@ body {
     color: #2563EB;
   }
 
+  /* Grid rather than a wrapping flex row now that the product name is its own
+     block: the gallery holds column 1 across both rows, with the name above the
+     options/buy column in column 2, and the related row spanning underneath.
+     Four flex children would have laid out as columns instead. Same 2x2-plus-
+     full-width-row arrangement corporate's .modal-grid and the gifts page's
+     .details-main use - all three product views share one layout. */
   .preview-scroll {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 40px;
+    display: grid;
+    grid-template-columns: 46% minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    align-items: start;
+    column-gap: 40px;
+    /* The name sits tight above the price here, not 40px clear of it. */
+    row-gap: 0;
     padding: 24px;
   }
 
+  .preview-title-block {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 0;
+  }
+
+  .preview-info {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  /* Was flex: 0 0 100% to force this below the gallery/info pair; the grid
+     equivalent is spanning every column on its own row. */
+  .preview-scroll .related-section {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    width: 100%;
+  }
+
   .preview-gallery-col {
-    flex: 0 0 46%;
+    grid-column: 1;
+    grid-row: 1 / span 2;
     display: flex;
     flex-direction: row;
     gap: 14px;
@@ -2177,7 +2316,7 @@ body {
     border-radius: 10px;
   }
 
-  .preview-info h2 {
+  .preview-title-block h2 {
     font-size: 24px;
   }
 
@@ -2906,78 +3045,3 @@ footer .container {
      above) already give it a mobile-appropriate 2-column grid. */
 }
 
-/* ================= MOBILE PROMO SLIDER (home-page style hero carousel) ================= */
-
-@media (max-width: 767px) {
-  .promo-hero-slider {
-    display: block;
-    width: 100%;
-    margin: 0 0 16px;
-  }
-
-  .promo-hero-window {
-    position: relative;
-    border-radius: 18px;
-    overflow: hidden;
-    box-shadow: 0 10px 26px rgba(92, 9, 48, .12);
-  }
-
-  .promo-hero-track {
-    display: flex;
-    width: 600%;
-    transition: transform .7s cubic-bezier(.65, 0, .35, 1);
-  }
-
-  .promo-hero-slide {
-    position: relative;
-    width: 16.6667%;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-    height: 150px;
-  }
-
-  .promo-hero-link {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    position: relative;
-  }
-
-  .promo-hero-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-  }
-
-  .promo-hero-dots {
-    position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 6px;
-    z-index: 4;
-  }
-
-  .promo-hero-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, .6);
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    transition: all .25s ease;
-  }
-
-  .promo-hero-dot.active {
-    width: 16px;
-    border-radius: 4px;
-    background: #fff;
-  }
-}

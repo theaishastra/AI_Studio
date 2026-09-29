@@ -37,6 +37,10 @@ async function renderArrange(params) {
 
 async function loadArrangeList(categoryId) {
   const data = await Api.arrange(categoryId);
+  // Bail out if the admin navigated to another section while this request was in
+  // flight - the elements below belong to a view that is no longer in the document,
+  // and writing to them throws an uncaught TypeError (see coupons.js).
+  if (!document.getElementById("arrangeList")) return;
   window._ARRANGE_CAT = data.category;
   window._ARRANGE_ITEMS = data.items;
   renderDraggableList(document.getElementById("arrangeList"), data.items, {});

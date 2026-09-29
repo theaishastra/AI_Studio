@@ -3,7 +3,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from .database import get_db
-from .models import AuditLog, User
+from .models import AuditLog, BlockedEmail, User
 from .security import decode_token
 
 bearer = HTTPBearer(auto_error=False)
@@ -21,6 +21,14 @@ def get_current_user(
     user = db.get(User, payload["sub"])
     if not user or not user.is_active:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found or disabled")
+    # Blocking an email used to gate only the login endpoints (see routers/auth.py),
+    # so an access token already issued to that address kept working for the rest of
+    # its lifetime - up to access_token_minutes, which is half a day by default.
+    # Staff blocking someone abusive reasonably expect it to take effect now, not at
+    # the next login they were never going to make, so the block is enforced on every
+    # authenticated request too.
+    if db.query(BlockedEmail).filter(BlockedEmail.email == user.email).first():
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This account has been blocked")
     return user
 
 

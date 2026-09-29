@@ -171,9 +171,10 @@
         allProds = allProds.concat(categoriesData[k].products);
       });
 
-      const filtered = allProds.filter(p => p.name.toLowerCase().includes(query) || (p.subtitle && p.subtitle.toLowerCase().includes(query)));
+      const isMatch = p => p.name.toLowerCase().includes(query) || (p.subtitle && p.subtitle.toLowerCase().includes(query)) || (p.search_keywords && p.search_keywords.join(' ').toLowerCase().includes(query));
+      const matches = allProds.filter(isMatch);
 
-      if (filtered.length === 0) {
+      if (matches.length === 0) {
         packagesGridEl.innerHTML = `
           <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #64748b;">
             <h3>No products matching "${query}"</h3>
@@ -181,13 +182,19 @@
           </div>
         `;
       } else {
-        packagesGridEl.innerHTML = filtered.map(p => {
+        // Matches float to the top instead of hiding the rest of the catalog - a
+        // query only a couple of products are tagged with (e.g. an occasion word
+        // like "rakhi") used to leave the whole grid looking empty.
+        const others = allProds.filter(p => !isMatch(p));
+        const ordered = matches.concat(others);
+        packagesGridEl.innerHTML = ordered.map((p, i) => {
+          const isSearchMatch = i < matches.length;
           const cleanName = p.name.replace(/'/g, "\\'");
           return `
-            <div class="pkg-card fnp-product-card" onclick="orderNowDirect('${cleanName}', '${p.price}', '${p.img}', '${p.id || ''}')">
+            <div class="pkg-card fnp-product-card${isSearchMatch ? ' search-match' : ''}" onclick="orderNowDirect('${cleanName}', '${p.price}', '${p.img}', '${p.id || ''}')">
               <div class="p-thumb">
                 <img src="${cldOpt(p.img)}" alt="${p.name}" loading="lazy" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
-                ${p.oldPrice ? `<span class="p-discount-badge">${Math.round((1 - parsePrice(p.price) / parsePrice(p.oldPrice)) * 100)}% off</span>` : ''}
+                ${isSearchMatch ? `<span class="p-discount-badge">Best Match</span>` : (p.oldPrice ? `<span class="p-discount-badge">${Math.round((1 - parsePrice(p.price) / parsePrice(p.oldPrice)) * 100)}% off</span>` : '')}
                 <button type="button" class="p-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                     <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
@@ -532,6 +539,60 @@
       return null;
     }
 
+    function findCorporateProductCategory(id) {
+      if (!id) return null;
+      for (const [catId, cat] of Object.entries(categoriesData)) {
+        if ((cat.products || []).some(p => p.id === id)) return catId;
+      }
+      return null;
+    }
+
+    // "You may also like" for the product-detail modal - scored by shared
+    // search_keywords first (admin-entered synonyms/tags), same category as a
+    // secondary tiebreak, across every loaded category (not just the one the
+    // opened product belongs to).
+    function renderModalRelated(product) {
+      const relatedEl = document.getElementById('modalRelatedProducts');
+      const sectionEl = document.getElementById('modalRelatedSection');
+      if (!relatedEl) return;
+      const currentCatId = findCorporateProductCategory(product && product.id);
+      const currentKeywords = new Set(((product && product.search_keywords) || []).map(k => String(k).toLowerCase().trim()).filter(Boolean));
+      const pool = [];
+      Object.entries(categoriesData).forEach(([catId, cat]) => {
+        (cat.products || []).forEach(p => pool.push(Object.assign({ _catId: catId }, p)));
+      });
+      const scored = pool
+        .filter(p => p.id !== (product && product.id))
+        .map(p => {
+          const itemKeywords = (p.search_keywords || []).map(k => String(k).toLowerCase().trim());
+          const shared = itemKeywords.filter(k => currentKeywords.has(k)).length;
+          const sameCategory = p._catId === currentCatId ? 1 : 0;
+          return { item: p, score: shared * 10 + sameCategory };
+        })
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 4)
+        .map(entry => entry.item);
+
+      if (sectionEl) sectionEl.style.display = scored.length ? '' : 'none';
+      relatedEl.innerHTML = scored.map(p => {
+        const cleanName = p.name.replace(/'/g, "\\'");
+        return `
+        <div class="pkg-card fnp-product-card" onclick="orderNowDirect('${cleanName}', '${p.price}', '${p.img}', '${p.id || ''}')">
+          <div class="p-thumb">
+            <img src="${p.img ? cldOpt(p.img) : ''}" alt="${p.name}" loading="lazy" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
+            ${p.oldPrice ? `<span class="p-discount-badge">${Math.round((1 - parsePrice(p.price) / parsePrice(p.oldPrice)) * 100)}% off</span>` : ''}
+          </div>
+          <div class="p-info">
+            <h4 class="p-title">${p.name}</h4>
+            <div class="p-price-row"><span class="p-price">${p.price}</span>${p.oldPrice ? `<span class="p-old-price">${p.oldPrice}</span>` : ''}</div>
+          </div>
+        </div>`;
+      }).join('');
+      if (window.SkLoading) {
+        relatedEl.querySelectorAll('.p-thumb img').forEach(img => window.SkLoading.wireImage(img, { wrap: img.closest('.p-thumb') }));
+      }
+    }
+
     window.orderNowDirect = function (name, price, img, productId, opts = {}) {
       const product = findCorporateProductById(productId);
       window.activeModalProduct = activeModalProduct = { name, price, img, id: productId || null, input_fields: product?.input_fields || [], deliveryDays: product?.delivery_days || null };
@@ -548,7 +609,14 @@
       // the calling card happened to be rendered with - that single value
       // was silently capping the thumbnail strip at one photo regardless of
       // how many were actually uploaded.
-      activeModalImages = (product && product.images && product.images.length) ? product.images : [img];
+      // Entries of {type, url}, not bare URLs - a product's gallery can end with a
+      // short video the admin attached (see js/shared/product-media.js).
+      activeModalImages = ProductMedia.build(
+        (product && product.images && product.images.length) ? product.images : [img],
+        product && product.videos,
+      );
+      if (!activeModalImages.length) activeModalImages = [{ type: 'image', url: img }];
+      renderModalRelated(product);
 
       const titleEl = document.getElementById('modalProductTitle');
       const priceEl = document.getElementById('modalProductPrice');
@@ -590,16 +658,13 @@
           });
         }
       }
-      if (mainImgEl) {
-        // Same reused <img> element across every product opened from this modal -
-        // wireImage() only hooks up once per element (data-sk-img-wired), so that
-        // has to be cleared on every open or products after the first never fade in.
-        delete mainImgEl.dataset.skImgWired;
-        mainImgEl.classList.remove('sk-img-loaded');
-        mainImgEl.src = cldOpt(activeModalImages[0] || img);
-        mainImgEl.onerror = function () { this.onerror = null; this.src = (window.SkLoading && window.SkLoading.PLACEHOLDER_IMG) || ''; };
-        if (window.SkLoading) window.SkLoading.wireImage(mainImgEl, { wrap: mainImgEl.closest('.modal-gallery-main') });
-      }
+      // Paints the opening gallery item through the same path the thumbnails and
+      // arrows use, so an image/video swap only has to be right in one place.
+      // A Customer-Questions option can name one of this product's photos (see
+      // option_images in js/shared/product-fields.js), and a priced dropdown opens
+      // with its first option already selected - so the modal should open on that
+      // option's photo. With no mapping this is 0, the cover, exactly as before.
+      if (mainImgEl) setModalMainImg(modalMappedImageIndex() ?? 0);
       if (qtyNumEl) qtyNumEl.textContent = '1';
       if (productCodeEl) productCodeEl.textContent = productId ? `EXCORP${productId}` : '';
       if (pincodeInputEl) pincodeInputEl.value = '';
@@ -636,9 +701,13 @@
 
       const thumbsContainer = document.getElementById('modalThumbsContainer');
       if (thumbsContainer) {
-        thumbsContainer.innerHTML = activeModalImages.map((tImg, idx) => `
-          <button class="thumb-btn ${idx === 0 ? 'active' : ''}" onclick="setModalMainImg(${idx})">
-            <img src="${cldOpt(tImg)}" alt="Thumb ${idx + 1}" loading="${idx === 0 ? 'eager' : 'lazy'}" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
+        thumbsContainer.innerHTML = activeModalImages.map((item, idx) => `
+          <button class="thumb-btn ${idx === 0 ? 'active' : ''}${item.type === 'video' ? ' thumb-btn-video' : ''}" onclick="setModalMainImg(${idx})" aria-label="${item.type === 'video' ? 'Play product video' : `Show photo ${idx + 1}`}">
+            ${item.type === 'video'
+              // muted + preload="metadata": the strip shows a first frame without
+              // pulling down every clip in full just to draw a thumbnail.
+              ? `<video src="${cldOpt(item.url)}" muted playsinline preload="metadata"></video><span class="thumb-play-badge"></span>`
+              : `<img src="${cldOpt(item.url)}" alt="Thumb ${idx + 1}" loading="${idx === 0 ? 'eager' : 'lazy'}" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">`}
           </button>
         `).join('');
         if (window.SkLoading) {
@@ -675,6 +744,8 @@
       if (e && e.target && e.target.id !== 'productDetailOverlay' && !e.target.classList.contains('close-modal-btn')) {
         return;
       }
+      // A clip left playing would keep its audio running behind the closed modal.
+      ProductMedia.pauseAll(document.querySelector('.modal-gallery-main'));
       const overlay = document.getElementById('productDetailOverlay');
       if (overlay) {
         overlay.classList.remove('active');
@@ -695,6 +766,7 @@
     // URL has already changed by the time this fires) - just tear down the modal UI.
     window.addEventListener('popstate', () => {
       if (activeModalProduct && !new URLSearchParams(window.location.search).has('openProduct')) {
+        ProductMedia.pauseAll(document.querySelector('.modal-gallery-main'));
         const overlay = document.getElementById('productDetailOverlay');
         if (overlay) {
           overlay.classList.remove('active');
@@ -706,12 +778,36 @@
 
     window.setModalMainImg = function (index) {
       currentModalImgIndex = index;
+      const item = activeModalImages[index];
       const mainImgEl = document.getElementById('modalMainImg');
-      if (mainImgEl && activeModalImages[index]) {
-        delete mainImgEl.dataset.skImgWired;
-        mainImgEl.classList.remove('sk-img-loaded');
-        mainImgEl.src = cldOpt(activeModalImages[index]);
-        if (window.SkLoading) window.SkLoading.wireImage(mainImgEl, { wrap: mainImgEl.closest('.modal-gallery-main') });
+      const mainVideoEl = document.getElementById('modalMainVideo');
+      if (item && mainImgEl) {
+        const isVideo = item.type === 'video';
+        // The two elements are siblings that take turns, rather than one element
+        // whose tag changes - the gallery's arrow/wishlist/share buttons are
+        // positioned against their shared parent and must not move when swapping.
+        mainImgEl.style.display = isVideo ? 'none' : '';
+        if (mainVideoEl) {
+          mainVideoEl.style.display = isVideo ? '' : 'none';
+          if (isVideo) {
+            // Only reload when the source actually changes - reassigning the same
+            // src restarts a clip the visitor may be part-way through.
+            const src = cldOpt(item.url);
+            if (mainVideoEl.getAttribute('src') !== src) mainVideoEl.setAttribute('src', src);
+          } else if (!mainVideoEl.paused) {
+            mainVideoEl.pause();
+          }
+        }
+        if (!isVideo) {
+          // Same reused <img> across every product opened from this modal -
+          // wireImage() only hooks up once per element (data-sk-img-wired), so that
+          // has to be cleared each time or products after the first never fade in.
+          delete mainImgEl.dataset.skImgWired;
+          mainImgEl.classList.remove('sk-img-loaded');
+          mainImgEl.src = cldOpt(item.url);
+          mainImgEl.onerror = function () { this.onerror = null; this.src = (window.SkLoading && window.SkLoading.PLACEHOLDER_IMG) || ''; };
+          if (window.SkLoading) window.SkLoading.wireImage(mainImgEl, { wrap: mainImgEl.closest('.modal-gallery-main') });
+        }
       }
       document.querySelectorAll('.thumb-btn').forEach((btn, idx) => {
         btn.classList.toggle('active', idx === index);
@@ -792,12 +888,63 @@
       return { fields, fieldLabels };
     }
 
+    // A priced Customer Questions dropdown (admin-configured option_prices) should
+    // override the base price shown/charged, same as studio.js's preview and
+    // gifts.js's product page - falls back to the base price (already a
+    // formatted "₹NNN" string here) once nothing/an unpriced option is selected.
+    function currentModalPrice() {
+      const wrap = document.getElementById('modalCustomFields');
+      const price = wrap && window.ProductFields && activeModalProduct ? ProductFields.getSelectedPrice(wrap, activeModalProduct) : null;
+      return (price || price === 0) ? ProductFields.formatPrice(price) : activeModalProduct?.price;
+    }
+    document.getElementById('modalCustomFields')?.addEventListener('pf:pricechange', () => {
+      const priceEl = document.getElementById('modalProductPrice');
+      if (!priceEl || !activeModalProduct) return;
+      priceEl.textContent = currentModalPrice();
+    });
+
+    /* The gallery index the current Customer-Questions selection points at, or
+       null when nothing maps or the mapping outlived the photo it named. Videos
+       sit after the photos in activeModalImages (see js/shared/product-media.js),
+       so this also refuses an index that has landed on one. */
+    function modalMappedImageIndex() {
+      const wrap = document.getElementById('modalCustomFields');
+      if (!wrap || !window.ProductFields || !activeModalProduct) return null;
+      return clampModalImageIndex(ProductFields.getSelectedImageIndex(wrap, activeModalProduct));
+    }
+
+    function clampModalImageIndex(index) {
+      if (index === null || index === undefined) return null;
+      const item = activeModalImages[index];
+      return item && item.type !== 'video' ? index : null;
+    }
+
+    // An option that names one of this product's photos swaps the main image to
+    // it. Only fires for options an admin actually mapped, so an unmapped
+    // dropdown leaves the gallery alone.
+    document.getElementById('modalCustomFields')?.addEventListener('pf:imagechange', (e) => {
+      const index = clampModalImageIndex(e.detail && e.detail.index);
+      if (index !== null) setModalMainImg(index);
+    });
+
     // Both are async (collectModalCustomFields() reads/resizes any uploaded
     // photo) and bound via a plain onclick="..." in corporate.html, not
     // addEventListener - a module-level in-flight flag guards against a
     // second tap on a slow connection firing this again before the first call
     // finishes, which would otherwise double up modalSelectedQty via a second
     // updateCartQty() call.
+    // Deep link back to this product's own modal, so the cart can make each row
+    // clickable. Matches the ?openProduct=/&pid= reader further down this file
+    // (which also wants openPrice/openImg as instant display values while it
+    // looks the rest up by pid).
+    function corporateProductUrl(product) {
+      if (!product) return '';
+      return 'corporate.html?openProduct=' + encodeURIComponent(product.name)
+        + '&openPrice=' + encodeURIComponent(product.price || '')
+        + '&openImg=' + encodeURIComponent(product.img || '')
+        + (product.id ? '&pid=' + encodeURIComponent(product.id) : '');
+    }
+
     let modalCartActionInFlight = false;
 
     window.addModalItemToCart = async function () {
@@ -809,11 +956,12 @@
         updateCartQty(
           activeModalProduct.name,
           modalSelectedQty,
-          activeModalProduct.price,
+          currentModalPrice(),
           activeModalProduct.img,
           { color: modalSelectedColor, ...custom },
           null,
-          activeModalProduct.id
+          activeModalProduct.id,
+          corporateProductUrl(activeModalProduct)
         );
         // Deliberately does NOT close the modal (unlike modalBuyNow below, where
         // leaving to check out is the point) - a customer adding one item still
@@ -837,11 +985,12 @@
         updateCartQty(
           activeModalProduct.name,
           modalSelectedQty,
-          activeModalProduct.price,
+          currentModalPrice(),
           activeModalProduct.img,
           { color: modalSelectedColor, ...custom },
           null,
-          activeModalProduct.id
+          activeModalProduct.id,
+          corporateProductUrl(activeModalProduct)
         );
         closeProductDetailModal();
         window.location.href = 'cart.html';
@@ -865,11 +1014,25 @@
       return cart[productName] ? cart[productName].qty : 0;
     };
 
-    window.updateCartQty = function (productName, delta, priceStr = '', imgUrl = '', customization = null, requirement = null, productId = null) {
-      CartCore.updateQty(productName, delta, {
-        name: productName, price: priceStr, img: imgUrl,
+    // A cart line is one *configuration* of a product: the same gift in red and
+    // in blue, or with two different engravings, are separate things to buy at
+    // (often) separate prices. Keying by product name alone merged them into a
+    // single row that kept whichever price/customization went in first and just
+    // multiplied the quantity. CartCore.lineKey keys by the configuration
+    // instead, so identical adds still stack and different ones don't.
+    window.updateCartQty = function (productName, delta, priceStr = '', imgUrl = '', customization = null, requirement = null, productId = null, url = '') {
+      CartCore.updateQty(CartCore.lineKey(productName, customization), delta, {
+        name: productName, price: priceStr, img: imgUrl, url,
         product_id: productId, customization, requirement,
       });
+      updateCartUI();
+      renderContent();
+    };
+
+    // The cart drawer's +/- steppers act on a row that already exists, so they
+    // pass its real object key instead of re-deriving one from the name.
+    window.updateCartQtyByKey = function (key, delta) {
+      CartCore.updateQty(key, delta, {}, { createIfMissing: false });
       updateCartUI();
       renderContent();
     };
@@ -929,7 +1092,7 @@
           drawerItemsContainer.innerHTML = cartDrawerEmptyStateHTML();
           if (subtotalEl) subtotalEl.textContent = '₹0';
         } else {
-          drawerItemsContainer.innerHTML = items.map(item => {
+          drawerItemsContainer.innerHTML = Object.entries(cart).map(([itemKey, item]) => {
             const cust = item.customization;
             let custBadgeHTML = '';
             if (cust && (cust.engravingText || cust.logoName)) {
@@ -938,7 +1101,10 @@
               const detailsStr = [textStr, logoStr].filter(Boolean).join(' • ');
               custBadgeHTML = `<div class="cart-customization-badge">✨ Custom ${cust.technique || 'Engraved'}: ${detailsStr}</div>`;
             }
-            const cleanItemName = item.name.replace(/'/g, "\\'");
+            // The row's own object key, not its name: two configurations of one
+            // product share a name but are separate rows, so keying the steppers
+            // by name would drive the wrong one.
+            const cleanItemKey = String(itemKey).replace(/'/g, "\\'");
             return `
               <div class="cart-drawer-item">
                 <img class="cart-drawer-item-img" src="${cldOpt(item.img)}" alt="${item.name}" loading="lazy" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
@@ -948,9 +1114,9 @@
                   ${custBadgeHTML}
                 </div>
                 <div class="quantity-selector" style="height: 24px; min-width: 72px;">
-                  <button class="qty-btn" onclick="updateCartQty('${cleanItemName}', -1, '${item.price}', '${item.img}')">-</button>
+                  <button class="qty-btn" onclick="updateCartQtyByKey('${cleanItemKey}', -1)">-</button>
                   <span class="qty-count">${item.qty}</span>
-                  <button class="qty-btn" onclick="updateCartQty('${cleanItemName}', 1, '${item.price}', '${item.img}')">+</button>
+                  <button class="qty-btn" onclick="updateCartQtyByKey('${cleanItemKey}', 1)">+</button>
                 </div>
               </div>
             `;
@@ -1363,8 +1529,8 @@
         e.target.value = '';
         return;
       }
-      if (file.size > 10 * 1024 * 1024) {
-        if (errMsg) errMsg.textContent = '❌ That image is larger than 10 MB - please choose a smaller photo.';
+      if (window.ProductFields && file.size > ProductFields.MAX_UPLOAD_BYTES) {
+        if (errMsg) errMsg.textContent = `❌ That image is larger than ${ProductFields.MAX_UPLOAD_MB} MB - please choose a smaller photo.`;
         if (errTag) errTag.style.display = 'flex';
         e.target.value = '';
         return;
@@ -1527,8 +1693,8 @@
         e.target.value = '';
         return;
       }
-      if (file.size > 10 * 1024 * 1024) {
-        if (statusSpan) statusSpan.textContent = '❌ That image is larger than 10 MB - please choose a smaller file.';
+      if (window.ProductFields && file.size > ProductFields.MAX_UPLOAD_BYTES) {
+        if (statusSpan) statusSpan.textContent = `❌ That image is larger than ${ProductFields.MAX_UPLOAD_MB} MB - please choose a smaller file.`;
         e.target.value = '';
         return;
       }
@@ -2078,6 +2244,8 @@
                 // with every photo an admin attached, not only the one the
                 // card itself was rendered with.
                 images: p.images || [],
+                // Only the detail modal's gallery plays these - cards stay images-only.
+                videos: p.videos || [],
                 subtitle: p.description || "",
               };
               if (p.mrp) prod.oldPrice = p.mrp;
@@ -2086,6 +2254,7 @@
               prod.features = p.feat || [];
               prod.type = p.type || null;
               prod.stock = p.stock ?? null;
+              prod.search_keywords = p.search_keywords || [];
               return prod;
             }),
           };
@@ -2212,62 +2381,3 @@
       }
     });
   })();
-
-(function initMobilePromoSlider() {
-  function init() {
-    const track = document.getElementById('corporatePromoTrack');
-    const dots = document.querySelectorAll('#corporatePromoDots .promo-hero-dot');
-    if (!track || !dots.length) return;
-
-    const slideCount = 4;
-    const totalSlots = slideCount + 2;
-    const slotWidth = 100 / totalSlots;
-    let pos = 1;
-    let timer;
-
-    function goTo(p, animate) {
-      track.style.transition = animate === false ? 'none' : 'transform .7s cubic-bezier(.65,0,.35,1)';
-      track.style.transform = 'translateX(-' + (p * slotWidth) + '%)';
-      const realIndex = ((p - 1) % slideCount + slideCount) % slideCount;
-      dots.forEach((d, di) => d.classList.toggle('active', di === realIndex));
-    }
-
-    function next() {
-      pos++;
-      goTo(pos);
-    }
-
-    track.addEventListener('transitionend', (e) => {
-      if (e.target !== track || e.propertyName !== 'transform') return;
-      if (pos >= totalSlots - 1) {
-        pos = 1;
-        goTo(pos, false);
-      } else if (pos <= 0) {
-        pos = slideCount;
-        goTo(pos, false);
-      }
-    });
-
-    function startAutoplay() {
-      clearInterval(timer);
-      timer = setInterval(next, 3000);
-    }
-
-    dots.forEach((dot) => {
-      dot.addEventListener('click', () => {
-        pos = parseInt(dot.dataset.i, 10) + 1;
-        goTo(pos);
-        startAutoplay();
-      });
-    });
-
-    goTo(pos, false);
-    startAutoplay();
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-})();

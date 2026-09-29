@@ -9,8 +9,8 @@ async function renderMediaLibrary() {
   view.innerHTML = `
     <header class="page-head"><h1>Media Library</h1></header>
     <div class="toolbar">
-      <select id="mediaCatSelect"><option value="">All images</option></select>
-      <input type="file" id="mediaUploadInput" accept="image/*">
+      <select id="mediaCatSelect"><option value="">All media</option></select>
+      <input type="file" id="mediaUploadInput" accept="image/*,${MEDIA_VIDEO_ACCEPT}">
       <span id="uploadStatus" style="color:var(--text-dim);font-size:12px;"></span>
     </div>
     <p id="mediaUploadHint" style="color:var(--text-dim);font-size:12px;margin:-6px 0 12px;"></p>
@@ -33,6 +33,10 @@ async function renderMediaLibrary() {
   document.getElementById("mediaBulkDeleteBtn").addEventListener("click", (e) => bulkDeleteMedia(e.currentTarget));
 
   const pages = await Api.pages();
+  // Bail out if the admin navigated to another section while this request was in
+  // flight - the elements below belong to a view that is no longer in the document,
+  // and writing to them throws an uncaught TypeError (see coupons.js).
+  if (!document.getElementById("mediaCatSelect")) return;
   _MEDIA_CATS = await allCategoriesAcrossPages(pages);
   const catSelect = document.getElementById("mediaCatSelect");
   catSelect.insertAdjacentHTML("beforeend", _MEDIA_CATS.map(c =>
@@ -49,6 +53,12 @@ async function renderMediaLibrary() {
     const file = e.target.files[0];
     if (!file) return;
     const status = document.getElementById("uploadStatus");
+    // Caught before a pointless 25MB+ round trip the backend would only reject.
+    if (file.type.startsWith("video/") && file.size > MAX_VIDEO_UPLOAD_BYTES) {
+      status.textContent = `Video is over the ${MAX_VIDEO_UPLOAD_BYTES / (1024 * 1024)}MB limit.`;
+      e.target.value = "";
+      return;
+    }
     status.textContent = "Uploading…";
     e.target.disabled = true;
     try {
@@ -88,10 +98,13 @@ function updateUploadHint() {
 
 async function loadMediaGrid() {
   const grid = document.getElementById("mediaGrid");
+  if (!grid) return;
   grid.innerHTML = LOADING;
   _MEDIA_SELECTED_IDS = new Set();
   document.getElementById("mediaSelectAll").checked = false;
   const items = await Api.mediaLibrary({ categoryId: _MEDIA_SELECTED_CAT_ID || null });
+  // Gone if the admin navigated away while the library was loading (see coupons.js).
+  if (!document.getElementById("mediaGrid")) return;
   updateBulkBar();
   if (!items.length) {
     grid.innerHTML = _MEDIA_SELECTED_CAT_ID
@@ -102,7 +115,13 @@ async function loadMediaGrid() {
   grid.innerHTML = items.map(m => `
     <figure class="media-tile" data-id="${m.id}">
       <div class="media-tile-imgwrap">
-        <img src="${esc(mediaUrl(m.thumb_url || m.url))}" title="Click to copy URL" data-copy-url="${esc(m.url)}" onerror="this.src='${esc(mediaUrl(m.url))}'">
+        ${isVideoMedia(m)
+          // No server-side poster frame exists (that needs ffmpeg), so the tile is
+          // the clip itself with only its metadata fetched, plus a badge so it reads
+          // as a video before any frame decodes.
+          ? `<video src="${esc(mediaUrl(m.url))}" muted playsinline preload="metadata" title="Click to copy URL" data-copy-url="${esc(m.url)}"></video>
+             <span class="media-video-badge" title="Video">▶</span>`
+          : `<img src="${esc(mediaUrl(m.thumb_url || m.url))}" title="Click to copy URL" data-copy-url="${esc(m.url)}" onerror="this.src='${esc(mediaUrl(m.url))}'">`}
         <label class="media-tile-select" title="${m.deletable ? "Select" : "Still attached elsewhere — see below"}">
           <input type="checkbox" class="media-tile-checkbox" data-select-id="${m.id}" ${!m.deletable ? "disabled" : ""}>
         </label>
@@ -111,7 +130,7 @@ async function loadMediaGrid() {
           ? `<button class="media-tile-delete" title="Delete" data-delete-id="${m.id}">×</button>`
           : `<button class="media-tile-delete" title="Still attached elsewhere — see below" disabled>×</button>`}
       </div>
-      <button type="button" class="media-tile-copy" title="Copy image URL" data-copy-url="${esc(m.url)}">🔗 Copy URL</button>
+      <button type="button" class="media-tile-copy" title="Copy ${isVideoMedia(m) ? "video" : "image"} URL" data-copy-url="${esc(m.url)}">🔗 Copy URL</button>
       <figcaption>${esc(m.alt || m.url)}</figcaption>
       ${!m.deletable && m.used_in.length ? `
         <div class="media-tile-usedin">Used in:

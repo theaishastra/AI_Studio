@@ -23,10 +23,10 @@ const GiftsModule = (() => {
   // ?view=home this app no longer links to anywhere.
   const view = ['category', 'product', 'customise', 'home'].includes(requested) ? requested : 'category';
   const category = params.get('category') || 'all';  const fragments = {
-    category: "<div class=\"gifts-dashboard studio-dashboard\"><aside class=\"filters sidebar\"><div class=\"sidebar-sticky-inner\"></div></aside><div class=\"gifts-main-col main-content\"><main class=\"container\">\n    <div class=\"promo-hero-slider\"><div class=\"promo-hero-window\"><div class=\"promo-hero-track\" id=\"giftsPromoTrack\"><div class=\"promo-hero-slide\" aria-hidden=\"true\"><a href=\"corporate.html\" class=\"promo-hero-link\" tabindex=\"-1\"><img class=\"promo-hero-img\" src=\"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/corporate_gifting_banner_1300x430.png\" alt=\"\" loading=\"lazy\"></a></div><div class=\"promo-hero-slide\"><a href=\"photography.html\" class=\"promo-hero-link\" aria-label=\"Explore Photography\"><img class=\"promo-hero-img\" src=\"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/photography_banner_1300x430.png\" alt=\"Photography\"></a></div><div class=\"promo-hero-slide\"><a href=\"gifts.html\" class=\"promo-hero-link\" aria-label=\"Explore Customised Gift Shop\"><img class=\"promo-hero-img\" src=\"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/personalized_gifts_shop_now_FINAL_1300x430.png\" alt=\"Customised Gift Shop\" loading=\"lazy\"></a></div><div class=\"promo-hero-slide\"><a href=\"studio.html\" class=\"promo-hero-link\" aria-label=\"Explore Studio Services\"><img class=\"promo-hero-img\" src=\"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/prints_lamination_shop_now_1300x430.png\" alt=\"Studio Services\" loading=\"lazy\"></a></div><div class=\"promo-hero-slide\"><a href=\"corporate.html\" class=\"promo-hero-link\" aria-label=\"Explore Corporate Gifts\"><img class=\"promo-hero-img\" src=\"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/corporate_gifting_banner_1300x430.png\" alt=\"Corporate Gifts\" loading=\"lazy\"></a></div><div class=\"promo-hero-slide\" aria-hidden=\"true\"><a href=\"photography.html\" class=\"promo-hero-link\" tabindex=\"-1\"><img class=\"promo-hero-img\" src=\"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/assets/hero-slide-images/photography_banner_1300x430.png\" alt=\"\" loading=\"lazy\"></a></div></div><div class=\"promo-hero-dots\" id=\"giftsPromoDots\"><button class=\"promo-hero-dot active\" data-i=\"0\" aria-label=\"Photography slide\"></button><button class=\"promo-hero-dot\" data-i=\"1\" aria-label=\"Customised Gift Shop slide\"></button><button class=\"promo-hero-dot\" data-i=\"2\" aria-label=\"Studio Services slide\"></button><button class=\"promo-hero-dot\" data-i=\"3\" aria-label=\"Corporate Gifts slide\"></button></div></div></div>\n    <div class=\"breadcrumb\"><a href=\"index.html\">Home</a> / <a href=\"gifts.html\">Customised Gifts</a> / <span id=\"breadcrumbTitle\"></span></div>\n    <div class=\"category-header\"><h1 id=\"categoryTitle\"></h1><p id=\"categorySubtitle\"></p></div>\n    <section class=\"category-hero\">\n      <img id=\"categoryHeroBanner\" class=\"category-hero-banner-img\" src=\"\" alt=\"\">\n    </section>\n    <nav class=\"category-tabs\" id=\"categoryTabs\" aria-label=\"Gift categories\"></nav>\n    <section class=\"catalog-main\"><div class=\"catalog-toolbar\"><div class=\"catalog-toolbar-header\"><h2 id=\"resultsTitle\"></h2><small id=\"resultCount\"></small></div><div class=\"catalog-toolbar-fields\"><input id=\"productSearch\" type=\"search\" placeholder=\"Search products\" aria-label=\"Search products\"><select id=\"sortProducts\" aria-label=\"Sort products\"><option value=\"featured\">Featured</option><option value=\"price-low\">Price: Low to High</option><option value=\"price-high\">Price: High to Low</option><option value=\"rating\">Top Rated</option></select></div></div><div class=\"product-grid packages-grid\" id=\"productGrid\"></div></section>\n  </main></div></div>\n  <div class=\"modal-backdrop\" id=\"productModal\" aria-hidden=\"true\"><article class=\"product-modal\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"modalTitle\"><button class=\"close-button\" id=\"closeModal\" aria-label=\"Close product details\">×</button><div class=\"modal-image\"><img id=\"modalImage\" src=\"\" alt=\"\"></div><div class=\"modal-copy\"><span class=\"eyebrow\">Personalised gift</span><h2 id=\"modalTitle\"></h2><div class=\"prices\"><span class=\"price\" id=\"modalPrice\"></span><span class=\"old-price\" id=\"modalOldPrice\"></span></div><p>Made to preserve your special memories with careful finishing and premium-quality printing.</p><ul class=\"features\"><li>Personalised with your photo or text</li><li>Quality checked before dispatch</li><li>Responsive order support</li><li>Secure online checkout</li></ul><div class=\"modal-actions\"><button class=\"btn btn-cart\" id=\"modalAdd\">Add to Cart</button><button class=\"btn btn-buy\" id=\"modalBuy\">Buy Now</button></div></div></article></div>\n  <div class=\"cart-backdrop\" id=\"cartDrawer\" aria-hidden=\"true\"><aside class=\"cart-panel\"><div class=\"cart-head\"><h2>My Cart</h2><button id=\"closeCart\" aria-label=\"Close cart\">×</button></div><div id=\"cartItems\"></div><div class=\"cart-footer\"><div class=\"cart-total\"><span>Subtotal</span><span id=\"cartTotal\">₹0</span></div><button class=\"btn btn-buy\" id=\"checkoutCart\">Proceed to Checkout</button></div></aside></div>\n  <div class=\"toast\" id=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n  <footer><div class=\"container\"><div class=\"footer-grid\"><div class=\"footer-col\"><div class=\"footer-brand\"><img src=\"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Sai_digital_lab_logo.png\" alt=\"Sai Kumar Digital Lab & Studio Logo\" loading=\"lazy\" style=\"height: 65px; object-fit: contain;\"></div><p class=\"desc\">Capturing your moments, beautifully and creating memories forever.</p><div class=\"socials\"><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M13 22v-9h3l1-4h-4V7c0-1 .3-2 2-2h2V1h-3c-3 0-5 2-5 5v3H6v4h3v9z\" /></svg></a><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"5\" /><circle cx=\"12\" cy=\"12\" r=\"4\" /><circle cx=\"17.5\" cy=\"6.5\" r=\"1\" /></svg></a><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"2\" y=\"5\" width=\"20\" height=\"14\" rx=\"3\" /><path d=\"M10 9l6 3-6 3z\" fill=\"currentColor\" stroke=\"none\" /></svg></a><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M17 2H7a5 5 0 0 0-5 5v10a5 5 0 0 0 5 5h10a5 5 0 0 0 5-5V7a5 5 0 0 0-5-5zM8.5 8.5C7 7 5 8 5 10c0 3 4 5 4 8\" /></svg></a></div></div><div class=\"footer-col\"><h4>Company</h4><ul><li><a href=\"about-us.html\">About Us</a></li><li><a href=\"photography.html\">Gallery</a></li><li><a href=\"#testimonials\">Testimonials</a></li><li><a href=\"#\">Careers</a></li><li><a href=\"#\">Blog</a></li></ul></div><div class=\"footer-col\"><h4>Services</h4><ul><li><a href=\"photography.html\">Photography</a></li><li><a href=\"gifts.html\">Customised Gift Shop</a></li><li><a href=\"studio.html\">Studio Services</a></li><li><a href=\"corporate.html\">Corporate Gifts</a></li><li><a href=\"bulk-orders.html\">Bulk Orders</a></li></ul></div><div class=\"footer-col\"><h4>Help &amp; Support</h4><ul><li><a href=\"#\">Track Order</a></li><li><a href=\"#\">Shipping Policy</a></li><li><a href=\"#\">Returns &amp; Refunds</a></li><li><a href=\"#\">Privacy Policy</a></li><li><a href=\"#\">Terms &amp; Conditions</a></li><li><a href=\"#\">FAQs</a></li></ul></div><div class=\"footer-col\"><h4>Contact Us</h4><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.5 2.1L8 9.7a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.7 2z\" /></svg><span>+91 98765 43210</span></div><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"2\" /><path d=\"M22 6l-10 7L2 6\" /></svg><span>saikumardigitallab@gmail.com</span></div><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z\" /><circle cx=\"12\" cy=\"10\" r=\"2.5\" /></svg><span>7-2-227 Srt 6, Bhagat Singh Nagar, Sanath Nagar, Hyderabad, Telangana 500018</span></div><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\" /><path d=\"M12 6v6l4 2\" /></svg><span>Mon - Sun: 9:00 AM - 9:00 PM</span></div></div></div><div class=\"footer-bottom\"><p>© 2025 Sai Kumar Digital Lab &amp; Studio. All Rights Reserved.</p><div class=\"pay-icons\"><span class=\"pi\">VISA</span><span class=\"pi\">Mastercard</span><span class=\"pi\">RuPay</span><span class=\"pi\">UPI</span></div></div></div></footer>",
-    product: "<main class=\"details-page container\"><div class=\"breadcrumb\"><button type=\"button\" class=\"breadcrumb-back-btn\" onclick=\"history.length>1?history.back():location.assign('gifts.html')\">‹ PRODUCT DETAILS</button><div class=\"breadcrumb-links\"><a href=\"index.html\">Home</a> / <a href=\"gifts.html\">Customised Gifts</a> / <a id=\"categoryBreadcrumb\" href=\"#\">Category</a> / <span id=\"breadcrumbProduct\">Product</span></div></div><section class=\"details-main\"><div class=\"details-gallery\"><div class=\"gallery-thumbs\" id=\"galleryThumbs\" aria-label=\"Product gallery\"></div><div class=\"gallery-main\" id=\"galleryMain\"><img id=\"galleryImage\" src=\"\" alt=\"\"><button type=\"button\" class=\"gallery-arrow-btn prev\" id=\"galleryPrev\" aria-label=\"Previous image\" onclick=\"event.stopPropagation()\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path fill-rule=\"evenodd\" d=\"M11.03 3.97a.75.75 0 010 1.06l-6.22 6.22H21a.75.75 0 010 1.5H4.81l6.22 6.22a.75.75 0 11-1.06 1.06l-7.5-7.5a.75.75 0 010-1.06l7.5-7.5a.75.75 0 011.06 0z\" clip-rule=\"evenodd\" /></svg></button><button type=\"button\" class=\"gallery-arrow-btn next\" id=\"galleryNext\" aria-label=\"Next image\" onclick=\"event.stopPropagation()\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path fill-rule=\"evenodd\" d=\"M12.97 3.97a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 11-1.06-1.06l6.22-6.22H3a.75.75 0 010-1.5h16.19l-6.22-6.22a.75.75 0 010-1.06z\" clip-rule=\"evenodd\" /></svg></button><button type=\"button\" class=\"gallery-wishlist-btn\" aria-label=\"Save\" onclick=\"event.stopPropagation();this.classList.toggle('active')\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"><path d=\"M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z\"></path></svg></button><button type=\"button\" class=\"gallery-share-btn\" aria-label=\"Share\" onclick=\"event.stopPropagation();shareGiftProduct()\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"22\" y1=\"2\" x2=\"11\" y2=\"13\"></line><polygon points=\"22 2 15 22 11 13 2 9 22 2\"></polygon></svg></button></div></div><section class=\"details-copy\"><span class=\"eyebrow\" id=\"productCategoryLabel\">Personalised gift</span><h1 id=\"productName\">Product Title</h1></section><aside class=\"details-buy-card\"><div class=\"details-price-row\"><span class=\"price\" id=\"productPrice\">₹0</span><span class=\"old-price\" id=\"productOldPrice\">₹0</span><span class=\"discount-badge\" id=\"productDiscount\">0% OFF</span></div><div class=\"stock-badge\" id=\"productStockBadge\">In Stock</div><div class=\"personalise-box\"><div class=\"personalise-box-header\"><span class=\"personalise-box-title\">PERSONALISE THIS GIFT</span><span class=\"personalise-free-tag\">Free Customisation</span></div><div class=\"pf-fields\" id=\"productCustomFields\" style=\"display:none;\"></div></div><div class=\"gift-action-bar\"><div class=\"quantity-picker\"><label for=\"productQuantity\">Quantity</label><div class=\"qty-controls\"><button type=\"button\" class=\"qty-btn\" id=\"qtyMinus\">-</button><input type=\"number\" id=\"productQuantity\" value=\"1\" min=\"1\" max=\"99\"><button type=\"button\" class=\"qty-btn\" id=\"qtyPlus\">+</button></div></div><div class=\"gift-action-buttons\"><button class=\"btn btn-cart\" id=\"detailAddToCart\">Add to Cart</button><button class=\"btn btn-buy\" id=\"detailBuyNow\">Buy Now</button></div></div><section class=\"gift-details-accordion\" aria-labelledby=\"giftDetailsTitle\"><h3 id=\"giftDetailsTitle\">About the Product</h3><div class=\"gift-accordion-item\"><button type=\"button\" class=\"gift-accordion-trigger\" aria-expanded=\"true\"><span><span class=\"gift-accordion-icon\">ⓘ</span>Description</span><span class=\"gift-accordion-chevron\">⌄</span></button><div class=\"gift-accordion-content\"><p class=\"details-description\" id=\"productDescription\"></p></div></div><div class=\"gift-accordion-item\"><button type=\"button\" class=\"gift-accordion-trigger\" aria-expanded=\"false\"><span><span class=\"gift-accordion-icon\">▣</span>Instructions</span><span class=\"gift-accordion-chevron\">⌄</span></button><div class=\"gift-accordion-content\"><p>Handle with care and keep away from direct sunlight or moisture to preserve the print and finish. Please double-check your uploaded name/photo before ordering, as personalised items go into production right away and cannot be changed afterwards.</p></div></div><div class=\"gift-accordion-item\"><button type=\"button\" class=\"gift-accordion-trigger\" aria-expanded=\"false\"><span><span class=\"gift-accordion-icon\">▣</span>Delivery Info</span><span class=\"gift-accordion-chevron\">⌄</span></button><div class=\"gift-accordion-content\"><p id=\"productDeliveryEst\">Standard delivery available.</p></div></div></section></aside></section><section class=\"related-section\" aria-labelledby=\"relatedTitle\"><div class=\"related-heading\"><div><span class=\"eyebrow\">More to explore</span><h2 id=\"relatedTitle\">You May Also Like</h2></div><p>Similar personalised gifts from this collection.</p></div><div class=\"related-grid\" id=\"relatedProducts\"></div></section></main><div class=\"cart-backdrop\" id=\"cartDrawer\" aria-hidden=\"true\"><aside class=\"cart-panel\"><div class=\"cart-head\"><h2>My Cart</h2><button id=\"closeCart\" aria-label=\"Close cart\">×</button></div><div id=\"cartItems\"></div><div class=\"cart-footer\"><div class=\"cart-total\"><span>Subtotal</span><span id=\"cartTotal\">₹0</span></div><button class=\"btn btn-buy\" id=\"checkoutCart\">Proceed to Checkout</button></div></aside></div><div class=\"toast\" id=\"toast\" role=\"status\" aria-live=\"polite\"></div><footer class=\"site-footer\"><div class=\"container footer-row\"><div><strong>Sai Kumar Digital Lab & Studio</strong><br><small>Personalised memories, made with care.</small></div><a href=\"contact-us.html\">Need help? Contact us →</a></div></footer>",
+    category: "<div class=\"gifts-dashboard studio-dashboard\"><aside class=\"filters sidebar\"><div class=\"sidebar-sticky-inner\"></div></aside><div class=\"gifts-main-col main-content\"><main class=\"container\">\n    <div class=\"breadcrumb\"><a href=\"index.html\">Home</a> / <a href=\"gifts.html\">Customised Gifts</a> / <span id=\"breadcrumbTitle\"></span></div>\n    <div class=\"category-header\"><h1 id=\"categoryTitle\"></h1><p id=\"categorySubtitle\"></p></div>\n    <section class=\"category-hero\">\n      <img id=\"categoryHeroBanner\" class=\"category-hero-banner-img\" src=\"\" alt=\"\">\n    </section>\n    <section class=\"gift-compare\" id=\"giftCompare\" aria-labelledby=\"giftCompareTitle\">\n      <div class=\"gift-compare-head\">\n        <span class=\"gift-compare-eyebrow\">See the difference</span>\n        <h2 id=\"giftCompareTitle\">Plain product. Personalised keepsake.</h2>\n        <p>Drag the slider to see what we turn everyday gifts into.</p>\n      </div>\n      <div class=\"gift-compare-frame\" id=\"giftCompareFrame\">\n        <div class=\"gift-compare-layer after\"><img id=\"giftCompareAfterImg\" src=\"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/comparison-personalised-products-wide.png\" alt=\"The same gifts after personalisation\" loading=\"lazy\"></div>\n        <div class=\"gift-compare-layer before\"><img src=\"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/gifts-assets/comparison-plain-products-wide.png\" alt=\"Plain products before personalisation\" loading=\"lazy\"></div>\n        <span class=\"gift-compare-tag before\">Before</span>\n        <span class=\"gift-compare-tag after\">Personalised</span>\n        <span class=\"gift-compare-divider\" aria-hidden=\"true\"><span class=\"gift-compare-handle\">◀ ▶</span></span>\n        <input class=\"gift-compare-range\" id=\"giftCompareRange\" type=\"range\" min=\"4\" max=\"96\" value=\"50\" aria-label=\"Compare before and personalised gift\">\n      </div>\n    </section>\n    <nav class=\"category-tabs\" id=\"categoryTabs\" aria-label=\"Gift categories\"></nav>\n    <section class=\"catalog-main\"><div class=\"catalog-toolbar\"><div class=\"catalog-toolbar-header\"><h2 id=\"resultsTitle\"></h2><small id=\"resultCount\"></small></div><div class=\"catalog-toolbar-fields\"><input id=\"productSearch\" type=\"search\" placeholder=\"Search products\" aria-label=\"Search products\"><select id=\"sortProducts\" aria-label=\"Sort products\"><option value=\"featured\">Featured</option><option value=\"price-low\">Price: Low to High</option><option value=\"price-high\">Price: High to Low</option><option value=\"rating\">Top Rated</option></select></div></div><div class=\"product-grid packages-grid\" id=\"productGrid\"></div></section>\n  </main></div></div>\n  <div class=\"modal-backdrop\" id=\"productModal\" aria-hidden=\"true\"><article class=\"product-modal\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"modalTitle\"><button class=\"close-button\" id=\"closeModal\" aria-label=\"Close product details\">×</button><div class=\"modal-image\"><img id=\"modalImage\" src=\"\" alt=\"\"></div><div class=\"modal-copy\"><span class=\"eyebrow\">Personalised gift</span><h2 id=\"modalTitle\"></h2><div class=\"prices\"><span class=\"price\" id=\"modalPrice\"></span><span class=\"old-price\" id=\"modalOldPrice\"></span></div><p>Made to preserve your special memories with careful finishing and premium-quality printing.</p><ul class=\"features\"><li>Personalised with your photo or text</li><li>Quality checked before dispatch</li><li>Responsive order support</li><li>Secure online checkout</li></ul><div class=\"modal-actions\"><button class=\"btn btn-cart\" id=\"modalAdd\">Add to Cart</button><button class=\"btn btn-buy\" id=\"modalBuy\">Buy Now</button></div></div></article></div>\n  <div class=\"cart-backdrop\" id=\"cartDrawer\" aria-hidden=\"true\"><aside class=\"cart-panel\"><div class=\"cart-head\"><h2>My Cart</h2><button id=\"closeCart\" aria-label=\"Close cart\">×</button></div><div id=\"cartItems\"></div><div class=\"cart-footer\"><div class=\"cart-total\"><span>Subtotal</span><span id=\"cartTotal\">₹0</span></div><button class=\"btn btn-buy\" id=\"checkoutCart\">Proceed to Checkout</button></div></aside></div>\n  <div class=\"toast\" id=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n  <footer><div class=\"container\"><div class=\"footer-grid\"><div class=\"footer-col\"><div class=\"footer-brand\"><img src=\"https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/legacy/Sai_digital_lab_logo.png\" alt=\"Sai Kumar Digital Lab & Studio Logo\" loading=\"lazy\" style=\"height: 65px; object-fit: contain;\"></div><p class=\"desc\">Capturing your moments, beautifully and creating memories forever.</p><div class=\"socials\"><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M13 22v-9h3l1-4h-4V7c0-1 .3-2 2-2h2V1h-3c-3 0-5 2-5 5v3H6v4h3v9z\" /></svg></a><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"5\" /><circle cx=\"12\" cy=\"12\" r=\"4\" /><circle cx=\"17.5\" cy=\"6.5\" r=\"1\" /></svg></a><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"2\" y=\"5\" width=\"20\" height=\"14\" rx=\"3\" /><path d=\"M10 9l6 3-6 3z\" fill=\"currentColor\" stroke=\"none\" /></svg></a><a href=\"#\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M17 2H7a5 5 0 0 0-5 5v10a5 5 0 0 0 5 5h10a5 5 0 0 0 5-5V7a5 5 0 0 0-5-5zM8.5 8.5C7 7 5 8 5 10c0 3 4 5 4 8\" /></svg></a></div></div><div class=\"footer-col\"><h4>Company</h4><ul><li><a href=\"about-us.html\">About Us</a></li><li><a href=\"photography.html\">Gallery</a></li><li><a href=\"#testimonials\">Testimonials</a></li><li><a href=\"#\">Careers</a></li><li><a href=\"#\">Blog</a></li></ul></div><div class=\"footer-col\"><h4>Services</h4><ul><li><a href=\"photography.html\">Photography</a></li><li><a href=\"gifts.html\">Customised Gift Shop</a></li><li><a href=\"studio.html\">Studio Services</a></li><li><a href=\"corporate.html\">Corporate Gifts</a></li><li><a href=\"bulk-orders.html\">Bulk Orders</a></li></ul></div><div class=\"footer-col\"><h4>Help &amp; Support</h4><ul><li><a href=\"#\">Track Order</a></li><li><a href=\"#\">Shipping Policy</a></li><li><a href=\"#\">Returns &amp; Refunds</a></li><li><a href=\"#\">Privacy Policy</a></li><li><a href=\"#\">Terms &amp; Conditions</a></li><li><a href=\"#\">FAQs</a></li></ul></div><div class=\"footer-col\"><h4>Contact Us</h4><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.5 2.1L8 9.7a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.7 2z\" /></svg><span>+91 98765 43210</span></div><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"2\" /><path d=\"M22 6l-10 7L2 6\" /></svg><span>saikumardigitallab@gmail.com</span></div><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z\" /><circle cx=\"12\" cy=\"10\" r=\"2.5\" /></svg><span>7-2-227 Srt 6, Bhagat Singh Nagar, Sanath Nagar, Hyderabad, Telangana 500018</span></div><div class=\"contact-item\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\" /><path d=\"M12 6v6l4 2\" /></svg><span>Mon - Sun: 9:00 AM - 9:00 PM</span></div></div></div><div class=\"footer-bottom\"><p>© 2025 Sai Kumar Digital Lab &amp; Studio. All Rights Reserved.</p><div class=\"pay-icons\"><span class=\"pi\">VISA</span><span class=\"pi\">Mastercard</span><span class=\"pi\">RuPay</span><span class=\"pi\">UPI</span></div></div></div></footer>",
+    product: "<main class=\"details-page container\"><div class=\"breadcrumb\"><button type=\"button\" class=\"breadcrumb-back-btn\" onclick=\"history.length>1?history.back():location.assign('gifts.html')\">‹ PRODUCT DETAILS</button><div class=\"breadcrumb-links\"><a href=\"index.html\">Home</a> / <a href=\"gifts.html\">Customised Gifts</a> / <a id=\"categoryBreadcrumb\" href=\"#\">Category</a> / <span id=\"breadcrumbProduct\">Product</span></div></div><section class=\"details-main\"><div class=\"details-gallery\"><div class=\"gallery-thumbs\" id=\"galleryThumbs\" aria-label=\"Product gallery\"></div><div class=\"gallery-main\" id=\"galleryMain\"><img id=\"galleryImage\" src=\"\" alt=\"\"><video id=\"galleryVideo\" controls playsinline preload=\"metadata\" style=\"display:none;\"></video><button type=\"button\" class=\"gallery-arrow-btn prev\" id=\"galleryPrev\" aria-label=\"Previous image\" onclick=\"event.stopPropagation()\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path fill-rule=\"evenodd\" d=\"M11.03 3.97a.75.75 0 010 1.06l-6.22 6.22H21a.75.75 0 010 1.5H4.81l6.22 6.22a.75.75 0 11-1.06 1.06l-7.5-7.5a.75.75 0 010-1.06l7.5-7.5a.75.75 0 011.06 0z\" clip-rule=\"evenodd\" /></svg></button><button type=\"button\" class=\"gallery-arrow-btn next\" id=\"galleryNext\" aria-label=\"Next image\" onclick=\"event.stopPropagation()\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path fill-rule=\"evenodd\" d=\"M12.97 3.97a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 11-1.06-1.06l6.22-6.22H3a.75.75 0 010-1.5h16.19l-6.22-6.22a.75.75 0 010-1.06z\" clip-rule=\"evenodd\" /></svg></button><button type=\"button\" class=\"gallery-wishlist-btn\" aria-label=\"Save\" onclick=\"event.stopPropagation();this.classList.toggle('active')\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"><path d=\"M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z\"></path></svg></button><button type=\"button\" class=\"gallery-share-btn\" aria-label=\"Share\" onclick=\"event.stopPropagation();shareGiftProduct()\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"22\" y1=\"2\" x2=\"11\" y2=\"13\"></line><polygon points=\"22 2 15 22 11 13 2 9 22 2\"></polygon></svg></button></div></div><section class=\"details-copy\"><span class=\"eyebrow\" id=\"productCategoryLabel\">Personalised gift</span><h1 id=\"productName\">Product Title</h1></section><aside class=\"details-buy-card\"><div class=\"details-price-row\"><span class=\"price\" id=\"productPrice\">₹0</span><span class=\"old-price\" id=\"productOldPrice\">₹0</span><span class=\"discount-badge\" id=\"productDiscount\">0% OFF</span></div><div class=\"stock-badge\" id=\"productStockBadge\">In Stock</div><div class=\"personalise-box\"><div class=\"personalise-box-header\"><span class=\"personalise-box-title\">PERSONALISE THIS GIFT</span><span class=\"personalise-free-tag\">Free Customisation</span></div><div class=\"pf-fields\" id=\"productCustomFields\" style=\"display:none;\"></div></div><div class=\"gift-action-bar\"><div class=\"quantity-picker\"><label for=\"productQuantity\">Quantity</label><div class=\"qty-controls\"><button type=\"button\" class=\"qty-btn\" id=\"qtyMinus\">-</button><input type=\"number\" id=\"productQuantity\" value=\"1\" min=\"1\" max=\"99\"><button type=\"button\" class=\"qty-btn\" id=\"qtyPlus\">+</button></div></div><div class=\"gift-action-buttons\"><button class=\"btn btn-cart\" id=\"detailAddToCart\">Add to Cart</button><button class=\"btn btn-buy\" id=\"detailBuyNow\">Buy Now</button></div></div><section class=\"gift-details-accordion\" aria-labelledby=\"giftDetailsTitle\"><h3 id=\"giftDetailsTitle\">About the Product</h3><div class=\"gift-accordion-item\"><button type=\"button\" class=\"gift-accordion-trigger\" aria-expanded=\"true\"><span><span class=\"gift-accordion-icon\">ⓘ</span>Description</span><span class=\"gift-accordion-chevron\">⌄</span></button><div class=\"gift-accordion-content\"><p class=\"details-description\" id=\"productDescription\"></p></div></div><div class=\"gift-accordion-item\"><button type=\"button\" class=\"gift-accordion-trigger\" aria-expanded=\"false\"><span><span class=\"gift-accordion-icon\">▣</span>What's Included</span><span class=\"gift-accordion-chevron\">⌄</span></button><div class=\"gift-accordion-content\"><ul class=\"gift-highlights\" id=\"productHighlights\"></ul><p id=\"productInstructionsFallback\">Handle with care and keep away from direct sunlight or moisture to preserve the print and finish. Please double-check your uploaded name/photo before ordering, as personalised items go into production right away and cannot be changed afterwards.</p></div></div><div class=\"gift-accordion-item\"><button type=\"button\" class=\"gift-accordion-trigger\" aria-expanded=\"false\"><span><span class=\"gift-accordion-icon\">▣</span>Delivery Info</span><span class=\"gift-accordion-chevron\">⌄</span></button><div class=\"gift-accordion-content\"><p id=\"productDeliveryEst\">Standard delivery available.</p></div></div></section></aside></section><section class=\"related-section\" aria-labelledby=\"relatedTitle\"><div class=\"related-heading\"><div><span class=\"eyebrow\">More to explore</span><h2 id=\"relatedTitle\">You May Also Like</h2></div><p>Similar personalised gifts from this collection.</p></div><div class=\"related-grid\" id=\"relatedProducts\"></div></section></main><div class=\"cart-backdrop\" id=\"cartDrawer\" aria-hidden=\"true\"><aside class=\"cart-panel\"><div class=\"cart-head\"><h2>My Cart</h2><button id=\"closeCart\" aria-label=\"Close cart\">×</button></div><div id=\"cartItems\"></div><div class=\"cart-footer\"><div class=\"cart-total\"><span>Subtotal</span><span id=\"cartTotal\">₹0</span></div><button class=\"btn btn-buy\" id=\"checkoutCart\">Proceed to Checkout</button></div></aside></div><div class=\"toast\" id=\"toast\" role=\"status\" aria-live=\"polite\"></div><footer class=\"site-footer\"><div class=\"container footer-row\"><div><strong>Sai Kumar Digital Lab & Studio</strong><br><small>Personalised memories, made with care.</small></div><a href=\"contact-us.html\">Need help? Contact us →</a></div></footer>",
   };
-  fragments.customise = "<main class=\"customise-page container\">\n    <div class=\"breadcrumb\"><div class=\"breadcrumb-links\"><a href=\"index.html\">Home</a> / <a href=\"gifts.html\">Customised Gifts</a> / <a id=\"customiseCategoryBreadcrumb\" href=\"#\">Category</a> / <a id=\"customiseProductBreadcrumb\" href=\"#\">Product</a> / <span>Customise</span></div></div>\n    <h1 class=\"customise-title\" id=\"customiseTitle\">Customise Gift</h1>\n    <div class=\"customise-layout\">\n      <div class=\"customise-preview-col\">\n        <span class=\"preview-badge\">Interactive live preview</span>\n        <div class=\"preview-viewport\" id=\"previewViewport\" tabindex=\"0\" role=\"application\" aria-label=\"Interactive customised product preview\">\n          <canvas class=\"product-3d-canvas\" id=\"product3dCanvas\" aria-label=\"Real-time 3D customised product preview\"></canvas>\n          <div class=\"preview-object\" id=\"previewObject\"><img class=\"preview-product-image\" id=\"previewProductImage\" src=\"\" alt=\"\"><div class=\"custom-print-area\" id=\"customPrintArea\"><img id=\"customPhotoPreview\" src=\"\" alt=\"Uploaded photo preview\"><span class=\"custom-print-placeholder\">Your photo</span><span class=\"custom-live-text\" id=\"customLiveText\"></span></div></div>\n        </div>\n        <div class=\"preview-controls\"><button type=\"button\" id=\"previewZoomOut\" aria-label=\"Zoom product out\">−</button><button type=\"button\" id=\"previewReset\" aria-label=\"Reset product view\">↻</button><button type=\"button\" id=\"previewZoomIn\" aria-label=\"Zoom product in\">+</button></div>\n        <p class=\"preview-help\">Drag outside the print area to rotate · Drag the photo to reposition it</p>\n      </div>\n      <section class=\"customisation-panel\" aria-labelledby=\"customizationTitle\">\n        <h3 id=\"customizationTitle\">Personalisation options</h3>\n        <p>Upload a photograph and add optional text. Your changes appear instantly.</p>\n        <label class=\"upload-zone\" id=\"uploadZone\" for=\"customPhotoInput\"><strong>Upload your photo</strong><small>JPG, JPEG, PNG, WebP or JFIF · maximum 2 MB</small><input id=\"customPhotoInput\" type=\"file\" accept=\"image/*,.jpg,.jpeg,.png,.webp,.jfif,.avif\" hidden></label>\n        <div class=\"customization-fields\"><input id=\"customText\" type=\"text\" maxlength=\"40\" placeholder=\"Add a name or message\" aria-label=\"Custom text\"><select id=\"customFinish\" aria-label=\"Product finish\"><option>Standard</option><option>Glossy</option><option>Matte</option></select></div>\n        <div class=\"personalisation-options\">\n          <fieldset class=\"option-group\"><legend>Text style</legend><div class=\"choice-row\" id=\"textStyleChoices\"><button class=\"option-button active\" type=\"button\" data-text-style=\"bold\" aria-pressed=\"true\"><b>A</b></button><button class=\"option-button\" type=\"button\" data-text-style=\"serif\" aria-pressed=\"false\"><span class=\"serif-sample\">A</span></button><button class=\"option-button\" type=\"button\" data-text-style=\"script\" aria-pressed=\"false\"><span class=\"script-sample\">A</span></button></div></fieldset>\n          <fieldset class=\"option-group\"><legend>Photo layout</legend><div class=\"layout-choice-row\" id=\"photoLayoutChoices\"><button class=\"layout-choice active\" type=\"button\" data-photo-layout=\"cover\" aria-pressed=\"true\">Fill</button><button class=\"layout-choice\" type=\"button\" data-photo-layout=\"contain\" aria-pressed=\"false\">Fit</button><button class=\"layout-choice\" type=\"button\" data-photo-layout=\"portrait\" aria-pressed=\"false\">Portrait</button><button class=\"layout-choice\" type=\"button\" data-photo-layout=\"wide\" aria-pressed=\"false\">Wide</button></div></fieldset>\n          <fieldset class=\"option-group\"><legend>Accent colour</legend><div class=\"accent-choice-row\" id=\"accentChoices\"><button class=\"accent-choice active\" type=\"button\" data-accent=\"#071B45\" style=\"--accent:#071B45\" aria-label=\"Royal navy\" aria-pressed=\"true\"></button><button class=\"accent-choice\" type=\"button\" data-accent=\"#D4A017\" style=\"--accent:#D4A017\" aria-label=\"Warm gold\" aria-pressed=\"false\"></button><button class=\"accent-choice\" type=\"button\" data-accent=\"#9AACC8\" style=\"--accent:#9AACC8\" aria-label=\"Silver blue\" aria-pressed=\"false\"></button><button class=\"accent-choice\" type=\"button\" data-accent=\"#2B2B2B\" style=\"--accent:#2B2B2B\" aria-label=\"Charcoal\" aria-pressed=\"false\"></button><button class=\"accent-choice light\" type=\"button\" data-accent=\"#F5F7FB\" style=\"--accent:#F5F7FB\" aria-label=\"Ice white\" aria-pressed=\"false\"></button></div></fieldset>\n        </div>\n        <div class=\"acrylic-options\" id=\"acrylicOptions\" hidden>\n          <div class=\"acrylic-photo-actions\"><button type=\"button\" id=\"replaceAcrylicPhoto\">Replace image</button><button type=\"button\" id=\"removeAcrylicPhoto\">Remove image</button></div>\n          <fieldset class=\"option-group\"><legend>Frame shape</legend><div class=\"acrylic-choice-grid\" id=\"acrylicShapeChoices\"><button type=\"button\" data-acrylic-shape=\"rectangle\">Rectangle</button><button type=\"button\" data-acrylic-shape=\"square\">Square</button><button type=\"button\" data-acrylic-shape=\"portrait\">Portrait</button><button class=\"active\" type=\"button\" data-acrylic-shape=\"landscape\" aria-pressed=\"true\">Landscape</button><button type=\"button\" data-acrylic-shape=\"heart\">Heart</button><button type=\"button\" data-acrylic-shape=\"circle\">Circle</button><button type=\"button\" data-acrylic-shape=\"hexagon\">Hexagon</button></div></fieldset>\n          <div class=\"acrylic-select-grid\">\n            <label>Frame size<select id=\"acrylicSize\"><option value=\"4x4\">4×4</option><option value=\"5x7\">5×7</option><option value=\"6x8\">6×8</option><option value=\"8x10\" selected>8×10</option><option value=\"10x12\">10×12</option></select></label>\n            <label>Acrylic thickness<select id=\"acrylicThickness\"><option value=\"5\">5 mm</option><option value=\"8\" selected>8 mm</option><option value=\"12\">12 mm</option></select></label>\n            <label>Stand<select id=\"acrylicStand\"><option value=\"none\" selected>Wall Mounted</option><option value=\"wood\">Wooden Stand</option><option value=\"crystal\">Crystal Stand</option><option value=\"metal\">Metal Stand</option></select></label>\n            <label>Background<select id=\"acrylicBackground\"><option value=\"room\" selected>Living Room</option><option value=\"white\">White</option><option value=\"black\">Black</option><option value=\"cream\">Cream</option><option value=\"grey\">Light Grey</option><option value=\"wood\">Wooden Table</option><option value=\"marble\">Marble Surface</option></select></label>\n            <label>Lighting<select id=\"acrylicLighting\"><option value=\"studio\" selected>Studio</option><option value=\"daylight\">Natural Daylight</option><option value=\"warm\">Warm Indoor</option><option value=\"soft\">Soft White</option></select></label>\n            <label>Shadow<select id=\"acrylicShadow\"><option value=\"soft\" selected>Soft Shadow</option><option value=\"medium\">Medium Shadow</option><option value=\"strong\">Strong Shadow</option></select></label>\n          </div>\n          <div class=\"acrylic-preview-actions\" aria-label=\"Acrylic preview controls\"><button type=\"button\" id=\"rotateAcrylicLeft\">↶ Rotate</button><button type=\"button\" id=\"rotateAcrylicRight\">Rotate ↷</button><button type=\"button\" id=\"toggleAcrylicBefore\" aria-pressed=\"false\">Original image</button><button type=\"button\" id=\"fullscreenAcrylicPreview\">Fullscreen</button></div>\n          <label class=\"auto-rotate-toggle\"><input id=\"acrylicAutoRotate\" type=\"checkbox\"> <span>Enable auto rotate</span></label>\n        </div>\n        <div id=\"dynamicVariants\"></div>\n        <div class=\"crop-controls\"><div class=\"crop-control\"><label for=\"photoZoom\">Photo zoom</label><input id=\"photoZoom\" type=\"range\" min=\"100\" max=\"260\" value=\"100\"></div><div class=\"crop-control\"><label for=\"photoX\">Horizontal position</label><input id=\"photoX\" type=\"range\" min=\"-60\" max=\"60\" value=\"0\"></div><div class=\"crop-control\"><label for=\"photoY\">Vertical position</label><input id=\"photoY\" type=\"range\" min=\"-60\" max=\"60\" value=\"0\"></div><div class=\"crop-actions\"><select id=\"photoFit\" aria-label=\"Photo crop mode\"><option value=\"cover\">Fill print area</option><option value=\"contain\">Show full photo</option></select><button id=\"resetPhotoCrop\" type=\"button\">Reset crop</button></div></div>\n        <p class=\"crop-hint\">Drag the uploaded photo inside the product’s print area for precise placement.</p>\n        <p class=\"upload-status\" id=\"uploadStatus\" role=\"status\" aria-live=\"polite\">No photo selected.</p>\n        <div class=\"customise-price-box\">\n          <div class=\"customise-price-wrapper\"><span class=\"price\" id=\"customisePrice\">₹0</span><span class=\"old-price\" id=\"customiseOldPrice\">₹0</span></div>\n          <div class=\"quantity-picker\"><button type=\"button\" class=\"qty-btn\" id=\"qtyMinus\" aria-label=\"Decrease quantity\">−</button><input type=\"number\" id=\"productQuantity\" value=\"1\" min=\"1\" max=\"99\" aria-label=\"Quantity\"><button type=\"button\" class=\"qty-btn\" id=\"qtyPlus\" aria-label=\"Increase quantity\">+</button></div>\n        </div>\n        <button class=\"btn btn-buy customise-order-btn\" id=\"proceedToOrderBtn\" type=\"button\">Proceed to Order</button>\n      </section>\n    </div>\n  </main>\n  <div class=\"cart-backdrop\" id=\"cartDrawer\" aria-hidden=\"true\"><aside class=\"cart-panel\"><div class=\"cart-head\"><h2>My Cart</h2><button id=\"closeCart\" aria-label=\"Close cart\">×</button></div><div id=\"cartItems\"></div><div class=\"cart-footer\"><div class=\"cart-total\"><span>Subtotal</span><span id=\"cartTotal\">₹0</span></div><button class=\"btn btn-buy\" id=\"checkoutCart\">Proceed to Checkout</button></div></aside></div>\n  <div class=\"toast\" id=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n  <footer class=\"site-footer\"><div class=\"container footer-row\"><div><strong>Sai Kumar Digital Lab & Studio</strong><br><small>Personalised memories, made with care.</small></div><a href=\"contact-us.html\">Need help? Contact us →</a></div></footer>";
+  fragments.customise = "<main class=\"customise-page container\">\n    <div class=\"breadcrumb\"><div class=\"breadcrumb-links\"><a href=\"index.html\">Home</a> / <a href=\"gifts.html\">Customised Gifts</a> / <a id=\"customiseCategoryBreadcrumb\" href=\"#\">Category</a> / <a id=\"customiseProductBreadcrumb\" href=\"#\">Product</a> / <span>Customise</span></div></div>\n    <h1 class=\"customise-title\" id=\"customiseTitle\">Customise Gift</h1>\n    <div class=\"customise-layout\">\n      <div class=\"customise-preview-col\">\n        <span class=\"preview-badge\">Interactive live preview</span>\n        <div class=\"preview-viewport\" id=\"previewViewport\" tabindex=\"0\" role=\"application\" aria-label=\"Interactive customised product preview\">\n          <canvas class=\"product-3d-canvas\" id=\"product3dCanvas\" aria-label=\"Real-time 3D customised product preview\"></canvas>\n          <div class=\"preview-object\" id=\"previewObject\"><img class=\"preview-product-image\" id=\"previewProductImage\" src=\"\" alt=\"\"><div class=\"custom-print-area\" id=\"customPrintArea\"><img id=\"customPhotoPreview\" src=\"\" alt=\"Uploaded photo preview\"><span class=\"custom-print-placeholder\">Your photo</span><span class=\"custom-live-text\" id=\"customLiveText\"></span></div></div>\n        </div>\n        <div class=\"preview-controls\"><button type=\"button\" id=\"previewZoomOut\" aria-label=\"Zoom product out\">−</button><button type=\"button\" id=\"previewReset\" aria-label=\"Reset product view\">↻</button><button type=\"button\" id=\"previewZoomIn\" aria-label=\"Zoom product in\">+</button></div>\n        <p class=\"preview-help\">Drag outside the print area to rotate · Drag the photo to reposition it</p>\n      </div>\n      <section class=\"customisation-panel\" aria-labelledby=\"customizationTitle\">\n        <h3 id=\"customizationTitle\">Personalisation options</h3>\n        <p>Upload a photograph and add optional text. Your changes appear instantly.</p>\n        <label class=\"upload-zone\" id=\"uploadZone\" for=\"customPhotoInput\"><strong>Upload your photo</strong><small>JPG, JPEG, PNG, WebP or JFIF · maximum 20 MB</small><input id=\"customPhotoInput\" type=\"file\" accept=\"image/*,.jpg,.jpeg,.png,.webp,.jfif,.avif\" hidden></label>\n        <div class=\"customization-fields\"><input id=\"customText\" type=\"text\" maxlength=\"40\" placeholder=\"Add a name or message\" aria-label=\"Custom text\"><select id=\"customFinish\" aria-label=\"Product finish\"><option>Standard</option><option>Glossy</option><option>Matte</option></select></div>\n        <div class=\"personalisation-options\">\n          <fieldset class=\"option-group\"><legend>Text style</legend><div class=\"choice-row\" id=\"textStyleChoices\"><button class=\"option-button active\" type=\"button\" data-text-style=\"bold\" aria-pressed=\"true\"><b>A</b></button><button class=\"option-button\" type=\"button\" data-text-style=\"serif\" aria-pressed=\"false\"><span class=\"serif-sample\">A</span></button><button class=\"option-button\" type=\"button\" data-text-style=\"script\" aria-pressed=\"false\"><span class=\"script-sample\">A</span></button></div></fieldset>\n          <fieldset class=\"option-group\"><legend>Photo layout</legend><div class=\"layout-choice-row\" id=\"photoLayoutChoices\"><button class=\"layout-choice active\" type=\"button\" data-photo-layout=\"cover\" aria-pressed=\"true\">Fill</button><button class=\"layout-choice\" type=\"button\" data-photo-layout=\"contain\" aria-pressed=\"false\">Fit</button><button class=\"layout-choice\" type=\"button\" data-photo-layout=\"portrait\" aria-pressed=\"false\">Portrait</button><button class=\"layout-choice\" type=\"button\" data-photo-layout=\"wide\" aria-pressed=\"false\">Wide</button></div></fieldset>\n          <fieldset class=\"option-group\"><legend>Accent colour</legend><div class=\"accent-choice-row\" id=\"accentChoices\"><button class=\"accent-choice active\" type=\"button\" data-accent=\"#071B45\" style=\"--accent:#071B45\" aria-label=\"Royal navy\" aria-pressed=\"true\"></button><button class=\"accent-choice\" type=\"button\" data-accent=\"#D4A017\" style=\"--accent:#D4A017\" aria-label=\"Warm gold\" aria-pressed=\"false\"></button><button class=\"accent-choice\" type=\"button\" data-accent=\"#9AACC8\" style=\"--accent:#9AACC8\" aria-label=\"Silver blue\" aria-pressed=\"false\"></button><button class=\"accent-choice\" type=\"button\" data-accent=\"#2B2B2B\" style=\"--accent:#2B2B2B\" aria-label=\"Charcoal\" aria-pressed=\"false\"></button><button class=\"accent-choice light\" type=\"button\" data-accent=\"#F5F7FB\" style=\"--accent:#F5F7FB\" aria-label=\"Ice white\" aria-pressed=\"false\"></button></div></fieldset>\n        </div>\n        <div class=\"acrylic-options\" id=\"acrylicOptions\" hidden>\n          <div class=\"acrylic-photo-actions\"><button type=\"button\" id=\"replaceAcrylicPhoto\">Replace image</button><button type=\"button\" id=\"removeAcrylicPhoto\">Remove image</button></div>\n          <fieldset class=\"option-group\"><legend>Frame shape</legend><div class=\"acrylic-choice-grid\" id=\"acrylicShapeChoices\"><button type=\"button\" data-acrylic-shape=\"rectangle\">Rectangle</button><button type=\"button\" data-acrylic-shape=\"square\">Square</button><button type=\"button\" data-acrylic-shape=\"portrait\">Portrait</button><button class=\"active\" type=\"button\" data-acrylic-shape=\"landscape\" aria-pressed=\"true\">Landscape</button><button type=\"button\" data-acrylic-shape=\"heart\">Heart</button><button type=\"button\" data-acrylic-shape=\"circle\">Circle</button><button type=\"button\" data-acrylic-shape=\"hexagon\">Hexagon</button></div></fieldset>\n          <div class=\"acrylic-select-grid\">\n            <label>Frame size<select id=\"acrylicSize\"><option value=\"4x4\">4×4</option><option value=\"5x7\">5×7</option><option value=\"6x8\">6×8</option><option value=\"8x10\" selected>8×10</option><option value=\"10x12\">10×12</option></select></label>\n            <label>Acrylic thickness<select id=\"acrylicThickness\"><option value=\"5\">5 mm</option><option value=\"8\" selected>8 mm</option><option value=\"12\">12 mm</option></select></label>\n            <label>Stand<select id=\"acrylicStand\"><option value=\"none\" selected>Wall Mounted</option><option value=\"wood\">Wooden Stand</option><option value=\"crystal\">Crystal Stand</option><option value=\"metal\">Metal Stand</option></select></label>\n            <label>Background<select id=\"acrylicBackground\"><option value=\"room\" selected>Living Room</option><option value=\"white\">White</option><option value=\"black\">Black</option><option value=\"cream\">Cream</option><option value=\"grey\">Light Grey</option><option value=\"wood\">Wooden Table</option><option value=\"marble\">Marble Surface</option></select></label>\n            <label>Lighting<select id=\"acrylicLighting\"><option value=\"studio\" selected>Studio</option><option value=\"daylight\">Natural Daylight</option><option value=\"warm\">Warm Indoor</option><option value=\"soft\">Soft White</option></select></label>\n            <label>Shadow<select id=\"acrylicShadow\"><option value=\"soft\" selected>Soft Shadow</option><option value=\"medium\">Medium Shadow</option><option value=\"strong\">Strong Shadow</option></select></label>\n          </div>\n          <div class=\"acrylic-preview-actions\" aria-label=\"Acrylic preview controls\"><button type=\"button\" id=\"rotateAcrylicLeft\">↶ Rotate</button><button type=\"button\" id=\"rotateAcrylicRight\">Rotate ↷</button><button type=\"button\" id=\"toggleAcrylicBefore\" aria-pressed=\"false\">Original image</button><button type=\"button\" id=\"fullscreenAcrylicPreview\">Fullscreen</button></div>\n          <label class=\"auto-rotate-toggle\"><input id=\"acrylicAutoRotate\" type=\"checkbox\"> <span>Enable auto rotate</span></label>\n        </div>\n        <div id=\"dynamicVariants\"></div>\n        <div class=\"crop-controls\"><div class=\"crop-control\"><label for=\"photoZoom\">Photo zoom</label><input id=\"photoZoom\" type=\"range\" min=\"100\" max=\"260\" value=\"100\"></div><div class=\"crop-control\"><label for=\"photoX\">Horizontal position</label><input id=\"photoX\" type=\"range\" min=\"-60\" max=\"60\" value=\"0\"></div><div class=\"crop-control\"><label for=\"photoY\">Vertical position</label><input id=\"photoY\" type=\"range\" min=\"-60\" max=\"60\" value=\"0\"></div><div class=\"crop-actions\"><select id=\"photoFit\" aria-label=\"Photo crop mode\"><option value=\"cover\">Fill print area</option><option value=\"contain\">Show full photo</option></select><button id=\"resetPhotoCrop\" type=\"button\">Reset crop</button></div></div>\n        <p class=\"crop-hint\">Drag the uploaded photo inside the product’s print area for precise placement.</p>\n        <p class=\"upload-status\" id=\"uploadStatus\" role=\"status\" aria-live=\"polite\">No photo selected.</p>\n        <div class=\"customise-price-box\">\n          <div class=\"customise-price-wrapper\"><span class=\"price\" id=\"customisePrice\">₹0</span><span class=\"old-price\" id=\"customiseOldPrice\">₹0</span></div>\n          <div class=\"quantity-picker\"><button type=\"button\" class=\"qty-btn\" id=\"qtyMinus\" aria-label=\"Decrease quantity\">−</button><input type=\"number\" id=\"productQuantity\" value=\"1\" min=\"1\" max=\"99\" aria-label=\"Quantity\"><button type=\"button\" class=\"qty-btn\" id=\"qtyPlus\" aria-label=\"Increase quantity\">+</button></div>\n        </div>\n        <button class=\"btn btn-buy customise-order-btn\" id=\"proceedToOrderBtn\" type=\"button\">Proceed to Order</button>\n      </section>\n    </div>\n  </main>\n  <div class=\"cart-backdrop\" id=\"cartDrawer\" aria-hidden=\"true\"><aside class=\"cart-panel\"><div class=\"cart-head\"><h2>My Cart</h2><button id=\"closeCart\" aria-label=\"Close cart\">×</button></div><div id=\"cartItems\"></div><div class=\"cart-footer\"><div class=\"cart-total\"><span>Subtotal</span><span id=\"cartTotal\">₹0</span></div><button class=\"btn btn-buy\" id=\"checkoutCart\">Proceed to Checkout</button></div></aside></div>\n  <div class=\"toast\" id=\"toast\" role=\"status\" aria-live=\"polite\"></div>\n  <footer class=\"site-footer\"><div class=\"container footer-row\"><div><strong>Sai Kumar Digital Lab & Studio</strong><br><small>Personalised memories, made with care.</small></div><a href=\"contact-us.html\">Need help? Contact us →</a></div></footer>";
   function mountRoute() {
     document.body.classList.toggle('gifts-module-route', view !== 'home');
     document.body.classList.toggle('gifts-module-home', view === 'home');
@@ -85,6 +85,7 @@ function fetchGiftsFlatCatalog() {
             delivery_days: p.delivery_days || null,
             type: p.type || null,
             stock: p.stock ?? null,
+            keywords: p.search_keywords || [],
           });
         });
       });
@@ -2191,8 +2192,8 @@ if (GiftsModule.view === 'home') {
       message.textContent = 'Please choose a JPG, PNG, or WebP image.';
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      message.textContent = 'Image is too large. Maximum size is 2 MB.';
+    if (window.ProductFields && file.size > ProductFields.MAX_UPLOAD_BYTES) {
+      message.textContent = `Image is too large. Maximum size is ${ProductFields.MAX_UPLOAD_MB} MB.`;
       return;
     }
     message.textContent = 'Preparing your photo…';
@@ -2918,6 +2919,21 @@ else if (GiftsModule.view === 'category') {
   };
   const escapeText = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
 
+  // Brings the product grid to the top of the viewport, under whatever the
+  // sticky site header currently occupies. The header's height changes between
+  // breakpoints (the category menu bar is only there on some), so it's measured
+  // rather than hardcoded as a scroll-margin constant.
+  function scrollToCatalog() {
+    const target = document.querySelector('.catalog-main');
+    if (!target) return;
+    const header = document.querySelector('.header-sticky-wrap');
+    const headerHeight = header && getComputedStyle(header).position === 'sticky'
+      ? header.getBoundingClientRect().height
+      : 0;
+    const top = target.getBoundingClientRect().top + window.pageYOffset - headerHeight - 8;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  }
+
   function switchCategory(catId, pushState = true) {
     const targetCat = (catId && CATEGORY_META[catId]) ? catId : 'all';
     activeCategory = targetCat;
@@ -2967,6 +2983,13 @@ else if (GiftsModule.view === 'category') {
     const searchInput = document.getElementById('productSearch');
     if (searchInput) searchInput.value = '';
     renderProducts();
+
+    // The hero banner and the before/after showcase sit above the grid, so
+    // picking a category left the page where it was - the products did change,
+    // but all the shopper saw was the showcase, and it read as the click doing
+    // nothing. Skipped when pushState is false (back/forward), where the
+    // browser restores its own scroll position instead.
+    if (pushState) scrollToCatalog();
   }
 
   function filterCategory(catId, subFilter) {
@@ -2987,6 +3010,59 @@ else if (GiftsModule.view === 'category') {
 
   function showAll() {
     switchCategory('all');
+  }
+
+  // Static before/after showcase below the category hero banner - a plain
+  // promotional strip (no admin data behind it) so a shopper landing on a
+  // category page can see what "personalised" actually means before scrolling
+  // into the grid. Both layers are the same box with the same object-fit, so
+  // the wipe lines up exactly; the frame's aspect ratio is taken from the real
+  // image below once it loads, which is what keeps it from letterboxing on a
+  // phone or stretching on a wide desktop.
+  function initGiftCompareShowcase() {
+    const frame = document.getElementById('giftCompareFrame');
+    const range = document.getElementById('giftCompareRange');
+    if (!frame || !range) return;
+
+    const afterImg = document.getElementById('giftCompareAfterImg');
+    const applyRatio = () => {
+      if (afterImg && afterImg.naturalWidth && afterImg.naturalHeight) {
+        frame.style.setProperty('--gc-ratio', `${afterImg.naturalWidth} / ${afterImg.naturalHeight}`);
+      }
+    };
+    if (afterImg) {
+      if (afterImg.complete) applyRatio();
+      else afterImg.addEventListener('load', applyRatio, { once: true });
+    }
+
+    const update = () => frame.style.setProperty('--gc-position', `${range.value}%`);
+    const setFromPointer = event => {
+      const bounds = frame.getBoundingClientRect();
+      if (!bounds.width) return;
+      const position = Math.min(96, Math.max(4, ((event.clientX - bounds.left) / bounds.width) * 100));
+      range.value = Math.round(position);
+      update();
+    };
+
+    range.addEventListener('input', update);
+    frame.addEventListener('pointerdown', event => {
+      event.preventDefault();
+      frame.setPointerCapture?.(event.pointerId);
+      setFromPointer(event);
+    });
+    frame.addEventListener('pointermove', event => {
+      // Mouse drags the wipe on hover; touch/pen only while actually held, so a
+      // vertical page scroll started on top of this doesn't get eaten by it.
+      if (event.pointerType === 'mouse' || frame.hasPointerCapture?.(event.pointerId)) {
+        if (frame.hasPointerCapture?.(event.pointerId)) event.preventDefault();
+        setFromPointer(event);
+      }
+    });
+    ['pointerup', 'pointercancel'].forEach(type => frame.addEventListener(type, event => {
+      if (frame.hasPointerCapture?.(event.pointerId)) frame.releasePointerCapture(event.pointerId);
+    }));
+
+    update();
   }
 
   function renderPage() {
@@ -3085,24 +3161,50 @@ else if (GiftsModule.view === 'category') {
     const query = searchEl ? searchEl.value.trim().toLowerCase() : '';
     const sortEl = document.getElementById('sortProducts');
     const sort = sortEl ? sortEl.value : 'featured';
-    let visible = categoryProducts.filter(product => product.name.toLowerCase().includes(query) || (product.category && product.category.toLowerCase().includes(query)));
-    if (sort === 'price-low') visible.sort((a, b) => a.price - b.price);
-    if (sort === 'price-high') visible.sort((a, b) => b.price - a.price);
-    if (sort === 'rating') visible.sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
+    const applySort = list => {
+      const sorted = list.slice();
+      if (sort === 'price-low') sorted.sort((a, b) => a.price - b.price);
+      if (sort === 'price-high') sorted.sort((a, b) => b.price - a.price);
+      if (sort === 'rating') sorted.sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
+      return sorted;
+    };
+
+    // A search here used to hide every non-matching product - a query like
+    // "rakhi" that only tags a couple of products left the rest of the category
+    // looking empty. Instead, matches float to the top (still sorted/highlighted)
+    // and the rest of the category's products stay visible underneath, same as
+    // browsing without a query - nothing is ever actually hidden.
+    let visible, matchCount;
+    if (query) {
+      const isMatch = product => product.name.toLowerCase().includes(query) || (product.category && product.category.toLowerCase().includes(query)) || (product.keywords && product.keywords.join(' ').toLowerCase().includes(query));
+      const matches = applySort(categoryProducts.filter(isMatch));
+      const others = applySort(categoryProducts.filter(p => !isMatch(p)));
+      visible = matches.concat(others);
+      matchCount = matches.length;
+    } else {
+      visible = applySort(categoryProducts);
+      matchCount = visible.length;
+    }
+
     const resultCountEl = document.getElementById('resultCount');
-    if (resultCountEl) resultCountEl.textContent = `${visible.length} product${visible.length === 1 ? '' : 's'}`;
+    if (resultCountEl) {
+      resultCountEl.textContent = query
+        ? `${matchCount} product${matchCount === 1 ? '' : 's'} match "${searchEl.value.trim()}"`
+        : `${visible.length} product${visible.length === 1 ? '' : 's'}`;
+    }
 
     const isMobileOrTablet = window.innerWidth <= 991;
 
     const catProductGridEl = document.getElementById('productGrid');
-    catProductGridEl.innerHTML = visible.length ? visible.map(product => {
+    catProductGridEl.innerHTML = visible.length ? visible.map((product, i) => {
       const hasDiscount = product.old && product.old > product.price;
+      const isSearchMatch = query && i < matchCount;
       return `
-    <div class="pkg-card" tabindex="0" role="button" aria-label="View ${escapeText(product.name)}" data-name="${escapeText(product.name)}" onclick="openProductPageByName('${encodeURIComponent(product.name)}')">
+    <div class="pkg-card${isSearchMatch ? ' search-match' : ''}" tabindex="0" role="button" aria-label="View ${escapeText(product.name)}" data-name="${escapeText(product.name)}" onclick="openProductPageByName('${encodeURIComponent(product.name)}')">
       <div class="pkg-image-wrap">
         <img class="pkg-image" src="${cldOpt(product.image)}" alt="${escapeText(product.name)}" loading="lazy" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
         <span class="pkg-badge">${escapeText((CATEGORY_META[product.category] && CATEGORY_META[product.category].title) || 'Gift')}</span>
-        ${product.off ? `<span class="pkg-ribbon pkg-ribbon-bestseller">${escapeText(product.off)}</span>` : ''}
+        ${isSearchMatch ? `<span class="pkg-ribbon pkg-ribbon-bestseller">Best Match</span>` : (product.off ? `<span class="pkg-ribbon pkg-ribbon-bestseller">${escapeText(product.off)}</span>` : '')}
         <button type="button" class="pkg-wishlist-btn" aria-label="Save" onclick="event.stopPropagation(); this.classList.toggle('active')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
@@ -3139,8 +3241,10 @@ else if (GiftsModule.view === 'category') {
   function addToCart(product, openDrawer = false, customization = null) {
     const cart = readCart();
     const configured = customization || {};
-    const key = hasCustomization(configured) ? `${product.name}::${Date.now()}` : product.name;
-    if (!cart[key]) cart[key] = { name: product.name, product_id: product.id || null, qty: 0, price: money(product.price), img: product.image, customization: configured };
+    // Same configuration -> same row (qty increments); a different photo or
+    // message -> its own row. `::${Date.now()}` used to give every click a row.
+    const key = CartCore.lineKey(product.name, hasCustomization(configured) ? configured : null);
+    if (!cart[key]) cart[key] = { name: product.name, product_id: product.id || null, qty: 0, price: money(product.price), img: product.image, url: `gifts.html?view=product&product=${encodeURIComponent(product.name)}`, customization: configured };
     cart[key].qty += 1;
     try {
       saveCart(cart);
@@ -3216,7 +3320,7 @@ else if (GiftsModule.view === 'category') {
       <p>Upload a photo and add optional text to see it applied live.</p>
       <label class="upload-zone" id="uploadZone" for="customPhotoInput">
         <strong>Upload your photo</strong>
-        <small>JPG, PNG or WebP · maximum 2 MB</small>
+        <small>JPG, PNG or WebP · maximum ${ProductFields.MAX_UPLOAD_MB} MB</small>
         <input id="customPhotoInput" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.jfif,.avif" hidden>
       </label>
       <div class="customization-fields">
@@ -3308,9 +3412,9 @@ else if (GiftsModule.view === 'category') {
       status.textContent = 'Please choose a JPG, PNG or WebP image.';
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
+    if (window.ProductFields && file.size > ProductFields.MAX_UPLOAD_BYTES) {
       photoUploadError = true;
-      status.textContent = 'The image must be 2 MB or smaller.';
+      status.textContent = `The image must be ${ProductFields.MAX_UPLOAD_MB} MB or smaller.`;
       return;
     }
     status.textContent = 'Preparing your preview…';
@@ -3485,6 +3589,7 @@ else if (GiftsModule.view === 'category') {
     console.error('Could not load gifts catalog:', err);
   }).finally(() => {
     renderPage();
+    initGiftCompareShowcase();
   });
 }
 else if (GiftsModule.view === 'product') {
@@ -3797,8 +3902,19 @@ else if (GiftsModule.view === 'product') {
   const requestedName = query.get('product');
   const matchedProduct = PRODUCTS.find(item => item.name === requestedName);
   let product = matchedProduct || PRODUCTS[0];
+  // Populated once fetchGiftsFlatCatalog() resolves below - the full live database
+  // catalog (218+ products), used by renderRelated() so recommendations aren't
+  // limited to the ~40 hardcoded PRODUCTS above.
+  let liveCatalogFlat = [];
   product.input_fields = product.input_fields || [];
-  let productGallery = (PRODUCT_GALLERIES[product.name] || [product.image]).slice(0, 5).map(path => (path.startsWith('gifts-assets/') || path.includes('://')) ? path : GALLERY_ROOT + path);
+  // {type, url} entries, not bare URLs - a product's gallery can end with a short
+  // video the admin attached (see js/shared/product-media.js). The hardcoded
+  // PRODUCT_GALLERIES lists are photos only; a video, if there is one, arrives
+  // from the API below.
+  let productGallery = ProductMedia.build(
+    (PRODUCT_GALLERIES[product.name] || [product.image]).slice(0, 5).map(path => (path.startsWith('gifts-assets/') || path.includes('://')) ? path : GALLERY_ROOT + path),
+    [],
+  );
 
   // When the requested product isn't one of the ~40 hardcoded ones, PRODUCTS[0]
   // is only a placeholder until the API lookup below resolves it. Rendering it
@@ -3859,6 +3975,7 @@ else if (GiftsModule.view === 'product') {
     const galleryMainLoading = document.getElementById('galleryMain');
     if (galleryMainLoading) galleryMainLoading.classList.add('sk-img-skel');
     inputFieldsLoaded = fetchGiftsFlatCatalog().then(flat => {
+      liveCatalogFlat = flat;
       const apiHit = flat.find(item => item.name === requestedName);
       // Previously fell straight through to finishProductLoad(), which renders
       // whatever placeholder `product` still holds (PRODUCTS[0], a completely
@@ -3876,14 +3993,16 @@ else if (GiftsModule.view === 'product') {
           Object.assign(product, {
             name: apiHit.name, category: apiHit.category, price: apiHit.price,
             old: apiHit.old, off: apiHit.off, rating: apiHit.rating || '',
-            image: apiHit.image,
+            image: apiHit.image, keywords: apiHit.keywords || [],
             delivery_days: (full && full.delivery_days) || apiHit.delivery_days || null,
             type: (full && full.type) || apiHit.type || null,
             stock: (full && full.stock) ?? apiHit.stock ?? null,
+            description: (full && full.description) || apiHit.description || '',
+            features: (full && full.feat) || apiHit.feat || [],
           });
           if (full && full.input_fields) product.input_fields = full.input_fields;
           const images = (full && full.images && full.images.length) ? full.images : (apiHit.image ? [apiHit.image] : []);
-          productGallery = (images.length ? images : [product.image]).slice(0, 5);
+          productGallery = ProductMedia.build((images.length ? images : [product.image]).slice(0, 5), full && full.videos);
           finishProductLoad();
         });
     }).catch(e => { console.log('Product not found via API either, showing not-found state', e); showGiftProductNotFound(); });
@@ -3892,8 +4011,29 @@ else if (GiftsModule.view === 'product') {
     // those only live in the database, so fetch this product's real record just for
     // that, without touching any of its hardcoded display fields (name/price/image/...).
     inputFieldsLoaded = fetchGiftsFlatCatalog().then(flat => {
+      liveCatalogFlat = flat;
       const apiHit = flat.find(item => item.name === product.name);
-      if (!apiHit || !apiHit.input_fields || !apiHit.input_fields.length) return;
+      if (!apiHit) return;
+      product.keywords = apiHit.keywords || [];
+      // liveCatalogFlat wasn't populated yet for the synchronous first render
+      // above (this fetch is async) - re-render now that it (and this hardcoded
+      // product's real keywords) are available, so recommendations upgrade from
+      // the same-category-only fallback to real keyword-scored matches.
+      if (typeof renderRelated === 'function') renderRelated();
+      // A hardcoded product keeps its hand-curated photo list, but a video only
+      // ever lives in the database - fetch the real record for it and append it to
+      // the gallery, leaving those photos (and their order) alone.
+      fetch(`${API_BASE}/api/catalog/product/${apiHit.id}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(full => {
+          if (!full || !full.videos || !full.videos.length) return;
+          productGallery = productGallery
+            .filter(item => item.type !== 'video')
+            .concat(full.videos.map(url => ({ type: 'video', url: url })));
+          renderGallery();
+        })
+        .catch(() => {});
+      if (!apiHit.input_fields || !apiHit.input_fields.length) return;
       product.input_fields = apiHit.input_fields;
       renderCustomFieldsUI();
     }).catch(() => {});
@@ -4224,23 +4364,65 @@ else if (GiftsModule.view === 'product') {
   }
   function selectGalleryImage(index) {
     const selected = productGallery[index] || productGallery[0];
-    delete galleryImage.dataset.skImgWired;
-    galleryImage.classList.remove('sk-img-loaded');
-    galleryImage.src = cldOpt(selected);
-    galleryImage.alt = `${product.name} — view ${index + 1}`;
-    galleryImage.onerror = function () { this.onerror = null; this.src = (window.SkLoading && window.SkLoading.PLACEHOLDER_IMG) || ''; };
-    if (window.SkLoading) window.SkLoading.wireImage(galleryImage, { wrap: galleryMain });
+    if (!selected) return;
+    const isVideo = selected.type === 'video';
+    const galleryVideo = document.getElementById('galleryVideo');
+    // The <img> and <video> take turns inside the same .gallery-main box rather
+    // than one element changing tag, so the arrows and the wishlist/share buttons
+    // positioned against that box stay exactly where they are across a swap.
+    galleryImage.style.display = isVideo ? 'none' : '';
+    if (galleryVideo) {
+      galleryVideo.style.display = isVideo ? '' : 'none';
+      if (isVideo) {
+        // Only reload on a genuine source change - reassigning the same src would
+        // restart a clip the visitor is part-way through.
+        const src = cldOpt(selected.url);
+        if (galleryVideo.getAttribute('src') !== src) galleryVideo.setAttribute('src', src);
+      } else if (!galleryVideo.paused) {
+        galleryVideo.pause();
+      }
+    }
+    if (!isVideo) {
+      delete galleryImage.dataset.skImgWired;
+      galleryImage.classList.remove('sk-img-loaded');
+      galleryImage.src = cldOpt(selected.url);
+      galleryImage.alt = `${product.name} — view ${index + 1}`;
+      galleryImage.onerror = function () { this.onerror = null; this.src = (window.SkLoading && window.SkLoading.PLACEHOLDER_IMG) || ''; };
+      if (window.SkLoading) window.SkLoading.wireImage(galleryImage, { wrap: galleryMain });
+    }
     galleryMain.classList.remove('zoomed');
+    galleryMain.classList.toggle('showing-video', isVideo);
     document.querySelectorAll('.gallery-thumb').forEach((button, buttonIndex) => {
       const active = buttonIndex === index;
       button.classList.toggle('active', active);
       button.setAttribute('aria-current', active ? 'true' : 'false');
     });
   }
+  /* The gallery index the current Customer-Questions selection points at, or null
+     when nothing maps or the mapping outlived the photo it named. */
+  function giftsMappedImageIndex() {
+    const wrap = document.getElementById('productCustomFields');
+    if (!wrap || !window.ProductFields) return null;
+    return clampGiftsImageIndex(ProductFields.getSelectedImageIndex(wrap, product));
+  }
+
+  /* productGallery holds {type, url} entries with any video after the photos (see
+     js/shared/product-media.js), so an index that has drifted onto a clip - or off
+     the end entirely, after a photo was deleted - is refused rather than played. */
+  function clampGiftsImageIndex(index) {
+    if (index === null || index === undefined) return null;
+    const item = productGallery[index];
+    return item && item.type !== 'video' ? index : null;
+  }
+
   function renderGallery() {
-    galleryThumbs.innerHTML = productGallery.map((image, index) => `
-    <button class="gallery-thumb${index === 0 ? ' active' : ''}" type="button" data-gallery-index="${index}" aria-label="Show ${escapeText(product.name)} image ${index + 1} of ${productGallery.length}" aria-current="${index === 0 ? 'true' : 'false'}">
-      <img src="${cldOpt(image)}" alt="" loading="${index === 0 ? 'eager' : 'lazy'}" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
+    galleryThumbs.innerHTML = productGallery.map((item, index) => `
+    <button class="gallery-thumb${index === 0 ? ' active' : ''}${item.type === 'video' ? ' gallery-thumb-video' : ''}" type="button" data-gallery-index="${index}" aria-label="${item.type === 'video' ? `Play ${escapeText(product.name)} video` : `Show ${escapeText(product.name)} image ${index + 1} of ${productGallery.length}`}" aria-current="${index === 0 ? 'true' : 'false'}">
+      ${item.type === 'video'
+        // muted + preload="metadata" so the strip can draw a first frame without
+        // downloading the whole clip just to render a thumbnail.
+        ? `<video src="${cldOpt(item.url)}" muted playsinline preload="metadata"></video><span class="gallery-thumb-play"></span>`
+        : `<img src="${cldOpt(item.url)}" alt="" loading="${index === 0 ? 'eager' : 'lazy'}" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">`}
     </button>`).join('');
     if (window.SkLoading) galleryThumbs.querySelectorAll('img').forEach(t => window.SkLoading.wireImage(t));
     selectGalleryImage(0);
@@ -4258,7 +4440,16 @@ else if (GiftsModule.view === 'product') {
     if (purchasePriceEl) purchasePriceEl.textContent = money(product.price);
     document.getElementById('productOldPrice').textContent = money(product.old);
     document.getElementById('productDiscount').textContent = product.off;
-    document.getElementById('productDescription').textContent = category.description;
+    document.getElementById('productDescription').textContent = product.description || category.description;
+
+    const highlightsListEl = document.getElementById('productHighlights');
+    const instructionsFallbackEl = document.getElementById('productInstructionsFallback');
+    if (highlightsListEl) {
+      const features = product.features || [];
+      highlightsListEl.innerHTML = features.map(f => `<li>${escapeText(f)}</li>`).join('');
+      highlightsListEl.style.display = features.length ? '' : 'none';
+      if (instructionsFallbackEl) instructionsFallbackEl.style.display = features.length ? 'none' : '';
+    }
 
     const deliveryEstEl = document.getElementById('productDeliveryEst');
     if (deliveryEstEl) {
@@ -4289,6 +4480,13 @@ else if (GiftsModule.view === 'product') {
     renderRelated();
     renderCart();
     renderCustomFieldsUI();
+    // renderGallery() above always lands on photo 1, and the fields only exist
+    // after renderCustomFieldsUI() - so the opening photo for a Customer-Questions
+    // option that names one (see option_images in js/shared/product-fields.js) is
+    // applied here, once both are in place. Null with no mapping, which leaves the
+    // gallery on the cover exactly as before.
+    const openingImageIdx = giftsMappedImageIndex();
+    if (openingImageIdx !== null) selectGalleryImage(openingImageIdx);
 
     const previewImage = document.getElementById('previewProductImage');
     if (previewImage) {
@@ -4309,13 +4507,28 @@ else if (GiftsModule.view === 'product') {
     }
   }
   function renderRelated() {
-    const same = PRODUCTS.filter(item => item.category === product.category && item.name !== product.name);
-    const extra = PRODUCTS.filter(item => item.category !== product.category);
+    // Prefer the full live database catalog (218+ products) so an admin-added
+    // product can actually appear here - the hardcoded PRODUCTS literal above
+    // only covers ~40 legacy items and is used only as a fallback if the live
+    // fetch hasn't resolved yet or failed outright.
+    const pool = liveCatalogFlat.length ? liveCatalogFlat : PRODUCTS;
+    const currentKeywords = new Set((product.keywords || []).map(k => String(k).toLowerCase().trim()).filter(Boolean));
+    const scored = pool
+      .filter(item => item.name !== product.name)
+      .map(item => {
+        const itemKeywords = (item.keywords || []).map(k => String(k).toLowerCase().trim());
+        const sharedKeywords = itemKeywords.filter(k => currentKeywords.has(k)).length;
+        const sameCategory = item.category === product.category ? 1 : 0;
+        return { item, score: sharedKeywords * 10 + sameCategory };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 4)
+      .map(entry => entry.item);
     const relatedEl = document.getElementById('relatedProducts');
-    relatedEl.innerHTML = [...same, ...extra].slice(0, 4).map(item => `
+    relatedEl.innerHTML = scored.map(item => `
     <article class="product-card" data-product="${escapeText(item.name)}" tabindex="0" role="link">
-      <div class="product-media"><img src="${cldOpt(item.image)}" alt="${escapeText(item.name)}" loading="lazy" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';"><span class="discount">${item.off}</span></div>
-      <div class="product-info"><h3>${escapeText(item.name)}</h3><div class="related-offer">${item.off}</div><div class="prices"><span class="price">${money(item.price)}</span><span class="old-price">${money(item.old)}</span></div><button class="btn btn-cart" type="button">View Product</button></div>
+      <div class="product-media"><img src="${cldOpt(item.image)}" alt="${escapeText(item.name)}" loading="lazy" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">${item.off ? `<span class="discount">${item.off}</span>` : ''}</div>
+      <div class="product-info"><h3>${escapeText(item.name)}</h3>${item.off ? `<div class="related-offer">${item.off}</div>` : ''}<div class="prices"><span class="price">${money(item.price)}</span>${item.old ? `<span class="old-price">${money(item.old)}</span>` : ''}</div><button class="btn btn-cart" type="button">View Product</button></div>
     </article>`).join('');
     if (window.SkLoading) {
       relatedEl.querySelectorAll('.product-media img').forEach(img => window.SkLoading.wireImage(img, { wrap: img.closest('.product-media') }));
@@ -4359,7 +4572,7 @@ else if (GiftsModule.view === 'product') {
   async function applyPhoto(file) {
     const status = document.getElementById('uploadStatus');
     const isImage = file && (file.type.startsWith('image/') || /\.(jpe?g|png|webp|jfif|avif|bmp|tiff?)$/i.test(file.name)); if (!isImage) { photoUploadError = true; return status.textContent = 'Choose a JPG, JPEG, PNG, WebP or JFIF image.'; }
-    if (file.size > 2 * 1024 * 1024) { photoUploadError = true; return status.textContent = 'The image must be 2 MB or smaller.'; }
+    if (window.ProductFields && file.size > ProductFields.MAX_UPLOAD_BYTES) { photoUploadError = true; return status.textContent = `The image must be ${ProductFields.MAX_UPLOAD_MB} MB or smaller.`; }
     status.textContent = 'Preparing your preview…';
     try {
       state.photoData = await resizeImage(file); state.photoName = file.name; customPhotoPreview.src = state.photoData; customPrintArea.classList.add('has-photo');
@@ -4423,7 +4636,14 @@ else if (GiftsModule.view === 'product') {
     document.getElementById('removeAcrylicPhoto')?.addEventListener('click', () => { state.photoData = ''; state.photoName = ''; uploaded3dImage = null; photoUploadError = false; customPhotoInputEl.value = ''; customPhotoPreview.removeAttribute('src'); customPrintArea.classList.remove('has-photo'); const status = document.getElementById('uploadStatus'); if (status) status.textContent = 'Photo removed. Upload a new image when ready.'; updateThreeTexture(); });
   }
   function cartItem(quantity) {
-    return { name: product.name, product_id: giftsProductIdByName(product.name), qty: quantity, price: money(product.price), img: product.image };
+    const selectedPrice = window.ProductFields ? ProductFields.getSelectedPrice(document.getElementById('productCustomFields'), product) : null;
+    const price = (selectedPrice || selectedPrice === 0) ? selectedPrice : product.price;
+    return {
+      name: product.name, product_id: giftsProductIdByName(product.name), qty: quantity,
+      price: money(price), img: product.image,
+      // Lets the cart link each row back to the page it was configured on.
+      url: `gifts.html?view=product&product=${encodeURIComponent(product.name)}`,
+    };
   }
   // Validates + reads the admin-configured "Customer questions" fields (upload
   // your photo / name or message, plus anything else admin added) the same way
@@ -4454,13 +4674,19 @@ else if (GiftsModule.view === 'product') {
     });
   }
   async function addToCart() {
-    if (photoUploadError) { showToast('Please choose a photo under 2 MB, or remove it, before adding to cart.'); return; }
+    if (photoUploadError) { showToast(`Please choose a photo under ${ProductFields.MAX_UPLOAD_MB} MB, or remove it, before adding to cart.`); return; }
     const custom = await collectCustomFieldsForCart();
     if (custom === null) return;
     const cart = readCart(); const item = cartItem(Number(productQuantity.value));
     if (custom.fields) item.customization = custom;
-    const key = custom.fields ? `${product.name}::${Date.now()}` : product.name;
-    if (cart[key]) cart[key].qty += item.qty; else cart[key] = item;
+    // Keyed by the configuration, not by the click: `::${Date.now()}` gave every
+    // add its own row, so adding the same customized gift twice left two rows of
+    // qty 1 instead of one of qty 2 - while two *different* configurations that
+    // happened to share a name still need to stay apart. CartCore.lineKey does
+    // both: same answers -> same key -> qty increments; different answers ->
+    // different key -> its own row at its own price.
+    const key = CartCore.lineKey(product.name, item.customization);
+    if (cart[key]) { cart[key].qty += item.qty; cart[key].price = item.price; } else cart[key] = item;
     try { saveCart(cart); } catch {
       stripUploadFieldValues(cart[key].customization);
       saveCart(cart);
@@ -4470,7 +4696,7 @@ else if (GiftsModule.view === 'product') {
     showCartToast();
   }
   async function buyNow() {
-    if (photoUploadError) { showToast('Please choose a photo under 2 MB, or remove it, before continuing.'); return; }
+    if (photoUploadError) { showToast(`Please choose a photo under ${ProductFields.MAX_UPLOAD_MB} MB, or remove it, before continuing.`); return; }
     const custom = await collectCustomFieldsForCart();
     if (custom === null) return;
     const item = cartItem(Number(productQuantity.value));
@@ -4496,12 +4722,17 @@ else if (GiftsModule.view === 'product') {
   const galleryMainEl = document.getElementById('galleryMain');
   const galleryImageEl = document.getElementById('galleryImage');
   const galleryThumbsEl = document.getElementById('galleryThumbs');
-  galleryMainEl.addEventListener('mousemove', event => { const b = galleryMainEl.getBoundingClientRect(); galleryImageEl.style.transformOrigin = `${((event.clientX - b.left) / b.width) * 100}% ${((event.clientY - b.top) / b.height) * 100}%`; });
+  galleryMainEl.addEventListener('mousemove', event => { if (galleryMainEl.classList.contains('showing-video')) return; const b = galleryMainEl.getBoundingClientRect(); galleryImageEl.style.transformOrigin = `${((event.clientX - b.left) / b.width) * 100}% ${((event.clientY - b.top) / b.height) * 100}%`; });
   // Zoom only on a deliberate click, not just moving the mouse over the
   // image - the previous mouseenter/mouseleave auto-zoom (scale(1.75) inside
   // an overflow:hidden box) meant the product photo looked cropped/cut off
   // any time the cursor merely passed over it while browsing the page.
-  galleryMainEl.addEventListener('click', () => galleryMainEl.classList.toggle('zoomed'));
+  // Not while a video is on the stage: the click would land on the player's own
+  // controls, and zooming a <video> in an overflow:hidden box just crops it.
+  galleryMainEl.addEventListener('click', () => {
+    if (galleryMainEl.classList.contains('showing-video')) return;
+    galleryMainEl.classList.toggle('zoomed');
+  });
   galleryThumbsEl.addEventListener('click', event => { const button = event.target.closest('[data-gallery-index]'); if (button) selectGalleryImage(Number(button.dataset.galleryIndex)); });
   function navigateGallery(step) {
     const thumbs = document.querySelectorAll('.gallery-thumb');
@@ -4545,6 +4776,26 @@ else if (GiftsModule.view === 'product') {
   }
   guardAsyncClick(detailAddToCart, addToCart);
   guardAsyncClick(detailBuyNow, buyNow);
+
+  // Priced Customer Questions dropdown (admin-configured option_prices) - keep
+  // the displayed price live as the customer changes their selection, same as
+  // studio.js's previewCustomFields listener does for the customise preview.
+  document.getElementById('productCustomFields')?.addEventListener('pf:pricechange', (e) => {
+    const price = e.detail && (e.detail.price || e.detail.price === 0) ? e.detail.price : null;
+    const text = price !== null ? money(price) : money(product.price);
+    const priceEl = document.getElementById('productPrice');
+    if (priceEl) priceEl.textContent = text;
+    const purchasePriceEl = document.getElementById('purchasePrice');
+    if (purchasePriceEl) purchasePriceEl.textContent = text;
+  });
+
+  // An option that names one of this product's photos swaps the gallery's main
+  // image to it. Only fires for options an admin actually mapped, so an unmapped
+  // dropdown leaves the gallery alone.
+  document.getElementById('productCustomFields')?.addEventListener('pf:imagechange', (e) => {
+    const index = clampGiftsImageIndex(e.detail && e.detail.index);
+    if (index !== null) selectGalleryImage(index);
+  });
 
   // "About the Product" accordion (Description / Instructions / Delivery Info) -
   // same open/close pattern as Corporate's .corporate-accordion-trigger and
@@ -5535,7 +5786,7 @@ else if (GiftsModule.view === 'customise') {
     const status = d.uploadStatus;
     if (!status) return;
     const isImage = file && (file.type.startsWith('image/') || /\.(jpe?g|png|webp|jfif|avif|bmp|tiff?)$/i.test(file.name)); if (!isImage) return status.textContent = 'Choose a JPG, JPEG, PNG, WebP or JFIF image.';
-    if (file.size > 2 * 1024 * 1024) return status.textContent = 'The image must be 2 MB or smaller.';
+    if (window.ProductFields && file.size > ProductFields.MAX_UPLOAD_BYTES) return status.textContent = `The image must be ${ProductFields.MAX_UPLOAD_MB} MB or smaller.`;
     status.textContent = 'Preparing your preview…';
     try {
       state.photoData = await resizeImage(file); state.photoName = file.name;
@@ -5661,7 +5912,11 @@ else if (GiftsModule.view === 'customise') {
     }
 
     const nameWithSpecs = `${product.name} ${variantLabel} (Finish: ${state.finish})`;
-    const item = { name: nameWithSpecs, product_id: giftsProductIdByName(product.name), qty: quantity, price: money(price), img: product.image };
+    const item = {
+      name: nameWithSpecs, product_id: giftsProductIdByName(product.name), qty: quantity,
+      price: money(price), img: product.image,
+      url: `gifts.html?view=customise&product=${encodeURIComponent(product.name)}`,
+    };
     const customization = currentCustomization();
     if (customization) item.customization = customization;
     if (supportsLivePreview && !isAcrylicPhotoFrame) {
@@ -5802,8 +6057,8 @@ else if (GiftsModule.view === 'customise') {
       }
       const cart = readCart();
       const item = cartItem(state.quantity);
-      const key = `${product.name}::${Date.now()}`;
-      cart[key] = item;
+      const key = CartCore.lineKey(item.name, item.customization);
+      if (cart[key]) cart[key].qty += item.qty; else cart[key] = item;
       try {
         saveCart(cart);
       } catch {
@@ -5943,65 +6198,6 @@ window.switchGiftTab = function (tabName) {
     document.getElementById('tabGiftShipping')?.classList.add('active');
   }
 };
-
-(function initMobilePromoSlider() {
-  function init() {
-    const track = document.getElementById('giftsPromoTrack');
-    const dots = document.querySelectorAll('#giftsPromoDots .promo-hero-dot');
-    if (!track || !dots.length) return;
-
-    const slideCount = 4;
-    const totalSlots = slideCount + 2;
-    const slotWidth = 100 / totalSlots;
-    let pos = 1;
-    let timer;
-
-    function goTo(p, animate) {
-      track.style.transition = animate === false ? 'none' : 'transform .7s cubic-bezier(.65,0,.35,1)';
-      track.style.transform = 'translateX(-' + (p * slotWidth) + '%)';
-      const realIndex = ((p - 1) % slideCount + slideCount) % slideCount;
-      dots.forEach((d, di) => d.classList.toggle('active', di === realIndex));
-    }
-
-    function next() {
-      pos++;
-      goTo(pos);
-    }
-
-    track.addEventListener('transitionend', (e) => {
-      if (e.target !== track || e.propertyName !== 'transform') return;
-      if (pos >= totalSlots - 1) {
-        pos = 1;
-        goTo(pos, false);
-      } else if (pos <= 0) {
-        pos = slideCount;
-        goTo(pos, false);
-      }
-    });
-
-    function startAutoplay() {
-      clearInterval(timer);
-      timer = setInterval(next, 3000);
-    }
-
-    dots.forEach((dot) => {
-      dot.addEventListener('click', () => {
-        pos = parseInt(dot.dataset.i, 10) + 1;
-        goTo(pos);
-        startAutoplay();
-      });
-    });
-
-    goTo(pos, false);
-    startAutoplay();
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-})();
 
 
 

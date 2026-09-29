@@ -366,25 +366,94 @@
       return images;
     }
 
-    // Different pages store the customer's custom message under different field
-    // names (gifts.js: text, corporate.js: engravingText), and an admin-configured
-    // text/dropdown "Customer Input Field" answer lands under
-    // customization.fields[fieldId] instead - checked the same way my-orders.js
-    // already does for a placed order.
-    function cartItemCustomText(item) {
+    /* The choices behind a cart line, as labelled "Photos: 16 Photos" rows -
+       the same spec list my-orders.js already builds for a placed order, so the
+       cart and the order history describe an item the same way.
+
+       This used to return a single bare string: the first non-upload value it
+       found anywhere in the customization, rendered in quotes with no label. On
+       a product whose only question was a priced dropdown that came out as a
+       row reading just "16 Photos" - no indication that it was the answer to
+       "Photos", and no way to tell two lines of the same product apart beyond
+       whatever the page had appended to the display name. */
+
+    const CART_UPLOAD_FIELDS = ['photoData', 'logoData', 'imageData', 'artworkData'];
+    // Live-preview/internal state with nothing to tell the customer (which
+    // rendering path the 3D preview took, the product name echoed back, crop
+    // offsets). `fields`/`fieldLabels` are unpacked separately, not hidden.
+    const CART_HIDDEN_FIELDS = new Set([
+      ...CART_UPLOAD_FIELDS,
+      'photoCrop', 'rotationX', 'rotationY', 'zoom',
+      'photoZoom', 'photoX', 'photoY', 'photoFit',
+      'previewType', 'previewTemplate', 'previewMode', 'fields', 'fieldLabels',
+    ]);
+    const CART_FIELD_LABELS = {
+      text: 'Message', engravingText: 'Engraving', message: 'Message', customText: 'Message',
+      photoName: 'Uploaded file', logoName: 'Uploaded file', fileName: 'Uploaded file',
+      finish: 'Finish', technique: 'Technique', color: 'Colour', accent: 'Accent colour',
+      textStyle: 'Text style', photoLayout: 'Photo layout', shape: 'Shape', size: 'Size',
+      thickness: 'Thickness', stand: 'Stand', background: 'Background', quantity: 'Quantity',
+      purpose: 'Purpose', notes: 'Notes',
+    };
+
+    function looksLikeUpload(value) {
+      return typeof value === 'string' && (value.startsWith('data:') || /^https?:\/\//i.test(value));
+    }
+
+    function prettyCartLabel(key) {
+      return CART_FIELD_LABELS[key] || String(key)
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replace(/[_-]+/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    // A single answer flattened to display text. Multi-select dropdowns and
+    // multi-file uploads both arrive as arrays; the uploaded files themselves
+    // are shown as thumbnails by cartItemUploadedImages(), not listed here.
+    function cartOptionValueText(value) {
+      const parts = (Array.isArray(value) ? value : [value])
+        .filter(v => (typeof v === 'string' || typeof v === 'number') && !looksLikeUpload(v))
+        .map(v => String(v).trim())
+        .filter(Boolean);
+      return parts.join(', ');
+    }
+
+    function cartItemOptions(item) {
       const cust = item.customization;
-      if (!cust) return '';
-      const direct = cust.text || cust.engravingText || cust.message || cust.customText || '';
-      if (typeof direct === 'string' && direct.trim()) return direct.trim();
+      if (!cust || typeof cust !== 'object') return [];
+      const rows = [];
+      // Admin-configured "Customer Input Fields" first, in the order the
+      // product defines them, using the label the customer actually saw.
       const fields = cust.fields;
       if (fields && typeof fields === 'object') {
-        for (const value of Object.values(fields)) {
-          if (typeof value === 'string' && value.trim() && !value.startsWith('data:') && !/^https?:\/\//.test(value)) {
-            return value.trim();
-          }
-        }
+        Object.keys(fields).forEach(fieldId => {
+          const text = cartOptionValueText(fields[fieldId]);
+          if (!text) return;
+          const label = (cust.fieldLabels && cust.fieldLabels[fieldId]) || prettyCartLabel(fieldId);
+          rows.push({ label, value: text });
+        });
       }
-      return '';
+      // Then whatever ad hoc keys the adding page used (gifts.js's text/finish,
+      // corporate.js's engravingText/color/technique, ...) so no choice the
+      // customer made silently disappears from the row.
+      Object.keys(cust).forEach(key => {
+        if (CART_HIDDEN_FIELDS.has(key)) return;
+        const text = cartOptionValueText(cust[key]);
+        if (!text) return;
+        rows.push({ label: prettyCartLabel(key), value: text });
+      });
+      return rows;
+    }
+
+    // Where this line's product page is. Stored on the line by the page that
+    // added it (each storefront page has its own deep-link scheme, and the line
+    // doesn't record which page it came from) - older lines, and the few pages
+    // that don't set it, simply render as plain text instead of a link.
+    function cartItemProductUrl(item) {
+      const url = item.url || (item.requirement && item.requirement.editUrl) || '';
+      // Only same-site relative links: these come back from the account's
+      // server-side cart, so an absolute URL is not something to follow blindly.
+      return /^[A-Za-z0-9._-]+\.html(\?|#|$)/.test(url) ? url : '';
     }
 
     function cartItemRowHTML(item, key, index) {
@@ -392,20 +461,28 @@
       const priceNum = parsePrice(item.price);
       const lineTotal = priceNum * item.qty;
       const uploadedImages = cartItemUploadedImages(item);
-      const customText = cartItemCustomText(item);
+      const options = cartItemOptions(item);
+      const productUrl = cartItemProductUrl(item);
       const lazyAttr = index === 0 ? '' : ' loading="lazy"';
+      const thumb = `<img class="cart-item-img" src="${cldOpt(resolveCartImagePath(item.img))}" alt="${escapeHtml(item.name)}"${lazyAttr} onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">`;
+      const title = escapeHtml(item.name);
       return `
         <div class="cart-item-row">
           <div class="cart-item-thumb-wrap">
-            <img class="cart-item-img" src="${cldOpt(resolveCartImagePath(item.img))}" alt="${escapeHtml(item.name)}"${lazyAttr} onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
+            ${productUrl ? `<a class="cart-item-thumb-link" href="${escapeHtml(productUrl)}" aria-label="View ${title}">${thumb}</a>` : thumb}
           </div>
           <div class="cart-item-details">
-            <h3>${escapeHtml(item.name)}</h3>
-            <p>${item.price} each</p>
+            <h3>${productUrl ? `<a class="cart-item-title-link" href="${escapeHtml(productUrl)}">${title}</a>` : title}</h3>
+            <p class="cart-item-unit-price">${item.price} each${item.qty > 1 ? ` &times; ${item.qty}` : ''}</p>
             ${item.customization && Object.values(item.customization).some(Boolean) ? '<span class="cart-item-customized-badge">&#10003; Customized</span>' : ''}
-            ${uploadedImages.length || customText ? `
+            ${options.length ? `
+            <ul class="cart-item-options">
+              ${options.map(o => `
+                <li><span class="cio-label">${escapeHtml(o.label)}</span><span class="cio-value">${escapeHtml(o.value)}</span></li>
+              `).join('')}
+            </ul>` : ''}
+            ${uploadedImages.length ? `
             <div class="cart-item-custom-preview">
-              ${uploadedImages.length ? `
               <div class="cart-item-custom-photo-wrap">
                 <div class="cart-item-custom-photo-row">
                   ${uploadedImages.map(src => `
@@ -413,8 +490,7 @@
                   `).join('')}
                 </div>
                 <span class="cart-item-custom-photo-label">${uploadedImages.length > 1 ? `Your photos (${uploadedImages.length})` : 'Your photo'}</span>
-              </div>` : ''}
-              ${customText ? `<span class="cart-item-custom-text">&ldquo;${escapeHtml(customText)}&rdquo;</span>` : ''}
+              </div>
             </div>` : ''}
           </div>
           <div class="cart-qty-selector">
@@ -462,7 +538,12 @@
 
       const cart = getCart();
       pending.items.forEach(item => {
-        const key = hasCustomizationFields(item.customization) ? `${item.name}::${Date.now()}` : item.name;
+        // Keyed by the configuration (CartCore.lineKey), not by the click:
+        // `::${Date.now()}` made "Buy Now" twice on the same configured product
+        // produce two rows of qty 1, while two *different* configurations still
+        // have to stay on separate rows at their separate prices.
+        const key = CartCore.lineKey(
+          item.name, hasCustomizationFields(item.customization) ? item.customization : null);
         if (cart[key]) cart[key].qty += item.qty || 1;
         else cart[key] = { ...item, qty: item.qty || 1 };
       });
