@@ -1,0 +1,260 @@
+========================================================================
+ MOVING TO A NEW SUPABASE PROJECT + ROTATING KEYS
+========================================================================
+
+For when the free-tier egress allowance is spent and the site has to move
+to a fresh Supabase project, and for any other planned move (region
+change, plan change, splitting staging off production).
+
+Three scripts, all in backend/scripts/:
+
+  backup_database.py    full read-only copy of every table (see
+                        DATABASE_BACKUP_GUIDE.txt)
+  migrate_supabase.py   loads that copy into a new project
+  rotate_secrets.py     changes and TESTS the keys in backend/.env
+
+The migration always goes through a backup rather than streaming rows
+straight across, so you end up holding a verified copy of the data on
+your own machine no matter how the rest of the move goes.
+
+
+------------------------------------------------------------------------
+ 0) READ THIS BEFORE PLANNING AROUND EGRESS
+------------------------------------------------------------------------
+
+CHECK THIS IN YOUR OWN DASHBOARD FIRST - the plan below depends on it.
+On Supabase's free plan the quotas (egress, database size, active
+projects) are billed per ORGANIZATION, not per project, and a free org is
+limited to a small number of active projects. If that is still true for
+your account, then creating a second project inside the SAME organization
+does NOT give you a fresh egress allowance - both projects draw on the
+same pool, and you will be back where you started.
+
+If you are moving to reset egress, the new project has to be in a
+DIFFERENT organization. Confirm the numbers on your own
+Organization -> Usage page before doing the move, because a migration
+that does not actually solve the problem is worse than no migration.
+
+The scripts do not care - they take a connection string and move data.
+Which org the target lives in is your decision to make.
+
+WORTH CHECKING ANYWAY: what is actually burning the egress? Product
+images and videos are served from Cloudflare R2, NOT from Supabase, so
+they are not the cause. Supabase egress here is API query traffic - the
+storefront's page bundles. If one page is re-querying the full catalog on
+every load, fixing that is cheaper and more permanent than moving project
+every month. catalog.py already has a warm cache (warm_catalog_cache());
+the Supabase dashboard's Reports -> Database page shows where the bytes
+are going.
+
+
+------------------------------------------------------------------------
+ A) THE MOVE - PLANNED, OLD PROJECT STILL WORKING
+------------------------------------------------------------------------
+
+This is the normal case: do it BEFORE the allowance is gone, not after.
+
+  1. Create the new project. Copy its SESSION POOLER connection string:
+       postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
+     NOT db.<ref>.supabase.co - that host is IPv6-only on new projects
+     and usually will not connect from Windows or a home network.
+
+  2. Rehearse it. This touches nothing - it checks both ends and prints
+     the plan:
+
+       cd backend
+       python scripts/migrate_supabase.py --target "<NEW URL>" --dry-run
+
+  3. Run it:
+
+       python scripts/migrate_supabase.py --target "<NEW URL>"
+
+     It takes a fresh backup of the old project, verifies that backup's
+     checksums, confirms the target is empty, creates every table and
+     index, loads the rows in foreign-key-safe order inside ONE
+     transaction, and re-counts everything. If anything fails part-way,
+     the target rolls back rather than ending up half-populated.
+
+  4. Follow the cutover checklist it prints (also section C below).
+
+If the target already has rows (you are re-running, or reusing a project),
+add --wipe-target. Without it the script refuses rather than merging two
+datasets into colliding primary keys.
+
+
+------------------------------------------------------------------------
+ B) THE MOVE - EGRESS ALREADY SPENT, OLD PROJECT THROTTLED
+------------------------------------------------------------------------
+
+If the old project is restricted, suspended or just too slow to read, do
+NOT try to read it. Migrate from the last scheduled backup instead - this
+path contacts the old project zero times:
+
+    cd backend
+    python scripts/migrate_supabase.py --target "<NEW URL>" ^
+        --from-backup "D:\studio-backups\backup_20260929_094533Z.zip"
+
+Everything written since that backup was taken is not in it. That gap is
+exactly why backup_database.py is worth running daily (section B of
+DATABASE_BACKUP_GUIDE.txt) - a nightly backup caps the worst case at one
+day of orders. If the old project is still readable at all, take a fresh
+backup first and use that instead of an old one.
+
+
+------------------------------------------------------------------------
+ C) CUTOVER - POINTING THE SITE AT THE NEW PROJECT
+------------------------------------------------------------------------
+
+The migration moves DATA. It does not move the SITE. Until you do this,
+the app is still reading and writing the old project, and every order
+placed meanwhile lands there and not in the new database. Keep the window
+between the final backup and the cutover as short as you can, and prefer
+a quiet hour.
+
+  1. Put the new URL into backend/.env and check it works BEFORE
+     restarting anything:
+
+       python scripts/rotate_secrets.py --set DATABASE_URL="<NEW URL>"
+       python scripts/rotate_secrets.py --check
+
+     --check must print OK for DATABASE_URL and report 25 tables. If it
+     reports 0 tables you have pointed at the wrong project.
+
+  2. Deploy the new .env to the VM and restart the backend - see
+     VM_REDEPLOY_GUIDE.txt. Remember the VM has its OWN .env; changing
+     the one on your laptop changes nothing on the live site.
+
+  3. Verify on the live site, not just the database:
+       - storefront loads products, images appear
+       - admin login works, admin dashboard lists the real orders
+       - one test order end to end
+       - an existing customer can still log in
+
+  4. Re-point the scheduled backup at the new project. If it uses the
+     default it reads DATABASE_URL from backend/.env, so there is nothing
+     to change - but confirm the next run reports the expected row counts.
+
+  5. Keep the old project alive for at least a week. It is the rollback:
+     put the old DATABASE_URL back, restart, and you are on the old data
+     again. Only delete it once the new one has carried real traffic.
+
+  6. Catch up anything written during the window in step 2:
+
+       python scripts/backup_database.py --source "<OLD URL>" --out "D:\gap"
+       python scripts/restore_database.py --from "D:\gap\backup_..." ^
+           --target "<NEW URL>" --tables orders,order_items,payments,order_tracking_events
+
+     Check first - if nobody ordered during the window there is nothing
+     to move, and moving nothing is safer than moving something twice.
+
+
+------------------------------------------------------------------------
+ D) ROTATING KEYS
+------------------------------------------------------------------------
+
+rotate_secrets.py changes values in backend/.env and, more importantly,
+TESTS every credential against the real service before you restart the
+app with it. It never prints a secret - only a masked fingerprint - and
+every write first saves a timestamped copy as backend/.env.bak.<stamp>.
+
+  See what is configured, masked:
+      python scripts/rotate_secrets.py --show
+
+  Test everything currently in .env:
+      python scripts/rotate_secrets.py --check
+
+  New JWT signing key (the script generates this one itself):
+      python scripts/rotate_secrets.py --new-secret-key
+
+  Keys you rotated in Cloudflare / Razorpay / Supabase / Gmail - paste
+  the new value in:
+      python scripts/rotate_secrets.py --set R2_ACCESS_KEY=... --set R2_SECRET_KEY=...
+      python scripts/rotate_secrets.py --set RAZORPAY_KEY_SECRET=...
+      python scripts/rotate_secrets.py --set SMTP_PASSWORD=...
+
+  Then always:
+      python scripts/rotate_secrets.py --check
+
+WHAT EACH ROTATION ACTUALLY BREAKS (the script prints this too):
+
+  SECRET_KEY      Signs access tokens and hashes pending OTP codes.
+                  Customers are NOT logged out: refresh tokens are plain
+                  SHA-256, not signed with this key, and /api/auth/refresh
+                  does not need a valid access token - so browsers silently
+                  get a new access token. But an OTP already emailed and not
+                  yet entered stops working; anyone mid-login needs a new code.
+
+  DATABASE_URL    The whole site, at the next restart. Always --check first.
+
+  R2_*            New admin uploads only. Images already uploaded keep
+                  working - they are served from the public R2 URL, which
+                  these keys have nothing to do with.
+
+  RAZORPAY_*      Customers can still pay, but confirmation fails signature
+                  verification and the order is not marked paid. Rotate
+                  outside business hours. If you change
+                  RAZORPAY_WEBHOOK_SECRET, change it in the Razorpay
+                  dashboard's webhook settings in the same sitting, or
+                  webhooks start failing quietly.
+
+  SMTP_PASSWORD   OTP emails. Wrong value = nobody can log in, because the
+                  code never arrives. Check this one before trusting it.
+
+  ADMIN_PASSWORD  Only seeds the first admin into an EMPTY database. It does
+                  NOT change an existing admin's password - use
+                  scripts/set_admin_password.py for that.
+
+IF A KEY ACTUALLY LEAKED (committed, pasted into a chat, sent to a
+vendor), rotating it is not enough by itself, because rotating SECRET_KEY
+does not invalidate refresh tokens. Also end every session:
+
+      python scripts/rotate_secrets.py --revoke-sessions
+
+That deletes all refresh tokens and pending OTPs - every customer and
+admin has to log in again.
+
+
+------------------------------------------------------------------------
+ E) ORDER OF OPERATIONS FOR A FULL MOVE + ROTATION
+------------------------------------------------------------------------
+
+Doing both at once is fine, and this order keeps a working rollback at
+every step:
+
+   1. python scripts/backup_database.py --zip        (safety net)
+   2. python scripts/rotate_secrets.py --check       (know what worked BEFORE)
+   3. create the new project, copy its pooler URL
+   4. python scripts/migrate_supabase.py --target "<NEW URL>" --dry-run
+   5. python scripts/migrate_supabase.py --target "<NEW URL>"
+   6. rotate the keys you intend to rotate in their own dashboards
+      (Cloudflare R2, Razorpay, Gmail app password)
+   7. python scripts/rotate_secrets.py --set ... --new-secret-key
+   8. python scripts/rotate_secrets.py --set DATABASE_URL="<NEW URL>"
+   9. python scripts/rotate_secrets.py --check       (everything green)
+  10. deploy .env to the VM, restart          (VM_REDEPLOY_GUIDE.txt)
+  11. verify the live site (section C step 3)
+  12. catch up the gap orders (section C step 6)
+  13. a week later: delete the old project, delete the .env.bak files
+
+Do not do step 10 until step 9 is green. A failed --check on your laptop
+costs nothing; the same failure after a restart is the site being down.
+
+
+------------------------------------------------------------------------
+ F) WHAT DOES NOT MOVE WITH THE DATABASE
+------------------------------------------------------------------------
+
+  * Images and videos. They are in Cloudflare R2 and stay exactly where
+    they are - the database only stores their URLs, and those URLs keep
+    working after the move. Do not re-upload anything.
+  * backend/.env itself. It is not in git and not in the backup. The VM
+    has its own copy.
+  * Supabase project settings (auth, storage buckets, RLS policies). The
+    app talks to Postgres directly and uses none of them, so there is
+    nothing to recreate - note it only if that ever changes.
+
+ONE THING TO CHECK ON THE VM: in the .env on this machine, Razorpay is
+unset, which puts the app in MOCK MODE - payments are simulated and no
+money moves. That is correct for local work. Confirm the VM's .env has
+the real Razorpay keys, or the live site is not taking real payments
+either. `python scripts/rotate_secrets.py --check` on the VM will say.

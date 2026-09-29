@@ -1,4 +1,5 @@
 .env
+.env.bak.*
 __pycache__/
 *.pyc
 image_assets_backup.zip
@@ -13,3 +14,7 @@ scripts/legacy_urls.txt
 scripts/migrate_db_image_urls.py
 scripts/r2_image_map.json
 scripts/r2_migrate_assets.py
+
+# Database backups - customer PII and password hashes. Never commit these;
+# keep them off the repo host and on the admin machine / external storage.
+backend/backups/

@@ -1,0 +1,190 @@
+========================================================================
+ DATABASE BACKUP & RESTORE (SUPABASE)
+========================================================================
+
+All site data lives in one Supabase Postgres project: products, orders,
+payments, customers, bookings, enquiries, coupons, settings, media
+records - 25 tables in total. If that project is lost, misconfigured,
+deleted, or a migration goes wrong, everything goes with it. Supabase's
+own free-tier projects have NO automatic backup you can rely on.
+
+Two scripts cover this, both in backend/scripts/:
+
+  backup_database.py    downloads every table to your own machine
+  restore_database.py   puts a backup back into a Supabase project
+
+The backup is READ-ONLY. It cannot change or break anything on the live
+site - it opens one connection, marks the transaction read-only (Postgres
+itself then rejects any write) and reads. It is safe to run at any time,
+including while customers are ordering. It also does not use the app's
+connection pool, so it cannot starve the site of connections.
+
+
+------------------------------------------------------------------------
+ A) TAKING A BACKUP
+------------------------------------------------------------------------
+
+From the project root, in Git Bash or PowerShell:
+
+    cd backend
+    venv\Scripts\activate
+    python scripts/backup_database.py
+
+That writes backend/backups/backup_<UTC timestamp>/ containing:
+
+  schema.sql      every CREATE TABLE / INDEX / CONSTRAINT - the complete
+                  table-creation commands for the whole database
+  data.sql        INSERT statements for every row, in an order that
+                  respects foreign keys
+  data/*.json     one file per table - the exact, lossless copy
+  csv/*.csv       the same data, openable in Excel / Google Sheets
+  manifest.json   row counts + a SHA-256 of every file
+  README.txt      restore instructions, inside the backup itself
+
+Useful options:
+
+  --zip                 one .zip instead of a folder (easier to copy off
+                        the machine or upload to Drive)
+  --keep 30             after a successful backup, delete all but the 30
+                        newest backups in that folder
+  --out "D:\studio-backups"
+                        write somewhere other than backend/backups
+  --source "postgresql://..."
+                        back up a different Supabase project
+  --no-sql              skip data.sql (faster once tables get very large;
+                        JSON is still a complete copy)
+
+Typical real-world command:
+
+    python scripts/backup_database.py --out "D:\studio-backups" --zip --keep 30
+
+ALWAYS RUN A BACKUP BEFORE: changing anything in the Supabase dashboard,
+moving to a new Supabase project, deploying a change that touches
+app/models.py or app/migrations.py, or running any script in
+backend/scripts/ that deletes data.
+
+
+------------------------------------------------------------------------
+ B) AUTOMATIC DAILY BACKUPS (WINDOWS)
+------------------------------------------------------------------------
+
+backend/scripts/backup_database.ps1 wraps the above for Task Scheduler.
+Run this ONCE from an elevated PowerShell:
+
+    $action  = New-ScheduledTaskAction -Execute "powershell.exe" `
+        -Argument '-NoProfile -ExecutionPolicy Bypass -File "D:\Gen AI\Studio\studio-backed\backend\scripts\backup_database.ps1" -Out "D:\studio-backups" -Keep 30'
+    $trigger = New-ScheduledTaskTrigger -Daily -At 2:00am
+    Register-ScheduledTask -TaskName "Studio DB backup" -Action $action -Trigger $trigger
+
+That leaves a rolling 30 days of zipped backups in D:\studio-backups.
+
+A backup on the same machine only protects against a Supabase-side
+problem. Point the folder at OneDrive/Google Drive, or copy the zips off
+periodically, so a dead laptop does not take the backups with it.
+
+
+------------------------------------------------------------------------
+ C) CHECKING A BACKUP IS GOOD
+------------------------------------------------------------------------
+
+A backup you have never verified is not a backup. This contacts no
+database at all - it re-checksums every file and re-counts every table:
+
+    cd backend
+    python scripts/restore_database.py --from "D:\studio-backups\backup_20260929_094533Z.zip" --verify-only
+
+It must print "All files present, checksums and row counts match."
+
+
+------------------------------------------------------------------------
+ D) RESTORING AFTER A FAILURE
+------------------------------------------------------------------------
+
+Into a brand-new, empty Supabase project (the normal disaster case):
+
+  1. Create the new project in Supabase.
+  2. Copy its SESSION POOLER connection string. It looks like
+       postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
+     Do NOT use the db.<ref>.supabase.co host - it is IPv6-only on new
+     projects and will not connect from Windows or a home network.
+  3. Restore:
+
+       cd backend
+       python scripts/restore_database.py ^
+           --from "D:\studio-backups\backup_20260929_094533Z.zip" ^
+           --target "postgresql://postgres.NEWREF:PASSWORD@aws-0-ap-south-1.pooler.supabase.com:5432/postgres"
+
+     It verifies the backup, creates every table, applies every migration
+     in app/migrations.py, loads the rows in foreign-key-safe order and
+     then re-counts every table to confirm nothing was lost. The whole
+     load runs in ONE transaction - if anything fails part-way, the
+     target is rolled back rather than left half-populated.
+
+  4. Put the new connection string into backend/.env as DATABASE_URL and
+     restart the backend (on the VM: see VM_REDEPLOY_GUIDE.txt).
+
+Other cases:
+
+  Target already has rows (re-running a restore, or overwriting a test
+  project) - add --wipe to clear the tables first:
+
+      python scripts/restore_database.py --from <backup> --target "..." --wipe --yes
+
+  One table was wiped by accident (e.g. products) - restore just that
+  one:
+
+      python scripts/restore_database.py --from <backup> --target "..." ^
+          --tables products --wipe
+
+  CAREFUL with --tables + --wipe: emptying a table also empties or blanks
+  its children through the foreign keys. Wiping products alone deletes
+  every media (product image) and review row and blanks product_id on
+  order_items, cart_items, wishlist_items and bookings. The script prints
+  exactly which tables that would be before asking you to confirm, and
+  refuses outright if you passed --yes, so read that list and add those
+  tables to --tables (or drop --tables and restore everything).
+
+  Schema only, no data (setting up a staging/test project):
+
+      python scripts/restore_database.py --from <backup> --target "..." --schema-only
+
+SAFETY: restore_database.py refuses to run against the DATABASE_URL in
+backend/.env - the LIVE database - unless you also pass --allow-live. It
+also asks for typed confirmation unless --yes is given. Both exist so a
+mistyped command cannot overwrite production.
+
+
+------------------------------------------------------------------------
+ E) RESTORING WITHOUT THIS REPO (psql only)
+------------------------------------------------------------------------
+
+If the code is unavailable and only the backup folder survives, the two
+.sql files are enough:
+
+    psql "<NEW DATABASE_URL>" -f schema.sql
+    psql "<NEW DATABASE_URL>" -f data.sql
+
+schema.sql creates all 25 tables with their indexes and constraints;
+data.sql inserts every row in foreign-key-safe order. Both are plain
+text - you can also paste them into the Supabase dashboard's SQL editor
+in chunks if psql is not installed.
+
+
+------------------------------------------------------------------------
+ F) WHAT THESE BACKUPS DO **NOT** COVER
+------------------------------------------------------------------------
+
+  * Images and videos. Those live in Cloudflare R2, not in Postgres -
+    the database only stores their URLs. R2 is a separate account with
+    its own durability; see scripts/r2_migrate_assets.py and
+    cloudinary_backup.zip for the existing asset copies.
+  * backend/.env. It holds the DB password, R2 keys, Razorpay keys and
+    the JWT secret, and is deliberately not in git and not in the
+    backup. Keep a copy of it somewhere safe and separate.
+  * Supabase project settings (auth config, storage buckets, RLS
+    policies). This app talks to Postgres directly and does not use
+    them, but note it if that ever changes.
+
+Backups contain customer names, emails, phone numbers, addresses and
+password hashes. backend/backups/ is in .gitignore - never commit a
+backup, never put one anywhere public.
