@@ -12,8 +12,17 @@
       CartCore.saveCart(cart);
     }
 
+    /* Escapes a value going into an inline handler - onclick="changeQty('KEY')".
+       Delegates to js/shared/cart-ui.js's escapeAttrJs so this page and every
+       cart drawer on the site escape keys identically; see that function for
+       why both the HTML and JS layers have to be handled. The local fallback
+       keeps this page working if cart-ui.js ever fails to load. */
     function escapeForAttr(str) {
-      return String(str).replace(/'/g, "\\'");
+      if (typeof escapeAttrJs === 'function') return escapeAttrJs(str);
+      return String(str == null ? '' : str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     }
 
     function escapeHtml(str) {

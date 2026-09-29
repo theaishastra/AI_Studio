@@ -85,22 +85,52 @@
       select.addEventListener('change', () => {
         const field = fields.find(f => f.id === select.closest('.pf-field').dataset.fieldId);
         const price = field && field.option_prices ? field.option_prices[select.value] : null;
-        container.dispatchEvent(new CustomEvent('pf:pricechange', { bubbles: true, detail: { fieldId: field.id, price } }));
+        // mrp rides along so a listener can refresh the was-price and discount
+        // badge from the event alone, instead of updating the price and leaving
+        // the product's own MRP beside it. Same non-null rule as
+        // getSelectedPricing(), which is where the test lives.
+        const pricing = getSelectedPricing(container, product);
+        container.dispatchEvent(new CustomEvent('pf:pricechange', {
+          bubbles: true,
+          detail: { fieldId: field.id, price, mrp: pricing ? pricing.mrp : null },
+        }));
       });
     });
   }
 
-  // The currently selected price from this container's first priced dropdown (if
-  // any), or null if the product has none / nothing's priced yet. Callers that need
-  // the value synchronously (e.g. at add-to-cart time) use this instead of the event.
-  function getSelectedPrice(container, product) {
+  /* Both numbers the selected option controls - { price, mrp } from this
+     container's first priced dropdown, or null when the product has none or
+     nothing is selected yet.
+
+     A page showing a priced dropdown has to replace its was-price and discount
+     badge as well as its price: leaving the product's own MRP on screen beside
+     an option's price advertises a discount that was never calculated from
+     these two numbers (a ₹1,999 "was" beside a ₹1,699 option that is simply
+     the cheapest size, not a reduction). `mrp` is therefore only non-null when
+     the admin gave that option its own was-price AND it is above the option's
+     price - the same test renderChoiceControl() applies to the tile itself, so
+     the headline and the tile can never disagree. Callers that need this
+     synchronously (at render time, or at add-to-cart) use this rather than
+     waiting for a pf:pricechange the initial selection never fires. */
+  function getSelectedPricing(container, product) {
     if (!container) return null;
     const field = sortedFields(product).find(f => f.type === 'dropdown' && !f.multi_select && f.option_prices && Object.keys(f.option_prices).length);
     if (!field) return null;
     const el = document.getElementById(controlId(container, field));
     if (!el || !el.value) return null;
     const price = field.option_prices[el.value];
-    return (price || price === 0) ? price : null;
+    if (!(price || price === 0)) return null;
+    const mrp = (field.option_mrps || {})[el.value];
+    const showMrp = (mrp || mrp === 0) && Number(mrp) > Number(price);
+    return { price, mrp: showMrp ? mrp : null };
+  }
+
+  // The currently selected price from this container's first priced dropdown (if
+  // any), or null if the product has none / nothing's priced yet. Callers that need
+  // the value synchronously (e.g. at add-to-cart time) use this instead of the event.
+  function getSelectedPrice(container, product) {
+    const pricing = getSelectedPricing(container, product);
+    return pricing ? pricing.price : null;
   }
 
   /* Formats an option's price the way the rest of the storefront writes money -
@@ -147,6 +177,34 @@
     return Number.isFinite(n) && n >= 1 ? Math.round(n) - 1 : null;
   }
 
+  /* An option's own picture, shown on its tile - the swatch case
+     option_images above cannot serve. option_images points at one of the
+     product's OWN gallery photos, which is right for "the 10X10 looks like
+     this" but wrong for a colour or a fabric: nobody wants ten swatch
+     close-ups sitting in the main gallery, and there would be no photo there
+     to point at anyway. option_image_urls is a picture per option instead,
+     uploaded in the admin field builder and stored as a Media Library URL.
+
+     Optional at every level, exactly like option_images: a product can have no
+     pictures at all, and a field that has some can still leave options without
+     one. Either way this returns null and the tile renders as the text-only
+     tile it always did. */
+  function optionImageUrl(field, value) {
+    const url = (field.option_image_urls || {})[value];
+    return url ? resolveMediaUrl(url) : null;
+  }
+
+  /* Media Library uploads are stored as site-relative "/media/<file>" paths and
+     served by the backend, not by whatever is hosting these pages - the same
+     reason cldOpt() (js/shared/cart-ui.js) exists. Deferred to that when it is
+     loaded, so the thumbnail mapping applies too; the fallback repeats only the
+     /media/ rule, so this file stays usable on a page that does not load it. */
+  function resolveMediaUrl(url) {
+    if (typeof global.cldOpt === 'function') return global.cldOpt(url);
+    if (url && url.indexOf('/media/') === 0) return `${global.SAI_API_BASE || ''}${url}`;
+    return url;
+  }
+
   /* The photo index for whatever is currently selected, so a page can paint the
      right image as it opens rather than waiting for the first click. Mirrors
      getSelectedPrice: first single-select dropdown with a mapped selection wins,
@@ -183,6 +241,12 @@
       ? `<select multiple class="pf-dropdown-input pf-choice-value" id="${cid}" aria-hidden="true" tabindex="-1">${opts}</select>`
       : `<select class="pf-dropdown-input pf-choice-value" id="${cid}" aria-hidden="true" tabindex="-1"${priced ? ' data-priced="true"' : ''}>${priced ? '' : '<option value=""></option>'}${opts}</select>`;
 
+    // One option carrying a picture makes every tile in the group a picture
+    // tile, with a blank frame standing in for any option the admin hasn't
+    // given one - a grid where some tiles are tall and some are one line high
+    // reads as broken rather than as a deliberate mix.
+    const withPictures = options.some(o => optionImageUrl(field, o));
+
     const tiles = options.map((o, i) => {
       const selected = !field.multi_select && o === initial;
       const price = prices[o];
@@ -193,10 +257,18 @@
       // that isn't there.
       const showMrp = hasPrice && (mrp || mrp === 0) && Number(mrp) > Number(price);
       const tabbable = field.multi_select || selected || (!initial && i === 0);
+      const picture = withPictures ? optionImageUrl(field, o) : null;
+      // alt="" on purpose: the option's name is right below it in the same
+      // button, so describing the picture again would have a screen reader
+      // announce every tile twice.
+      const thumb = withPictures
+        ? `<span class="pf-choice-thumb">${picture ? `<img src="${escAttr(picture)}" alt="" loading="lazy">` : ''}</span>`
+        : '';
       return `
         <button type="button" class="pf-choice${selected ? ' is-selected' : ''}"
                 role="${field.multi_select ? 'checkbox' : 'radio'}" aria-checked="${selected ? 'true' : 'false'}"
                 tabindex="${tabbable ? '0' : '-1'}" data-value="${escAttr(o)}">
+          ${thumb}
           <span class="pf-choice-name">${esc(o)}</span>
           ${hasPrice ? `<span class="pf-choice-price">${money(price)}</span>` : ''}
           ${showMrp ? `<span class="pf-choice-mrp">${money(mrp)}</span>` : ''}
@@ -204,7 +276,8 @@
     }).join('');
 
     return `
-      <div class="pf-choices" id="${cid}_choices" role="${field.multi_select ? 'group' : 'radiogroup'}"
+      <div class="pf-choices${withPictures ? ' has-pictures' : ''}" id="${cid}_choices"
+           role="${field.multi_select ? 'group' : 'radiogroup'}"
            aria-labelledby="${cid}_label">${tiles}</div>
       ${select}`;
   }
@@ -551,7 +624,7 @@
 
   global.ProductFields = {
     renderProductFields, collectProductFields, validateProductFields, getSelectedPrice,
-    getSelectedImageIndex,
+    getSelectedPricing, getSelectedImageIndex,
     // Exported as formatPrice so a page's headline price is written the same way
     // as the option tile it came from - the two sit next to each other, and
     // "Rs 1234.5" beside "Rs 1,234.50" reads like two different numbers.

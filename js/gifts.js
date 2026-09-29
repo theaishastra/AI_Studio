@@ -3952,7 +3952,56 @@ else if (GiftsModule.view === 'product') {
   // of this page's own built-in photo+message personalisation above it.
   function renderCustomFieldsUI() {
     const wrap = document.getElementById('productCustomFields');
-    if (wrap && window.ProductFields) ProductFields.renderProductFields(wrap, product);
+    if (wrap && window.ProductFields) {
+      ProductFields.renderProductFields(wrap, product);
+      // A priced dropdown starts on its first option (renderChoiceControl picks
+      // it, since the item has to be priced by something), but that initial
+      // selection is not a 'change', so no pf:pricechange fires for it. Without
+      // this the tile reads "9X9 ₹1,699" while the headline still shows the
+      // product's own base price - the customer sees two different prices for
+      // the thing they are about to buy, and only the tile is what add-to-cart
+      // actually charges (see collectCustomFieldsForCart's getSelectedPrice).
+      syncPriceFromCustomFields();
+    }
+  }
+
+  /* Paints the headline price, the was-price and the discount badge from
+     whichever priced option is currently selected, falling back to the
+     product's own figures when this product has no priced dropdown. Called once
+     after the fields render and again on every pf:pricechange, so the two paths
+     can't drift. */
+  function syncPriceFromCustomFields() {
+    const wrap = document.getElementById('productCustomFields');
+    const pricing = wrap && window.ProductFields
+      ? ProductFields.getSelectedPricing(wrap, product) : null;
+    const priceText = pricing ? money(pricing.price) : money(product.price);
+    const priceEl = document.getElementById('productPrice');
+    if (priceEl) priceEl.textContent = priceText;
+    const purchasePriceEl = document.getElementById('purchasePrice');
+    if (purchasePriceEl) purchasePriceEl.textContent = priceText;
+
+    const oldEl = document.getElementById('productOldPrice');
+    const offEl = document.getElementById('productDiscount');
+    if (!pricing) {
+      // No priced dropdown - the product's own MRP/discount are the right ones.
+      if (oldEl) { oldEl.textContent = money(product.old); oldEl.style.display = product.old ? '' : 'none'; }
+      if (offEl) { offEl.textContent = product.off || ''; offEl.style.display = product.off ? '' : 'none'; }
+      return;
+    }
+    // A priced option replaces the product's price, so the product's MRP and
+    // "30% OFF" badge no longer describe what is on screen - they are shown only
+    // when that option carries its own was-price, and the percentage is computed
+    // from the pair actually being displayed rather than reused from the product.
+    const hasMrp = pricing.mrp !== null && pricing.mrp > pricing.price;
+    if (oldEl) {
+      oldEl.textContent = hasMrp ? money(pricing.mrp) : '';
+      oldEl.style.display = hasMrp ? '' : 'none';
+    }
+    if (offEl) {
+      const pct = hasMrp ? Math.round((1 - pricing.price / pricing.mrp) * 100) : 0;
+      offEl.textContent = pct > 0 ? `${pct}% OFF` : '';
+      offEl.style.display = pct > 0 ? '' : 'none';
+    }
   }
   // product.input_fields (the admin-configured "Customer questions" - required
   // photo upload/text/dropdown) only lives in the database, so it's always []
@@ -4780,13 +4829,10 @@ else if (GiftsModule.view === 'product') {
   // Priced Customer Questions dropdown (admin-configured option_prices) - keep
   // the displayed price live as the customer changes their selection, same as
   // studio.js's previewCustomFields listener does for the customise preview.
-  document.getElementById('productCustomFields')?.addEventListener('pf:pricechange', (e) => {
-    const price = e.detail && (e.detail.price || e.detail.price === 0) ? e.detail.price : null;
-    const text = price !== null ? money(price) : money(product.price);
-    const priceEl = document.getElementById('productPrice');
-    if (priceEl) priceEl.textContent = text;
-    const purchasePriceEl = document.getElementById('purchasePrice');
-    if (purchasePriceEl) purchasePriceEl.textContent = text;
+  document.getElementById('productCustomFields')?.addEventListener('pf:pricechange', () => {
+    // Reads the live selection rather than the event's own detail, so a change
+    // and the initial render go through exactly the same code path.
+    syncPriceFromCustomFields();
   });
 
   // An option that names one of this product's photos swaps the gallery's main

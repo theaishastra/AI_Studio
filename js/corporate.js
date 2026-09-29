@@ -629,7 +629,12 @@
       const deliveryInfoTextEl = document.getElementById('modalDeliveryInfoText');
 
       if (titleEl) titleEl.textContent = name;
-      if (priceEl) priceEl.textContent = price;
+      // currentModalPrice(), not the base `price` passed in: a priced Customer
+      // Questions dropdown has already rendered above and starts on its first
+      // option, but that initial selection fires no pf:pricechange, so showing
+      // `price` here would leave the modal advertising the base price while the
+      // selected tile - and add-to-cart - use the option's.
+      if (priceEl) priceEl.textContent = currentModalPrice();
       if (breadcrumbNameEl) breadcrumbNameEl.textContent = name;
 
       // product.stock only means something for a real, database-backed physical

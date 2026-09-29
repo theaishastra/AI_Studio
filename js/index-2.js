@@ -304,11 +304,11 @@
                 <p>${item.price} each</p>
               </div>
               <div class="quantity-selector" style="height: 24px; min-width: 72px;">
-                <button class="qty-btn" onclick="updateCartQty('${item.name}', -1, '${item.price}', '${item.img}')">-</button>
+                <button class="qty-btn" onclick="updateCartQty('${escapeAttrJs(item.name)}', -1, '${escapeAttrJs(item.price)}', '${escapeAttrJs(item.img)}')">-</button>
                 <span class="qty-count">${item.qty}</span>
-                <button class="qty-btn" onclick="updateCartQty('${item.name}', 1, '${item.price}', '${item.img}')">+</button>
+                <button class="qty-btn" onclick="updateCartQty('${escapeAttrJs(item.name)}', 1, '${escapeAttrJs(item.price)}', '${escapeAttrJs(item.img)}')">+</button>
               </div>
-              <button class="cart-drawer-item-remove" onclick="removeCartItem('${item.name}')" title="Remove item" aria-label="Remove item">
+              <button class="cart-drawer-item-remove" onclick="removeCartItem('${escapeAttrJs(item.name)}')" title="Remove item" aria-label="Remove item">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>

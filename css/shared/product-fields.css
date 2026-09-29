@@ -140,6 +140,59 @@
   text-decoration: line-through;
 }
 
+/* ---------- option tiles carrying their own picture ----------
+   Set by renderChoiceControl() when the field has option_image_urls - the
+   admin-uploaded swatch per option (a colour, a fabric, a frame style), where
+   the picture is what the shopper is actually choosing between and the name is
+   the caption. The tiles become a fixed-width grid rather than free-flowing
+   chips, so a row of swatches lines up instead of stepping up and down with
+   the length of each name. */
+
+.pf-choices.has-pictures {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+}
+
+.pf-choices.has-pictures .pf-choice {
+  min-width: 0;
+  align-items: stretch;
+  padding: 8px;
+  gap: 6px;
+}
+
+.pf-choices.has-pictures .pf-choice.is-selected {
+  padding: 7.5px;
+}
+
+.pf-choice-thumb {
+  display: block;
+  width: 100%;
+  /* A square frame the picture is cropped into, so tiles stay the same height
+     whatever shape the admin uploaded. */
+  aspect-ratio: 1 / 1;
+  border-radius: 6px;
+  overflow: hidden;
+  /* Also the placeholder for an option the admin left without a picture - see
+     the `withPictures` comment in renderChoiceControl(). */
+  background: #f6eef2;
+}
+
+.pf-choice-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Slightly narrower tiles on a phone, so three still fit across rather than
+   two wide ones with a gap. */
+@media (max-width: 480px) {
+  .pf-choices.has-pictures {
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  }
+}
+
 .pf-upload-input {
   position: absolute;
   width: 1px;

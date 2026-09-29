@@ -385,6 +385,81 @@ function categorySectionOptionsHTML(allCats, selectedId) {
     </optgroup>`).join("");
 }
 
+/* ---------------------------------------------------------------- dropdown
+   option entries.
+
+   A "Customer questions" dropdown's options are edited in one of two ways: as
+   lines of text ("9X9 = 1699 / 1999 @2"), which is compact and quick to paste,
+   or - once the admin wants a picture on each option - as a list of rows with a
+   name, a price, a was-price, a picture and a gallery photo number.
+
+   Both editors, and the saved field itself, are read and written through the
+   one neutral shape these helpers produce: a list of
+   { name, price, mrp, photo, image, raw }, with every field kept as the raw
+   string the admin typed. Nothing here validates or converts to numbers - that
+   happens once, in collectInputFields(), so the two editors cannot drift into
+   disagreeing about what "10X10 = " means. `image` is the only member the text
+   form cannot express, and `raw` is the original line (text editor only) so an
+   error message can quote what was actually typed. */
+
+function parseOptionLine(line, priced) {
+  const raw = line;
+  let photo = "";
+  // "@N" at the very end points that option at this product's Nth photo.
+  // Stripped first, so it works the same on a priced line and a plain one.
+  // Anchored to the end and digits-only, so an "@" inside a label is left alone.
+  const at = line.match(/\s*@\s*(\d+)\s*$/);
+  if (at) {
+    photo = at[1];
+    line = line.slice(0, at.index).trim();
+  }
+  // Only a priced dropdown splits on "=" - an unpriced option is free to be
+  // called "A = B", and always could be.
+  if (!priced) return { name: line, price: "", mrp: "", photo, image: null, raw };
+  const eq = line.lastIndexOf("=");
+  if (eq === -1) return { name: line, price: "", mrp: "", photo, image: null, raw };
+  // Split on the slash only on the price side, never on the label side, so an
+  // option called "A4 / A5" keeps its name.
+  const [priceText, mrpText] = line.slice(eq + 1).split("/");
+  return {
+    name: line.slice(0, eq).trim(),
+    price: (priceText || "").trim(),
+    mrp: (mrpText === undefined ? "" : mrpText.trim()),
+    photo,
+    image: null,
+    raw,
+  };
+}
+
+// The inverse of parseOptionLine, so switching editors (or re-opening a saved
+// product) shows the same thing that was typed.
+function optionEntriesToText(entries, priced) {
+  return entries.map(e => {
+    let line = e.name;
+    if (priced && e.price !== "") line += ` = ${e.price}${e.mrp !== "" ? ` / ${e.mrp}` : ""}`;
+    if (e.photo !== "") line += ` @${e.photo}`;
+    return line;
+  }).join("\n");
+}
+
+// Entries for a field as it came back from the API.
+function dropdownEntries(field) {
+  const priced = !!(field?.option_prices && Object.keys(field.option_prices).length);
+  const prices = field?.option_prices || {};
+  const mrps = field?.option_mrps || {};
+  const photos = field?.option_images || {};
+  const images = field?.option_image_urls || {};
+  const str = (v) => (v || v === 0 ? String(v) : "");
+  return (field?.options || []).map(o => ({
+    name: o,
+    price: priced ? str(prices[o]) : "",
+    mrp: str(mrps[o]),
+    photo: str(photos[o]),
+    image: images[o] || null,
+    raw: null,
+  }));
+}
+
 function openProductForm(id, opts = {}) {
   const p = id ? window._PRODUCTS_CACHE.find(x => x.id === id) : null;
   const allCats = window._ALL_CATS || [];
@@ -546,28 +621,30 @@ function openProductForm(id, opts = {}) {
     }
     if (type === "dropdown") {
       const priced = !!(row?.option_prices && Object.keys(row.option_prices).length);
-      const optionMrps = row?.option_mrps || {};
-      const optionImages = row?.option_images || {};
-      // Round-trips exactly the line syntax the parser below reads, so re-opening
-      // a saved field shows what was typed: "Label", "Label = Price",
-      // "Label = Price / WasPrice", any of them optionally suffixed with "@N" to
-      // point at this product's Nth photo.
-      const optionLine = (o) => {
-        const photo = optionImages[o];
-        const suffix = photo ? ` @${photo}` : "";
-        if (!priced) return `${o}${suffix}`;
-        const price = row.option_prices[o] ?? "";
-        const mrp = optionMrps[o];
-        return (mrp || mrp === 0) ? `${o} = ${price} / ${mrp}${suffix}` : `${o} = ${price}${suffix}`;
-      };
-      const optionsText = (row?.options || []).map(optionLine).join("\n");
+      // A dropdown whose options carry their own picture is edited as a list of
+      // rows instead of as lines of text - see the "Options with pictures" block
+      // further down for why.
+      const rich = !!(row?.option_image_urls && Object.keys(row.option_image_urls).length);
+      const optionsText = optionEntriesToText(dropdownEntries(row), priced);
       return `
         <div class="field-type-panel fp-dropdown">
           <label class="inline" style="font-weight:400;margin-bottom:6px;"><input type="checkbox" class="fr_priced" ${priced ? "checked" : ""}> This dropdown sets the price (e.g. quantity or size options each at their own price)</label>
-          <label class="fr_options_label">Options (one per line)</label>
-          <textarea class="fr_options" rows="3" placeholder="${priced ? "8 Photos = 130&#10;16 Photos = 200&#10;32 Photos = 250" : "4x6&#10;5x7&#10;Passport Size"}">${esc(optionsText)}</textarea>
-          <div class="form-hint fr_priced_hint" style="${priced ? "" : "display:none;"}">Add a struck-through &quot;was&quot; price by writing <b>Label = Price / WasPrice</b> — e.g. <b>16 Photos = 200 / 299</b>. It is shown on that option's tile on the product page and nowhere else; the customer is always charged the first number.</div>
-          <div class="form-hint">Optionally end any line with <b>@</b> and a photo number to show that photo when the option is picked — e.g. <b>9X9 = 1699 @2</b> shows photo 2. The number is the one printed on each tile in this product's <b>Photos &amp; Video</b> dialog; videos are not numbered and do not count. Leave <b>@</b> off and the gallery stays put, which is how every option behaves today. Re-ordering the photos re-numbers them, so check the tiles again afterwards.</div>
+          <label class="inline" style="font-weight:400;margin-bottom:10px;"><input type="checkbox" class="fr_rich" ${rich ? "checked" : ""}> Show a picture on each option (e.g. colours, fabrics, frame styles)</label>
+
+          <div class="fr-opt-simple" style="${rich ? "display:none;" : ""}">
+            <label class="fr_options_label">Options (one per line)</label>
+            <textarea class="fr_options" rows="3" placeholder="${priced ? "8 Photos = 130&#10;16 Photos = 200&#10;32 Photos = 250" : "4x6&#10;5x7&#10;Passport Size"}">${esc(optionsText)}</textarea>
+            <div class="form-hint fr_priced_hint" style="${priced ? "" : "display:none;"}">Add a struck-through &quot;was&quot; price by writing <b>Label = Price / WasPrice</b> — e.g. <b>16 Photos = 200 / 299</b>. It is shown on that option's tile on the product page and nowhere else; the customer is always charged the first number.</div>
+            <div class="form-hint">Optionally end any line with <b>@</b> and a photo number to show that photo when the option is picked — e.g. <b>9X9 = 1699 @2</b> shows photo 2. The number is the one printed on each tile in this product's <b>Photos &amp; Video</b> dialog; videos are not numbered and do not count. Leave <b>@</b> off and the gallery stays put, which is how every option behaves today. Re-ordering the photos re-numbers them, so check the tiles again afterwards.</div>
+          </div>
+
+          <div class="fr-opt-rich" style="${rich ? "" : "display:none;"}">
+            <div class="opt-rows"></div>
+            <button type="button" class="btn secondary fr_add_opt">+ Add option</button>
+            <div class="form-hint" style="margin-top:8px;">Each option becomes one tile on the product page, showing its picture, its name and — when this dropdown sets the price — its price. Ticking this box off again keeps the names and prices but drops the pictures.</div>
+            <div class="form-hint"><b>Gallery photo #</b> is a separate, optional extra: it swaps the <i>big</i> product image to one of this product's own <b>Photos &amp; Video</b> when the option is picked. Leave it blank and the gallery stays put.</div>
+          </div>
+
           <label class="inline" style="font-weight:400;"><input type="checkbox" class="fr_multi_select" ${row?.multi_select ? "checked" : ""} ${priced ? "disabled" : ""}> Allow selecting multiple options</label>
         </div>`;
     }
@@ -588,6 +665,7 @@ function openProductForm(id, opts = {}) {
     });
     rowEl.querySelector(".field-type-panel-wrap").innerHTML = fieldTypePanelHTML(row, row.type);
     wireUploadModeToggle(rowEl);
+    wireRichOptions(rowEl, row);
     wireDropdownPricedToggle(rowEl);
   }
 
@@ -614,9 +692,250 @@ function openProductForm(id, opts = {}) {
       if (label) label.textContent = on ? "Options — one per line, as \"Label = Price\"" : "Options (one per line)";
       if (pricedHint) pricedHint.style.display = on ? "" : "none";
       if (multiSelect) { multiSelect.disabled = on; if (on) multiSelect.checked = false; }
+      // The rich editor's Price / Was price columns only mean anything while
+      // this dropdown is the thing setting the item's price.
+      rowEl.querySelectorAll(".opt-priced-only").forEach(cell => { cell.style.display = on ? "" : "none"; });
     };
     priced.addEventListener("change", sync);
     sync();
+  }
+
+  /* ---------------------------------------------------------------- Options
+     with pictures.
+
+     A dropdown's options are variants a shopper compares, and for some of them
+     - colours, fabrics, frame styles - the picture IS the option; a row of
+     text tiles reading "Maroon / Navy / Bottle Green" tells a customer far less
+     than three swatches would. option_images already existed but only points at
+     one of the product's OWN gallery photos, which a colour swatch has no
+     business being (nobody wants ten swatch close-ups in the main gallery), and
+     a picture is not something the "Label = Price @N" line syntax could ever
+     express anyway.
+
+     So ticking "Show a picture on each option" swaps the textarea for a row per
+     option - picture, name, price, was-price, gallery photo # - and each
+     picture is uploaded straight to the Media Library, exactly as the Photos
+     dialog does it. Everything else about the field is unchanged: the same
+     options/option_prices/option_mrps/option_images are produced either way, and
+     the new option_image_urls is simply absent on every product that does not
+     use this, which is what keeps the storefront's existing tiles untouched. */
+
+  // Matches MAX_SIZE in backend/app/services/media.py. A UX nicety only - the
+  // backend is what actually enforces it - but it saves a 20MB round trip that
+  // was always going to be rejected.
+  const MAX_OPTION_IMAGE_BYTES = 20 * 1024 * 1024;
+  const MAX_DROPDOWN_OPTIONS = 50; // must match ProductInputFieldIn.options' max_length
+
+  function optionRowHTML(entry, priced) {
+    const img = entry.image
+      ? `<img class="opt-pic-img" src="${esc(mediaUrl(entry.image))}" alt="">`
+      : `<span class="opt-pic-img is-empty"></span>`;
+    return `
+      <div class="opt-pic">
+        ${img}
+        <input type="file" accept="image/*" class="opt_pic_input" hidden>
+        <button type="button" class="opt-pic-btn">${entry.image ? "Replace" : "Upload"}</button>
+        <button type="button" class="opt-pic-clear" style="${entry.image ? "" : "display:none;"}">Remove</button>
+        <span class="opt-pic-status"></span>
+      </div>
+      <div class="opt-fields">
+        <div class="opt-cell opt-cell-name">
+          <label>Option name</label>
+          <input class="opt_name" value="${esc(entry.name)}" placeholder="e.g. Maroon">
+        </div>
+        <div class="opt-cell opt-priced-only" style="${priced ? "" : "display:none;"}">
+          <label>Price (₹)</label>
+          <input class="opt_price" type="number" step="1" min="0" value="${esc(entry.price)}">
+        </div>
+        <div class="opt-cell opt-priced-only" style="${priced ? "" : "display:none;"}">
+          <label>Was price (₹)</label>
+          <input class="opt_mrp" type="number" step="1" min="0" value="${esc(entry.mrp)}" placeholder="optional">
+        </div>
+        <div class="opt-cell opt-cell-photo">
+          <label>Gallery photo #</label>
+          <input class="opt_photo" type="number" min="1" step="1" value="${esc(entry.photo)}" placeholder="—">
+        </div>
+      </div>
+      <div class="opt-actions">
+        <button type="button" class="opt_up" title="Move up">▲</button>
+        <button type="button" class="opt_down" title="Move down">▼</button>
+        <button type="button" class="opt_remove" title="Remove option">×</button>
+      </div>`;
+  }
+
+  // The uploaded picture lives on the row element rather than in an <input>:
+  // it is never typed, only set by an upload or cleared, and keeping it out of
+  // the form means nothing can half-edit it into an invalid URL.
+  function setOptionPicture(optRow, url) {
+    optRow.dataset.image = url || "";
+    const pic = optRow.querySelector(".opt-pic-img");
+    const clear = optRow.querySelector(".opt-pic-clear");
+    const btn = optRow.querySelector(".opt-pic-btn");
+    const next = document.createElement(url ? "img" : "span");
+    next.className = `opt-pic-img${url ? "" : " is-empty"}`;
+    if (url) { next.src = mediaUrl(url); next.alt = ""; }
+    pic.replaceWith(next);
+    clear.style.display = url ? "" : "none";
+    btn.textContent = url ? "Replace" : "Upload";
+  }
+
+  async function uploadOptionPicture(optRow, file) {
+    const status = optRow.querySelector(".opt-pic-status");
+    if (!file.type.startsWith("image/")) {
+      status.textContent = "Pictures only — pick a JPG, PNG or WebP.";
+      return;
+    }
+    if (file.size > MAX_OPTION_IMAGE_BYTES) {
+      status.textContent = `Over ${MAX_OPTION_IMAGE_BYTES / (1024 * 1024)}MB — pick a smaller picture.`;
+      return;
+    }
+    status.textContent = "Uploading… 0%";
+    const fd = new FormData();
+    fd.append("file", file);
+    // Files it alongside the rest of this product's media in R2 (see
+    // upload_media_library_asset()) instead of one flat folder - organization
+    // only, nothing queries the key path.
+    if (cat?.pageSlug) fd.append("page_slug", cat.pageSlug);
+    if (cat?.slug) fd.append("category_slug", cat.slug);
+    try {
+      const uploaded = await Api.uploadMediaWithProgress(fd, (pct) => {
+        // 100% means the bytes have all been SENT, not that the upload is done -
+        // the server still has to re-encode the image, store it and write the
+        // row, which is the slowest part of this on a distant database. Saying
+        // "Uploading… 100%" through all of that reads as a picture that has
+        // silently failed, so the wait gets a label of its own.
+        status.textContent = pct >= 100 ? "Processing…" : `Uploading… ${pct}%`;
+      });
+      setOptionPicture(optRow, uploaded.url);
+      status.textContent = "";
+    } catch (err) {
+      status.textContent = err.message;
+    }
+  }
+
+  function addOptionRow(rowsWrap, entry, priced) {
+    const optRow = document.createElement("div");
+    optRow.className = "opt-row";
+    optRow.dataset.image = entry.image || "";
+    optRow.innerHTML = optionRowHTML(entry, priced);
+    rowsWrap.appendChild(optRow);
+
+    const fileInput = optRow.querySelector(".opt_pic_input");
+    optRow.querySelector(".opt-pic-btn").addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files && fileInput.files[0];
+      fileInput.value = "";
+      if (file) uploadOptionPicture(optRow, file);
+    });
+    optRow.querySelector(".opt-pic-clear").addEventListener("click", () => {
+      // Only unlinks it from this option - the picture stays in the Media
+      // Library, the same as removing a photo from a product's gallery.
+      setOptionPicture(optRow, "");
+      optRow.querySelector(".opt-pic-status").textContent = "";
+    });
+    optRow.querySelector(".opt_remove").addEventListener("click", () => {
+      optRow.remove();
+      refreshOptRowsEmptyState(rowsWrap);
+    });
+    optRow.querySelector(".opt_up").addEventListener("click", () => {
+      const prev = optRow.previousElementSibling;
+      if (prev && prev.classList.contains("opt-row")) rowsWrap.insertBefore(optRow, prev);
+    });
+    optRow.querySelector(".opt_down").addEventListener("click", () => {
+      const next = optRow.nextElementSibling;
+      if (next && next.classList.contains("opt-row")) rowsWrap.insertBefore(next, optRow);
+    });
+    refreshOptRowsEmptyState(rowsWrap);
+    return optRow;
+  }
+
+  function refreshOptRowsEmptyState(rowsWrap) {
+    const empty = rowsWrap.querySelector(".opt-rows-empty");
+    if (rowsWrap.querySelector(".opt-row")) {
+      if (empty) empty.remove();
+    } else if (!empty) {
+      const note = document.createElement("div");
+      note.className = "opt-rows-empty";
+      note.textContent = "No options yet — add one below.";
+      rowsWrap.appendChild(note);
+    }
+  }
+
+  function renderOptRows(rowEl, entries, priced) {
+    const rowsWrap = rowEl.querySelector(".opt-rows");
+    if (!rowsWrap) return;
+    rowsWrap.innerHTML = "";
+    entries.forEach(entry => addOptionRow(rowsWrap, entry, priced));
+    refreshOptRowsEmptyState(rowsWrap);
+  }
+
+  // What the rows currently hold, in the same shape parseOptionLine() produces.
+  function readRichEntries(rowEl) {
+    return Array.from(rowEl.querySelectorAll(".opt-row")).map(optRow => ({
+      name: optRow.querySelector(".opt_name").value.trim(),
+      price: optRow.querySelector(".opt_price").value.trim(),
+      mrp: optRow.querySelector(".opt_mrp").value.trim(),
+      photo: optRow.querySelector(".opt_photo").value.trim(),
+      image: optRow.dataset.image || null,
+      raw: null,
+    }));
+  }
+
+  function readSimpleEntries(rowEl, priced) {
+    return (rowEl.querySelector(".fr_options")?.value || "")
+      .split("\n").map(s => s.trim()).filter(Boolean)
+      .map(line => parseOptionLine(line, priced));
+  }
+
+  // Whichever editor is on screen is the one that holds the truth.
+  function readDropdownEntries(rowEl, priced) {
+    return rowEl.querySelector(".fr_rich")?.checked
+      // A row left completely blank is an unfinished "+ Add option" click, not
+      // an option the admin forgot to name.
+      ? readRichEntries(rowEl).filter(e => e.name || e.price || e.mrp || e.photo || e.image)
+      : readSimpleEntries(rowEl, priced);
+  }
+
+  function wireRichOptions(rowEl, row) {
+    const richToggle = rowEl.querySelector(".fr_rich");
+    if (!richToggle) return;
+    const simpleWrap = rowEl.querySelector(".fr-opt-simple");
+    const richWrap = rowEl.querySelector(".fr-opt-rich");
+    const rowsWrap = rowEl.querySelector(".opt-rows");
+    const priced = () => !!rowEl.querySelector(".fr_priced")?.checked;
+
+    // Pictures the admin has already attached, remembered across a toggle off
+    // and back on: unticking the box is easy to do by accident, and re-uploading
+    // a dozen swatches because of it would be a miserable way to find that out.
+    // They are still dropped on save while the box is unticked - that is what
+    // the hint under the editor promises - but only on save.
+    rowEl.__optionImages = {};
+    dropdownEntries(row).forEach(e => { if (e.image) rowEl.__optionImages[e.name] = e.image; });
+
+    if (richToggle.checked) renderOptRows(rowEl, dropdownEntries(row), priced());
+
+    richToggle.addEventListener("change", () => {
+      if (richToggle.checked) {
+        // Carry the typed lines over, re-attaching any picture whose option
+        // still has the same name.
+        const entries = readSimpleEntries(rowEl, priced())
+          .map(e => ({ ...e, image: rowEl.__optionImages[e.name] || null }));
+        renderOptRows(rowEl, entries, priced());
+      } else {
+        const entries = readRichEntries(rowEl).filter(e => e.name);
+        entries.forEach(e => { if (e.image) rowEl.__optionImages[e.name] = e.image; });
+        const box = rowEl.querySelector(".fr_options");
+        if (box) box.value = optionEntriesToText(entries, priced());
+      }
+      simpleWrap.style.display = richToggle.checked ? "none" : "";
+      richWrap.style.display = richToggle.checked ? "" : "none";
+    });
+
+    rowEl.querySelector(".fr_add_opt").addEventListener("click", () => {
+      if (rowsWrap.querySelectorAll(".opt-row").length >= MAX_DROPDOWN_OPTIONS) return;
+      const added = addOptionRow(rowsWrap, { name: "", price: "", mrp: "", photo: "", image: null }, priced());
+      added.querySelector(".opt_name").focus();
+    });
   }
 
   function addFieldRow(field) {
@@ -637,6 +956,7 @@ function openProductForm(id, opts = {}) {
       option_prices: field?.option_prices || null,
       option_mrps: field?.option_mrps || null,
       option_images: field?.option_images || null,
+      option_image_urls: field?.option_image_urls || null,
     };
     const div = document.createElement("div");
     div.className = "field-row";
@@ -672,6 +992,7 @@ function openProductForm(id, opts = {}) {
     div.__field = row;
     fieldsWrap.appendChild(div);
     wireUploadModeToggle(div);
+    wireRichOptions(div, row);
     wireDropdownPricedToggle(div);
 
     div.querySelectorAll(".type-checkbox").forEach(chip => {
@@ -730,71 +1051,85 @@ function openProductForm(id, opts = {}) {
         field.multiple = !!row.querySelector(".fr_upload_multiple")?.checked;
         field.max_files = field.multiple ? Math.max(2, Math.min(10, parseInt(row.querySelector(".fr_max_files")?.value || "3", 10))) : 1;
       } else if (type === "dropdown") {
-        const rawLines = (row.querySelector(".fr_options")?.value || "").split("\n").map(s => s.trim()).filter(Boolean);
         const priced = !!row.querySelector(".fr_priced")?.checked;
+        const rich = !!row.querySelector(".fr_rich")?.checked;
+        // Both editors hand back the same { name, price, mrp, photo, image }
+        // shape, so everything below - the numbers, the ordering, the error
+        // wording - is written once and behaves identically in either.
+        const entries = readDropdownEntries(row, priced);
+        const option_prices = {};
+        const option_mrps = {};
         const option_images = {};
-        // "@N" at the very end of a line points that option at this product's Nth
-        // photo. Stripped off here, before anything else parses the line, so the
-        // suffix works the same on a priced line ("9X9 = 1699 / 1999 @2") and a
-        // plain one ("Red @3"). Anchored to the end and digits-only so an "@" in
-        // the middle of a label is left alone.
-        const lines = rawLines.map(line => {
-          const m = line.match(/\s*@\s*(\d+)\s*$/);
-          if (!m) return { line, photo: null };
-          const photo = parseInt(m[1], 10);
-          if (photo < 1) {
-            errors.push(`Dropdown field "${label}": the photo number in "${line}" must be 1 or more.`);
-            return { line: line.slice(0, m.index).trim(), photo: null };
+        const option_image_urls = {};
+        const seen = new Set();
+        // Quotes what was actually typed when the text editor is in use, and
+        // falls back to the option's name in the row editor, where there is no
+        // "line" to point at.
+        const where = (entry) => entry.raw || entry.name;
+        entries.forEach(entry => {
+          const name = entry.name;
+          if (!name) {
+            errors.push(entry.raw
+              ? `Dropdown field "${label}": "${entry.raw}" has no option name.`
+              : `Dropdown field "${label}": an option has no name.`);
+            return;
           }
-          return { line: line.slice(0, m.index).trim(), photo };
-        }).filter(entry => {
-          if (entry.line) return true;
-          // "@2" with nothing in front of it is a typo, not an option.
-          errors.push(`Dropdown field "${label}": a line has a photo number but no option name.`);
-          return false;
-        });
-        const rememberPhoto = (opt, photo) => { if (photo) option_images[opt] = photo; };
-        if (priced) {
-          const option_prices = {};
-          const option_mrps = {};
-          lines.forEach(({ line, photo }) => {
-            const eq = line.lastIndexOf("=");
-            const opt = (eq === -1 ? line : line.slice(0, eq)).trim();
-            // Everything after the "=" is "Price" or "Price / WasPrice". Split on
-            // the slash only here, never on the label side, so an option called
-            // "A4 / A5" keeps its name.
-            const [priceText, mrpText] = (eq === -1 ? "" : line.slice(eq + 1)).split("/");
-            const price = eq === -1 ? NaN : Number((priceText || "").trim());
-            if (!opt || Number.isNaN(price)) { errors.push(`Dropdown field "${label}": "${line}" should look like "Label = Price" (or "Label = Price / WasPrice").`); return; }
-            field.options.push(opt);
-            option_prices[opt] = price;
-            rememberPhoto(opt, photo);
-            if (mrpText !== undefined && mrpText.trim() !== "") {
-              const mrp = Number(mrpText.trim());
-              if (Number.isNaN(mrp)) {
-                errors.push(`Dropdown field "${label}": the was-price in "${line}" is not a number.`);
-              } else if (mrp <= price) {
-                // Caught here rather than silently dropped by the storefront (which
-                // hides a was-price that isn't above the real one) so the admin
-                // finds out now instead of wondering why it never appears.
-                errors.push(`Dropdown field "${label}": the was-price in "${line}" must be higher than the price.`);
-              } else {
-                option_mrps[opt] = mrp;
+          // Every map below is keyed by the option's name, so two options
+          // sharing one would silently overwrite each other's price/picture.
+          if (seen.has(name)) {
+            errors.push(`Dropdown field "${label}": "${name}" is listed twice — each option needs its own name.`);
+            return;
+          }
+          seen.add(name);
+          field.options.push(name);
+
+          if (priced) {
+            const price = Number(entry.price);
+            if (entry.price === "" || Number.isNaN(price) || price < 0) {
+              errors.push(rich
+                ? `Dropdown field "${label}": "${name}" needs a price.`
+                : `Dropdown field "${label}": "${where(entry)}" should look like "Label = Price" (or "Label = Price / WasPrice").`);
+            } else {
+              option_prices[name] = price;
+              if (entry.mrp !== "") {
+                const mrp = Number(entry.mrp);
+                if (Number.isNaN(mrp)) {
+                  errors.push(`Dropdown field "${label}": the was-price for "${name}" is not a number.`);
+                } else if (mrp <= price) {
+                  // Caught here rather than silently dropped by the storefront
+                  // (which hides a was-price that isn't above the real one) so
+                  // the admin finds out now instead of wondering why it never
+                  // appears.
+                  errors.push(`Dropdown field "${label}": the was-price for "${name}" must be higher than the price.`);
+                } else {
+                  option_mrps[name] = mrp;
+                }
               }
             }
-          });
-          field.option_prices = option_prices;
-          field.option_mrps = Object.keys(option_mrps).length ? option_mrps : null;
-          field.multi_select = false;
-        } else {
-          field.options = lines.map(({ line }) => line);
-          lines.forEach(({ line, photo }) => rememberPhoto(line, photo));
-          field.multi_select = !!row.querySelector(".fr_multi_select")?.checked;
-        }
-        // Left null rather than {} when nothing is mapped, so a product that never
-        // used this reads exactly as it did before the feature existed.
+          }
+
+          if (entry.photo !== "") {
+            const photo = parseInt(entry.photo, 10);
+            if (!Number.isFinite(photo) || photo < 1) {
+              errors.push(`Dropdown field "${label}": the photo number for "${name}" must be 1 or more.`);
+            } else {
+              option_images[name] = photo;
+            }
+          }
+
+          // Only while the box is ticked - see wireRichOptions(). Unticking it
+          // is how an admin removes every picture at once.
+          if (rich && entry.image) option_image_urls[name] = entry.image;
+        });
+        field.multi_select = priced ? false : !!row.querySelector(".fr_multi_select")?.checked;
+        field.option_prices = priced ? option_prices : null;
+        // Left null rather than {} when nothing is set, so a product that never
+        // used one of these reads exactly as it did before the feature existed.
+        field.option_mrps = Object.keys(option_mrps).length ? option_mrps : null;
         field.option_images = Object.keys(option_images).length ? option_images : null;
+        field.option_image_urls = Object.keys(option_image_urls).length ? option_image_urls : null;
         if (!field.options.length) errors.push(`Dropdown field "${label}" needs at least one option.`);
+        if (field.options.length > MAX_DROPDOWN_OPTIONS) errors.push(`Dropdown field "${label}" has ${field.options.length} options — the most allowed is ${MAX_DROPDOWN_OPTIONS}.`);
         field.options.filter(o => UNSAFE.test(o)).forEach(o =>
           errors.push(`Dropdown option "${o}" cannot contain double quotes or angle brackets.`));
       }

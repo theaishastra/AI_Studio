@@ -838,6 +838,54 @@ select.order-status-select:focus { box-shadow: 0 0 0 3px rgba(92, 9, 48, .12); }
 .fr-upload-mode label { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 400; color: var(--text); margin: 0; }
 .fr-help-text input { margin-bottom: 0; }
 
+/* ---- a dropdown's options edited as rows, one picture each ----
+   Shown instead of the plain textarea when "Show a picture on each option" is
+   ticked; see the "Options with pictures" block in admin/js/catalog.js. */
+
+.fr-opt-rich .opt-rows { margin-bottom: 10px; }
+.opt-rows-empty { font-size: 12.5px; color: var(--text-dim); padding: 6px 0 10px; }
+.opt-row {
+  display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 12px;
+  align-items: start; padding: 10px; margin-bottom: 8px;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--panel);
+}
+.opt-pic { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.opt-pic-img {
+  width: 72px; height: 72px; border-radius: 8px; object-fit: cover; display: block;
+  border: 1px solid var(--border); background: var(--panel-2);
+}
+/* The same "no image yet" placeholder .field-img-preview uses. */
+.opt-pic-img.is-empty {
+  background: var(--border) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1.5'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'/%3E%3Cpath d='M21 15l-5-5L5 21'/%3E%3C/svg%3E") center/26px no-repeat;
+}
+.opt-pic-btn, .opt-pic-clear {
+  border: 1px solid var(--border); background: var(--panel-2); color: var(--text-dim);
+  border-radius: 5px; font-size: 11px; padding: 3px 8px; cursor: pointer; font-family: inherit;
+}
+.opt-pic-btn:hover, .opt-pic-clear:hover { border-color: var(--accent-2); color: var(--text); }
+/* Upload progress, and the reason an upload was refused - kept narrow so a long
+   message wraps under the thumbnail instead of stretching the row. */
+.opt-pic-status { font-size: 10.5px; color: var(--text-dim); text-align: center; line-height: 1.3; max-width: 92px; }
+
+.opt-fields { display: grid; grid-template-columns: minmax(0, 2fr) 110px 110px 110px; gap: 0 10px; }
+.opt-cell { min-width: 0; }
+.opt-cell label { font-size: 11px; margin-bottom: 3px; display: block; }
+.opt-cell input { margin-bottom: 0; }
+
+.opt-actions { display: flex; align-items: center; gap: 4px; padding-top: 20px; }
+.opt-actions button {
+  width: 24px; height: 24px; line-height: 1; padding: 0; font-size: 11px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--panel-2); color: var(--text-dim); border-radius: 5px;
+}
+.opt-actions button:hover { background: var(--panel); color: var(--text); }
+.opt-actions .opt_remove { border-color: transparent; background: var(--danger); color: #fff; border-radius: 50%; font-size: 13px; }
+
+/* The four inputs wrap before the row itself does, so the picture stays beside
+   its option rather than jumping above it on a narrow modal. */
+@media (max-width: 780px) {
+  .opt-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+
 .add-field-btn { margin-top: 2px; }
 .field-builder-empty { font-size: 12.5px; color: var(--text-dim); padding: 8px 0 12px; }
 

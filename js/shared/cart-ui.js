@@ -17,6 +17,30 @@
 // the product grid) that don't generalize safely. Load this before any page
 // script that calls cldOpt() or cartDrawerEmptyStateHTML().
 (function (global) {
+  /* Escapes a cart key (a product name, or "<name>::<timestamp>" for a
+     customized line) for use inside an inline handler:
+     onclick="updateCartQty('KEY', 1)".
+
+     Such a value passes through two parsers, in this order - the HTML
+     attribute parser strips the outer double quotes, then the JS parser reads
+     what's left as a single-quoted string - so it must be escaped for both.
+     Every cart drawer on the site interpolated the raw product name here,
+     which meant a product legitimately named 'Photo Frame Gift 8X12"' ended
+     its own onclick attribute at that inches mark: the handler became an
+     unterminated string literal, clicking threw a SyntaxError, and that row's
+     +/- and remove buttons silently did nothing.
+
+     Order matters: backslashes first (so a literal one cannot escape the quote
+     added next), then the JS string delimiter, then the HTML-special
+     characters. The HTML parser turns &quot;/&amp; back into "/& before the JS
+     runs, so the handler still receives the exact original key. */
+  function escapeAttrJs(str) {
+    return String(str == null ? '' : str)
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+      .replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  }
+
   function cldOpt(url) {
     // Cloudinary account has Strict Transformations enabled — any on-the-fly
     // transform (even a plain resize) 400s. No-op until that's turned off.
@@ -69,6 +93,7 @@
     location.href = 'cart.html';
   }
 
+  global.escapeAttrJs = escapeAttrJs;
   global.cldOpt = cldOpt;
   global.cartDrawerEmptyStateHTML = cartDrawerEmptyStateHTML;
   global.showCartToast = showCartToast;

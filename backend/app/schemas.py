@@ -364,6 +364,15 @@ class ProductInputFieldIn(BaseModel):
     # index past the end of the gallery is ignored by the storefront rather than
     # rejected here, because photos can be removed long after the mapping is set.
     option_images: dict[str, int] | None = None
+    # Display only, and entirely optional: a picture of its own for each option,
+    # shown on that option's tile in the storefront's variant picker. This is the
+    # swatch case option_images cannot serve - a colour, a fabric, a frame style
+    # has no reason to exist in the product's own gallery, and there is no
+    # gallery photo to point at. Keyed by the option string, like option_prices;
+    # an option with no entry simply renders as the text-only tile it always did,
+    # so a product that never used this is unaffected. Uploaded through the admin
+    # field builder, which stores the Media Library URL it gets back.
+    option_image_urls: dict[str, str] | None = None
 
     # Longest answer a customer may submit for a text field on this product.
     # Without a cap, nothing stopped a several-hundred-KB string being stored as
@@ -380,6 +389,16 @@ class ProductInputFieldIn(BaseModel):
         if v and _UNSAFE_TEXT_CHARS.search(v):
             raise ValueError("Cannot contain double quotes or angle brackets")
         return v
+
+    @field_validator("option_image_urls")
+    @classmethod
+    def _safe_option_image_urls(cls, v: dict[str, str] | None) -> dict[str, str] | None:
+        # Same rules as any other stored media URL (MediaIn.url): absolute http(s)
+        # or a site-relative path, and no quote/angle-bracket characters, because
+        # this lands in an src= attribute on a public product page.
+        if not v:
+            return None
+        return {option: _validate_media_url(url) for option, url in v.items()}
 
     @field_validator("options")
     @classmethod
@@ -400,6 +419,19 @@ class ProductInputFieldIn(BaseModel):
             if unknown:
                 raise ValueError(
                     f'Field "{self.label}" prices an option it does not offer: {", ".join(unknown)}'
+                )
+        # Same check for the picture map: a leftover entry for a renamed or
+        # removed option would quietly never render, so it is rejected rather
+        # than stored. Deliberately NOT extended to option_mrps/option_images,
+        # which predate this: ProductOut runs this same model over every stored
+        # product on the way OUT (see _product_out in routers/admin.py), so a
+        # tightened rule there would turn a harmless stale key on an existing
+        # product into a 500 on the admin's product list.
+        if self.option_image_urls:
+            unknown = [o for o in self.option_image_urls if o not in set(self.options or [])]
+            if unknown:
+                raise ValueError(
+                    f'Field "{self.label}" has a picture for an option it does not offer: {", ".join(unknown)}'
                 )
         return self
 
