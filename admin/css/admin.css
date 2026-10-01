@@ -446,6 +446,9 @@ tr[draggable="true"].dragging { opacity: .4; }
 .oid-title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .oid-title-row b { font-size: 14px; }
 .oid-pricing { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
+/* "quantity offer -₹500" next to a line that got one, so staff can see why a
+   line billed for less than its unit price × quantity. */
+.oid-bulk-saving { color: var(--success, #2e7d32); font-weight: 700; margin-left: 6px; }
 .oid-custom { margin-top: 8px; padding: 9px 11px; background: var(--panel); border: 1px dashed var(--border); border-radius: 8px; }
 .oid-upload { width: 68px; height: 68px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); cursor: zoom-in; flex-shrink: 0; display: block; }
 .oid-text { font-size: 12.5px; font-style: italic; color: var(--text); overflow-wrap: anywhere; }
@@ -814,6 +817,24 @@ select.order-status-select:focus { box-shadow: 0 0 0 3px rgba(92, 9, 48, .12); }
 .field-row-remove {
   width: 26px; height: 26px; border-radius: 50%; border: none; background: var(--danger);
   color: #fff; font-size: 14px; line-height: 1; cursor: pointer; flex-shrink: 0;
+}
+/* Quantity-offer summary in the products table, so an offer that was set up
+   months ago is visible without opening each product. */
+.offer-badge { background: var(--success-bg); color: var(--success); font-weight: 700; white-space: nowrap; }
+.offer-none { color: var(--text-dim); }
+
+/* Bulk / quantity discount tier rows - reuse .field-row's card shell, with
+   their own compact grid (quantity / kind / amount on one line). */
+.bulk-tier-top { display: flex; align-items: flex-start; gap: 10px; }
+.bulk-tier-grid {
+  flex: 1 1 auto; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 10px;
+}
+.bulk-tier-row .bulk-tier-top .field-row-remove { margin-top: 24px; }
+.bulk-tier-row .bt_preview:empty { display: none; }
+.bulk-tier-row .bt_preview { margin-top: 2px; font-style: italic; }
+@media (max-width: 720px) {
+  .bulk-tier-grid { grid-template-columns: 1fr; }
+  .bulk-tier-row .bulk-tier-top .field-row-remove { margin-top: 0; }
 }
 .field-row-required { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-dim); white-space: nowrap; }
 

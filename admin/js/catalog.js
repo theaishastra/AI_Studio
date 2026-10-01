@@ -313,6 +313,20 @@ async function renderProducts(params) {
   await loadProdTable();
 }
 
+/* "10+ 10% · 20+ 20%" for a product with quantity offers, so staff can see at a
+   glance which products carry one - otherwise an offer set months ago is
+   invisible in this list and the only way to find it is to open every product
+   in turn. Clicking Edit opens the form where each row has its own remove (x). */
+function bulkOfferCell(p) {
+  const tiers = (p.bulk_discounts || []).slice().sort((a, b) => (a.min_qty ?? 0) - (b.min_qty ?? 0));
+  if (!tiers.length) return `<span class="offer-none">—</span>`;
+  const parts = tiers.slice(0, 2).map(t => t.type === "flat"
+    ? `${t.min_qty}+ ₹${Math.round(t.value)}`
+    : `${t.min_qty}+ ${t.value}%`);
+  if (tiers.length > 2) parts.push(`+${tiers.length - 2}`);
+  return `<span class="badge offer-badge" title="${esc(tiers.map(t => t.label).join(" · "))}">${esc(parts.join(" · "))}</span>`;
+}
+
 async function loadProdTable() {
   const wrap = document.getElementById("prodTableWrap");
   wrap.innerHTML = LOADING;
@@ -325,7 +339,7 @@ async function loadProdTable() {
   }
   wrap.innerHTML = `
     <table>
-      <thead><tr><th class="drag-col"></th><th class="table-thumb-col"></th><th>Tier</th><th>Title</th><th>Price</th><th>Media</th><th>Status</th><th>Sort</th><th></th></tr></thead>
+      <thead><tr><th class="drag-col"></th><th class="table-thumb-col"></th><th>Tier</th><th>Title</th><th>Price</th><th>Offers</th><th>Media</th><th>Status</th><th>Sort</th><th></th></tr></thead>
       <tbody id="prodTableBody">
         ${products.map(p => `
           <tr draggable="true" data-id="${esc(p.id)}">
@@ -336,6 +350,7 @@ async function loadProdTable() {
             <td>${esc(p.tier || "—")}</td>
             <td>${esc(p.title)}</td>
             <td>${fmtINR(p.price)}</td>
+            <td>${bulkOfferCell(p)}</td>
             <td>${p.media.length}${(p.media || []).some(isVideoMedia) ? " ▶" : ""}</td>
             <td><span class="badge ${p.is_active ? "on" : "off"}">${p.is_active ? "Active" : "Hidden"}</span></td>
             <td>${p.sort}</td>
@@ -518,6 +533,12 @@ function openProductForm(id, opts = {}) {
         <div><label>Address-change window after ordering <span class="form-hint">(hours, optional — leave blank to use the site-wide default in Settings)</span></label>
           <input id="f_addr_window" type="number" min="0" step="1" value="${p?.address_change_window_hours ?? ""}" placeholder="e.g. 24"></div>
       </div>
+
+      <div class="form-section-title">Bulk / quantity discounts</div>
+      <label style="margin-top:0;">Automatic "buy more, save more" offers <span class="form-hint">&mdash; e.g. 10 for 10% off, 20 for 20% off. Add a row per offer; the customer automatically gets the best one their quantity reaches (the offers do not add together). The quantity counts every unit of this product in the cart, even across different customisations. Shown on the product page and applied in the cart with no coupon code needed.</span></label>
+      <div id="bulkTierRows" class="field-builder"></div>
+      <button type="button" class="btn secondary" id="addBulkTierBtn">+ Add quantity offer</button>
+      <div class="form-hint" id="bulkTierNoIdHint" style="margin-top:8px;">Leave this empty for no quantity offers, which is how every product behaves today.</div>
 
       <div class="form-section-title">What's included</div>
       <label style="margin-top:0;">Features / inclusions <span class="form-hint">(one per line — shown as a checklist to the customer)</span></label>
@@ -1016,6 +1037,145 @@ function openProductForm(id, opts = {}) {
   (p?.input_fields || []).slice().sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0)).forEach(addFieldRow);
   document.getElementById("addFieldBtn").addEventListener("click", () => addFieldRow());
 
+  // ---- Bulk / quantity discount tiers (Product.bulk_discounts) ----
+  const bulkWrap = document.getElementById("bulkTierRows");
+
+  /* The same wording services/pricing.py generates when an admin leaves the
+     label blank. Defined here rather than called off window.BulkTiers so this
+     form still works if that storefront module is missing or fails to load -
+     losing a preview string must never take the whole offers section (and its
+     "+ Add" button) down with it. Kept in step with pricing.default_tier_label()
+     and js/shared/bulk-tiers.js defaultLabel(). */
+  function tierLabel(minQty, type, value) {
+    if (window.BulkTiers && typeof window.BulkTiers.defaultLabel === "function") {
+      return window.BulkTiers.defaultLabel(minQty, type, value);
+    }
+    const amount = type === "flat"
+      ? `₹${Math.round(Number(value))} off`
+      : `${Number(value)}% off`;
+    return `Buy ${minQty} or more, get ${amount}`;
+  }
+
+  function addBulkTierRow(tier) {
+    const div = document.createElement("div");
+    div.className = "field-row bulk-tier-row";
+    const type = tier?.type === "flat" ? "flat" : "percent";
+    div.innerHTML = `
+      <div class="bulk-tier-top">
+        <div class="bulk-tier-grid">
+          <div><label>Buy this many or more</label>
+            <input type="number" class="bt_min_qty" min="2" step="1" value="${tier?.min_qty ?? ""}" placeholder="e.g. 10"></div>
+          <div><label>Discount</label>
+            <select class="bt_type">
+              <option value="percent" ${type === "percent" ? "selected" : ""}>% off</option>
+              <option value="flat" ${type === "flat" ? "selected" : ""}>₹ off</option>
+            </select></div>
+          <div><label class="bt_value_label">${type === "percent" ? "Percentage" : "Amount (₹)"}</label>
+            <input type="number" class="bt_value" min="0" step="1" value="${tier?.value ?? ""}" placeholder="${type === "percent" ? "e.g. 10" : "e.g. 500"}"></div>
+        </div>
+        <button type="button" class="field-row-remove bt_remove" title="Remove this offer">&times;</button>
+      </div>
+      <div class="two-col">
+        <div class="bt_cap_wrap" style="${type === "percent" ? "" : "display:none;"}">
+          <label>Most this offer can ever take off <span class="form-hint">(₹, optional)</span></label>
+          <input type="number" class="bt_max" min="0" step="1" value="${tier?.max_discount ?? ""}" placeholder="no limit"></div>
+        <div><label>Wording on the site <span class="form-hint">(optional)</span></label>
+          <input class="bt_label" maxlength="120" value="${esc(tier?.label || "")}" placeholder="${esc(defaultTierLabelPreview(tier, type))}"></div>
+      </div>
+      <div class="form-hint bt_preview"></div>`;
+    bulkWrap.appendChild(div);
+
+    const typeSel = div.querySelector(".bt_type");
+    const valueInput = div.querySelector(".bt_value");
+    const syncType = () => {
+      const isPercent = typeSel.value === "percent";
+      div.querySelector(".bt_value_label").textContent = isPercent ? "Percentage" : "Amount (₹)";
+      valueInput.placeholder = isPercent ? "e.g. 10" : "e.g. 500";
+      // A cap on a flat amount is meaningless - the amount already is the cap.
+      div.querySelector(".bt_cap_wrap").style.display = isPercent ? "" : "none";
+    };
+    // What the shopper will actually read, updated as the row is typed - the
+    // admin should never have to save and reload the storefront to find out.
+    const previewEl = div.querySelector(".bt_preview");
+    const minQtyInput = div.querySelector(".bt_min_qty");
+    const labelInput = div.querySelector(".bt_label");
+    const maxInput = div.querySelector(".bt_max");
+    const syncPreview = () => {
+      const minQty = parseInt(minQtyInput.value, 10);
+      const value = Number(valueInput.value);
+      if (!(minQty >= 2) || !(value > 0)) { previewEl.textContent = ""; return; }
+      const wording = labelInput.value.trim()
+        || tierLabel(minQty, typeSel.value, value);
+      const cap = typeSel.value === "percent" && Number(maxInput.value) > 0
+        ? ` (never more than ₹${Math.round(Number(maxInput.value))} off)` : "";
+      previewEl.textContent = `Shoppers will see: "${wording}"${cap}`;
+      labelInput.placeholder = tierLabel(minQty, typeSel.value, value);
+    };
+    typeSel.addEventListener("change", () => { syncType(); syncPreview(); });
+    [minQtyInput, valueInput, labelInput, maxInput].forEach((el) => {
+      el.addEventListener("input", syncPreview);
+    });
+    syncPreview();
+    div.querySelector(".bt_remove").addEventListener("click", () => div.remove());
+  }
+
+  // The placeholder shown before the admin has typed a quantity/value, so the
+  // "Wording on the site" box explains itself rather than sitting blank.
+  function defaultTierLabelPreview(tier, type) {
+    if (tier?.min_qty >= 2 && tier?.value > 0) {
+      return tierLabel(tier.min_qty, type, tier.value);
+    }
+    return "filled in automatically";
+  }
+
+  // Wire the button FIRST: if rendering a saved row ever throws, the admin must
+  // still be able to add, edit and remove offers rather than face a dead panel.
+  document.getElementById("addBulkTierBtn").addEventListener("click", () => addBulkTierRow());
+  (p?.bulk_discounts || []).slice()
+    .sort((a, b) => (a.min_qty ?? 0) - (b.min_qty ?? 0))
+    .forEach((tier) => {
+      try {
+        addBulkTierRow(tier);
+      } catch (err) {
+        console.error("Could not render a saved quantity offer", tier, err);
+      }
+    });
+
+  function collectBulkTiers() {
+    const bulk_discounts = [];
+    const errors = [];
+    const seenQty = new Set();
+    Array.from(bulkWrap.querySelectorAll(".bulk-tier-row")).forEach((row, index) => {
+      const minQty = parseInt(row.querySelector(".bt_min_qty").value, 10);
+      const value = Number(row.querySelector(".bt_value").value);
+      const type = row.querySelector(".bt_type").value === "flat" ? "flat" : "percent";
+      const rawMax = row.querySelector(".bt_max").value;
+      const label = row.querySelector(".bt_label").value.trim();
+      const blank = !row.querySelector(".bt_min_qty").value && !row.querySelector(".bt_value").value;
+      if (blank) return;  // an empty row the admin added and changed their mind about
+      const where = `Quantity offer #${index + 1}`;
+      if (!(minQty >= 2)) { errors.push(`${where}: "Buy this many or more" must be 2 or more.`); return; }
+      if (!(value > 0)) { errors.push(`${where}: enter a discount greater than 0.`); return; }
+      if (type === "percent" && value > 100) { errors.push(`${where}: a percentage cannot be more than 100.`); return; }
+      if (seenQty.has(minQty)) {
+        errors.push(`${where}: there is already an offer at ${minQty}. Use one offer per quantity.`);
+        return;
+      }
+      seenQty.add(minQty);
+      bulk_discounts.push({
+        min_qty: minQty,
+        type,
+        value,
+        // Only a percentage can be capped; a flat amount is its own ceiling, and
+        // sending a cap alongside it would just be dead data on the row.
+        max_discount: type === "percent" && rawMax !== "" && Number(rawMax) > 0 ? Number(rawMax) : null,
+        label,
+      });
+    });
+    bulk_discounts.sort((a, b) => a.min_qty - b.min_qty);
+    return { bulk_discounts, errors };
+  }
+
   function collectInputFields() {
     const input_fields = [];
     const errors = [];
@@ -1179,8 +1339,10 @@ function openProductForm(id, opts = {}) {
       else delete extra.events;
     }
     const { input_fields, errors: fieldErrors } = collectInputFields();
-    if (fieldErrors.length) {
-      document.getElementById("formMsg").innerHTML = `<div class="msg error">${fieldErrors.map(esc).join("<br>")}</div>`;
+    const { bulk_discounts, errors: bulkErrors } = collectBulkTiers();
+    const allErrors = fieldErrors.concat(bulkErrors);
+    if (allErrors.length) {
+      document.getElementById("formMsg").innerHTML = `<div class="msg error">${allErrors.map(esc).join("<br>")}</div>`;
       return;
     }
     const categoryId = document.getElementById("f_category").value;
@@ -1203,6 +1365,7 @@ function openProductForm(id, opts = {}) {
       sort: parseInt(document.getElementById("f_sort").value || "0", 10),
       extra,
       input_fields,
+      bulk_discounts,
     };
     try {
       const btn = e.target.querySelector('button[type="submit"]');

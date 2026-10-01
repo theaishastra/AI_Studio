@@ -706,6 +706,27 @@ function renderPreviewOptions(pkg) {
     document.getElementById('previewPrice').textContent = priceText;
     document.getElementById('previewActionPrice').textContent = priceText;
   }
+  renderStudioStock();
+  renderStudioBulkOffers();
+}
+
+/* The "buy more, save more" panel in the preview modal. Priced options here
+   replace the unit price (Studio's "16 Photos = ₹200" picker), so the saving is
+   quoted against whichever one is selected - re-run on every quantity change
+   and on pf:pricechange. */
+function renderStudioBulkOffers() {
+  const box = document.getElementById('previewBulkOffers');
+  if (!box || !window.BulkTiers || !activePreviewPkg) return;
+  const wrap = document.getElementById('previewCustomFields');
+  const selected = wrap && window.ProductFields
+    ? ProductFields.getSelectedPrice(wrap, activePreviewPkg) : null;
+  const unitPrice = (selected || selected === 0)
+    ? selected
+    : parseInt(String(activePreviewPkg.price || '0').replace(/[^\d]/g, ''), 10) || 0;
+  BulkTiers.renderOfferBox(box, activePreviewPkg.bulk_discounts, {
+    qty: activePreviewItemQty,
+    unitPrice,
+  });
 }
 
 function initStudioProductAccordions() {
@@ -880,8 +901,45 @@ function sharePreviewProduct() {
 }
 
 function adjustPreviewItemQty(delta) {
-  activePreviewItemQty = Math.max(1, Math.min(99, activePreviewItemQty + delta));
+  const want = activePreviewItemQty + delta;
+  activePreviewItemQty = window.StockUI
+    ? StockUI.clampQty(want, activePreviewPkg, 99)
+    : Math.max(1, Math.min(99, want));
   document.getElementById('previewItemQty').textContent = activePreviewItemQty;
+  renderStudioStock();
+  renderStudioBulkOffers();
+}
+
+/* Stock state for the preview modal. Studio had none at all before: a package
+   could be out of stock and the modal would still invite an order, with the
+   refusal only arriving at checkout. */
+function renderStudioStock() {
+  const badgeEl = document.getElementById('previewStockBadge');
+  const capEl = document.getElementById('previewQtyCapNote');
+  if (!badgeEl || !window.StockUI || !activePreviewPkg) return;
+  const info = StockUI.badge(activePreviewPkg);
+  if (!info) {
+    badgeEl.style.display = 'none';
+  } else {
+    badgeEl.textContent = info.text;
+    // Same class vocabulary gifts and corporate already use, so one rule set
+    // covers all three rather than studio inventing its own.
+    const mod = info.state === 'out' ? ' out-of-stock' : (info.state === 'low' ? ' low-stock' : '');
+    badgeEl.className = 'stock-badge' + mod;
+    badgeEl.style.display = '';
+  }
+  const out = StockUI.isOutOfStock(activePreviewPkg);
+  ['previewAddToCart', 'previewBuyNow', 'previewOrderBtn'].forEach((id) => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.disabled = out;
+    btn.classList.toggle('btn-disabled', out);
+  });
+  if (capEl) {
+    const msg = StockUI.capMessage(activePreviewPkg, activePreviewItemQty);
+    capEl.textContent = msg || '';
+    capEl.style.display = msg ? 'block' : 'none';
+  }
 }
 
 function closeProductPreview() {
@@ -1349,6 +1407,9 @@ async function loadStudioCatalog() {
         if (extra.turnaround) pkg.turnaround = extra.turnaround;
         if (extra.requiresPhotoUpload) pkg.requiresPhotoUpload = extra.requiresPhotoUpload;
         pkg.input_fields = p.input_fields || [];
+        pkg.bulk_discounts = p.bulk_discounts || [];
+        pkg.type = p.type || null;
+        pkg.stock = p.stock ?? null;
         pkg.deliveryDays = p.delivery_days || null;
         pkg.search_keywords = p.search_keywords || [];
         return pkg;
@@ -1413,6 +1474,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     const text = price !== null ? ProductFields.formatPrice(price) : activePreviewPkg.price;
     document.getElementById('previewPrice').textContent = text;
     document.getElementById('previewActionPrice').textContent = text;
+    // The saving is quoted against the selected option's price, so it moves with it.
+    renderStudioBulkOffers();
   });
 
   // An option that names one of this product's photos scrolls the carousel to it.

@@ -368,3 +368,206 @@ body .preview-scroll .preview-title-block h2 {
     gap: 16px;
   }
 }
+
+/* ---------------------------------------------------------------------
+   QUANTITY OFFERS ("buy more, save more")
+   ---------------------------------------------------------------------
+   Rendered by js/shared/bulk-tiers.js renderOfferBox() into a single
+   #productBulkOffers container on each of the three product views, so
+   the tier list, the live saving and the "applied automatically" note
+   read identically on gifts, corporate and studio. Hidden entirely by
+   the renderer when a product has no tiers, which is every product
+   until an admin adds one. */
+.bulk-offer-box {
+  margin: 14px 0 6px;
+  padding: 13px 14px 11px;
+  border: 1px solid rgba(92, 9, 48, 0.14);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(92, 9, 48, 0.045) 0%, rgba(92, 9, 48, 0) 62%),
+    #fff;
+}
+
+.bulk-offer-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 11px;
+}
+
+/* A small filled mark gives the block an anchor so the heading is not the only
+   thing carrying the brand colour. */
+.bulk-offer-head .boh-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: var(--pv-brand);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.bulk-offer-head .boh-text {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--pv-brand);
+}
+
+/* The rungs, side by side so they can be compared at a glance. Wraps to a
+   second row rather than scrolling, so a product with four tiers still shows
+   all of them on a phone. */
+.bulk-offer-tiers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.bulk-offer-tier {
+  flex: 1 1 96px;
+  min-width: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 7px 10px;
+  border: 1px solid var(--pv-frame);
+  border-radius: 10px;
+  background: #fff;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.bulk-offer-tier .bot-qty {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--pv-muted);
+}
+
+.bulk-offer-tier .bot-save {
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--pv-ink);
+}
+
+/* The rung this quantity has reached: filled, so "which one am I on" needs no
+   reading. */
+.bulk-offer-tier.is-active {
+  border-color: var(--pv-brand);
+  background: var(--pv-brand);
+}
+
+.bulk-offer-tier.is-active .bot-qty { color: rgba(255, 255, 255, 0.72); }
+.bulk-offer-tier.is-active .bot-save { color: #fff; }
+
+.bulk-offer-tier .bot-flag {
+  margin-top: 2px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* The rung they are closest to, outlined rather than filled. */
+.bulk-offer-tier.is-next {
+  border-color: rgba(92, 9, 48, 0.4);
+  background: rgba(92, 9, 48, 0.035);
+}
+
+.bulk-offer-progress {
+  height: 4px;
+  margin: 11px 0 0;
+  border-radius: 99px;
+  background: var(--pv-frame);
+  overflow: hidden;
+}
+
+.bulk-offer-progress span {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--pv-brand);
+  transition: width 0.25s ease;
+}
+
+.bulk-offer-cta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 9px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--pv-ink);
+}
+
+.bulk-offer-cta strong { font-weight: 800; }
+
+/* Already saving: state the amount, in the brand colour, with a tick. */
+.bulk-offer-cta.is-saving { color: var(--pv-brand); }
+
+.bulk-offer-cta .boc-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--pv-brand);
+  color: #fff;
+  font-size: 9px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.bulk-offer-note {
+  margin: 7px 0 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--pv-muted);
+}
+
+@media (max-width: 420px) {
+  .bulk-offer-tier { flex: 1 1 calc(50% - 4px); min-width: 0; }
+}
+
+/* ---------------------------------------------------------------------
+   STOCK
+   ---------------------------------------------------------------------
+   Gifts and corporate already had a .stock-badge with this exact class
+   vocabulary in their own stylesheets; studio had no stock display at
+   all, so these rules give it the same one rather than a third variant.
+   Scoped to the studio preview so the other two pages keep their own. */
+#previewStockBadge.stock-badge {
+  display: inline-block;
+  margin: 2px 0 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #DCFCE7;
+  color: #16A34A;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+#previewStockBadge.stock-badge.low-stock { background: #FEF3C7; color: #B45309; }
+#previewStockBadge.stock-badge.out-of-stock { background: #FEE2E2; color: #B91C1C; }
+
+/* "Only 3 available" under a quantity stepper that has hit its ceiling.
+   Shared by all three product views. */
+.qty-cap-note {
+  margin-top: 5px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #B45309;
+}

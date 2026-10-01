@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="css/shared/site-chrome.css">
   <link rel="stylesheet" href="css/studio.css?v=3">
   <!-- Shared product-view rules. MUST stay after the page stylesheet above: it wins on source order. -->
-  <link rel="stylesheet" href="css/shared/product-view.css?v=1">
+  <link rel="stylesheet" href="css/shared/product-view.css?v=4">
 </head>
 
 <body>
@@ -651,6 +651,10 @@
             <span id="previewDiscountPercent" class="preview-discount-percent"></span>
           </div>
 
+          <div class="stock-badge" id="previewStockBadge" style="display:none;"></div>
+
+          <div class="bulk-offer-box" id="previewBulkOffers" style="display:none;"></div>
+
           <div class="preview-options" id="previewOptions" style="display:none;">
             <div class="preview-option-group" id="previewQtyGroup" style="display:none;">
               <label for="previewQtySelect" id="previewQtyLabel">Photo Quantity</label>
@@ -682,16 +686,17 @@
                 <span id="previewItemQty">1</span>
                 <button type="button" aria-label="Increase quantity" onclick="adjustPreviewItemQty(1)">+</button>
               </div>
+              <div class="qty-cap-note" id="previewQtyCapNote" style="display:none;"></div>
             </div>
             <div class="preview-action-buttons">
-              <button type="button" class="preview-add-btn" onclick="previewAddToCart()">
+              <button type="button" class="preview-add-btn" id="previewAddToCart" onclick="previewAddToCart()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M6 8h12l1 13H5L6 8Z"></path>
                   <path d="M9 8a3 3 0 0 1 6 0"></path>
                 </svg>
                 <span>Add to cart</span>
               </button>
-              <button type="button" class="preview-buy-btn" onclick="previewBuyNow()">Buy Now</button>
+              <button type="button" class="preview-buy-btn" id="previewBuyNow" onclick="previewBuyNow()">Buy Now</button>
             </div>
           </div>
 
@@ -865,10 +870,12 @@
   <script src="js/shared/product-fields.js?v=6"></script>
   <script src="js/shared/thumb-map.js"></script>
   <script src="js/shared/api-config.js"></script>
+  <script src="js/shared/stock.js?v=1"></script>
+  <script src="js/shared/bulk-tiers.js?v=3"></script>
   <script src="js/shared/cart-core.js"></script>
   <script src="js/shared/cart-ui.js"></script>
   <script src="js/shared/product-media.js"></script>
-  <script src="js/studio.js?v=5"></script>
+  <script src="js/studio.js?v=7"></script>
   <script src="js/shared/bottom-nav.js"></script>
   <script src="js/shared/home-nav.js" defer></script>
   <script src="js/shared/customer-api.js"></script>

@@ -436,6 +436,33 @@ class ProductInputFieldIn(BaseModel):
         return self
 
 
+class ProductBulkTierIn(BaseModel):
+    """One quantity-tier ("buy more, save more") offer on a product. Several per
+    product is the point - "10 for 10% off, 20 for 20% off" is two rows - and the
+    single highest tier a customer's quantity reaches is the one that applies;
+    they never stack with each other. See services/pricing.bulk_discount_for().
+
+    Quantity is counted per product across the whole cart, so two differently
+    customized lines of the same product add up toward min_qty."""
+    min_qty: int = Field(ge=2, le=100000)
+    type: str = Field(default="percent", pattern="^(percent|flat)$")
+    # A percentage of the product's line value, or a flat rupee amount off it.
+    value: float = Field(gt=0)
+    # percent only, optional - caps what one tier can ever take off, the same
+    # guard CouponIn.max_discount gives a percentage coupon.
+    max_discount: float | None = Field(default=None, gt=0)
+    # Storefront wording. Left blank, pricing.default_tier_label() generates
+    # "Buy 10 or more, get 10% off" - so the admin only types this to override it.
+    label: str = Field(default="", max_length=120)
+
+    @field_validator("value")
+    @classmethod
+    def _percent_within_range(cls, v, info):
+        if (info.data.get("type") or "percent") == "percent" and v > 100:
+            raise ValueError("A percentage discount cannot exceed 100")
+        return v
+
+
 class ProductIn(BaseModel):
     category_id: str
     tier: str | None = None
@@ -455,6 +482,7 @@ class ProductIn(BaseModel):
     sort: int = 0
     extra: dict = {}
     input_fields: list[ProductInputFieldIn] = []
+    bulk_discounts: list[ProductBulkTierIn] = []
     media: list[MediaIn] = []
 
 
@@ -477,6 +505,7 @@ class ProductPatch(BaseModel):
     sort: int | None = None
     extra: dict | None = None
     input_fields: list[ProductInputFieldIn] | None = None
+    bulk_discounts: list[ProductBulkTierIn] | None = None
 
 
 class ProductOut(BaseModel):
@@ -500,6 +529,14 @@ class ProductOut(BaseModel):
     sort: int
     extra: dict
     input_fields: list[ProductInputFieldIn] = []
+    bulk_discounts: list[ProductBulkTierIn] = []
+    # A JSON column holding null rather than [] must not take the whole product
+    # list down with it - the same null-tolerance the order money fields need.
+    # Applied to input_fields too: it has always had this shape and this risk,
+    # and there is no reason for one of the two to be the fragile one.
+    _coerce_json_lists = field_validator("bulk_discounts", "input_fields", mode="before")(
+        lambda v: [] if v is None else v
+    )
     media: list[MediaOut] = []
 
 
@@ -624,6 +661,14 @@ class CheckoutIn(BaseModel):
     coupon_code: str | None = None
 
 
+def _zero_if_none(v):
+    """A nullable money column read back as None becomes 0. Used for the
+    quantity-discount fields, which were added to tables that already had rows
+    and are still nullable - without this, one old order with a NULL in it
+    turns every list/detail endpoint that includes it into a 500."""
+    return 0 if v is None else v
+
+
 class OrderItemOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
@@ -631,6 +676,13 @@ class OrderItemOut(BaseModel):
     product_snapshot: dict
     unit_price: float
     qty: int
+    # This line's share of the order's automatic quantity-tier discount, so the
+    # customer and staff can see which line the saving came from - see
+    # OrderItem.discount. Coerced from null because the column is nullable and
+    # rows can predate it (or be written by a path that never sets it, e.g.
+    # seed_dummy_orders.py) - an old order must still serialize, not 500.
+    discount: float = 0
+    _coerce_discount = field_validator("discount", mode="before")(_zero_if_none)
     notes: str
     # active | cancel_requested | cancelled - see OrderItem.status.
     status: str = "active"
@@ -782,7 +834,12 @@ class OrderOut(BaseModel):
     number: str
     status: str
     subtotal: float
+    # Coupon discount only; the automatic quantity-tier saving is bulk_discount.
     discount: float
+    # Null-coerced for the same reason as OrderItemOut.discount above: orders
+    # placed before this column existed must keep serializing.
+    bulk_discount: float = 0
+    _coerce_bulk = field_validator("bulk_discount", mode="before")(_zero_if_none)
     total: float
     coupon_code: str | None
     address_id: str | None

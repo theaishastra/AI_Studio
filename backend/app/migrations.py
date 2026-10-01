@@ -20,6 +20,7 @@ _COLUMN_MIGRATIONS: dict[str, list[str]] = {
         "ADD COLUMN IF NOT EXISTS input_fields JSON DEFAULT '[]'::json",
         "ADD COLUMN IF NOT EXISTS delivery_days INTEGER",
         "ADD COLUMN IF NOT EXISTS search_keywords JSON DEFAULT '[]'::json",
+        "ADD COLUMN IF NOT EXISTS bulk_discounts JSON DEFAULT '[]'::json",
         "DROP COLUMN IF EXISTS is_featured",
     ],
     "orders": [
@@ -28,9 +29,11 @@ _COLUMN_MIGRATIONS: dict[str, list[str]] = {
         "ADD COLUMN IF NOT EXISTS tracking_url TEXT",
         "ADD COLUMN IF NOT EXISTS expected_delivery DATE",
         "ADD COLUMN IF NOT EXISTS address_snapshot JSON DEFAULT '{}'::json",
+        "ADD COLUMN IF NOT EXISTS bulk_discount NUMERIC(10, 2) DEFAULT 0",
     ],
     "order_items": [
         "ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'",
+        "ADD COLUMN IF NOT EXISTS discount NUMERIC(10, 2) DEFAULT 0",
     ],
     "order_cancellation_requests": [
         "ADD COLUMN IF NOT EXISTS order_item_id UUID REFERENCES order_items(id) ON DELETE CASCADE",

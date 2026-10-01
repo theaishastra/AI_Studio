@@ -19,7 +19,7 @@ from ..services.policy import (
     IMMEDIATE_CANCEL_STATUSES, REQUESTABLE_CANCEL_STATUSES,
     address_change_deadline, annotate_order, annotate_orders,
 )
-from ..services.pricing import money, price_cart, to_paise
+from ..services.pricing import deduct_order_item, price_cart, to_paise
 from ..services.product_fields import resolve_product_price, validate_product_field_values
 from ..services.razorpay_service import create_rzp_order
 from ..services.retention import link_uploads_to_order
@@ -273,6 +273,7 @@ def checkout(body: CheckoutIn, background_tasks: BackgroundTasks,
             for idx, i in enumerate(body.items)
         ],
         body.coupon_code,
+        products,
     )
     if not priced["lines"]:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cart is empty")
@@ -295,6 +296,7 @@ def checkout(body: CheckoutIn, background_tasks: BackgroundTasks,
         status="payment_pending",
         subtotal=priced["subtotal"],
         discount=priced["discount"],
+        bulk_discount=priced["bulk_discount"],
         total=priced["total"],
         coupon_code=priced["coupon"].code if priced["coupon"] else None,
         address_id=address.id,
@@ -341,6 +343,7 @@ def checkout(body: CheckoutIn, background_tasks: BackgroundTasks,
             },
             unit_price=line["unit_price"],
             qty=line["qty"],
+            discount=line.get("bulk_discount") or 0,
         ))
         if _customization_has_upload(customization):
             pending_externalization.append((item_id, customization))
@@ -623,9 +626,7 @@ def _cancel_order_item(db: Session, order: Order, body: CancellationRequestIn, u
         # See the matching comment in cancel_order() - this item's stock was
         # reserved at checkout and must be released now that it won't be paid for.
         _restock_order_items(db, [item])
-        line_amount = money(item.unit_price) * item.qty
-        order.subtotal = max(money(0), money(order.subtotal) - line_amount)
-        order.total = max(money(0), money(order.total) - line_amount)
+        deduct_order_item(order, item)
         db.add(OrderTrackingEvent(order_id=order.id, status=order.status, title=f"Item cancelled: {title}",
                                    description=f"Cancelled by customer. Reason: {body.reason}"))
         db.commit()

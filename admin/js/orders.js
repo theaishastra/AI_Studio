@@ -666,7 +666,10 @@ function orderItemDetailHTML(order, item, index) {
           <span class="mono">${item.product_id ? `Product ID: ${esc(item.product_id)}` : "Custom item (no catalog ID)"}</span>
           ${ITEM_STATUS_BADGE[itemStatus] || ""}
         </div>
-        <div class="oid-pricing">${item.qty} × ${fmtINR(item.unit_price)} = <b>${fmtINR(item.unit_price * item.qty)}</b></div>
+        <div class="oid-pricing">${item.qty} × ${fmtINR(item.unit_price)} = ${item.discount > 0
+          ? `<s>${fmtINR(item.unit_price * item.qty)}</s> <b>${fmtINR(item.unit_price * item.qty - item.discount)}</b>
+             <span class="oid-bulk-saving">quantity offer &minus;${fmtINR(item.discount)}</span>`
+          : `<b>${fmtINR(item.unit_price * item.qty)}</b>`}</div>
         ${item.notes ? `<div class="oid-note">Note: ${esc(item.notes)}</div>` : ""}
         ${pendingItemRequest ? `
         <div class="request-card" style="margin-top:8px;">
@@ -773,6 +776,8 @@ function renderOrderModal(o) {
       <h3 class="order-section-title">Order Summary</h3>
       <div class="order-summary-card">
         <div class="order-summary-row"><span>Subtotal</span><span>${fmtINR(o.subtotal)}</span></div>
+        ${o.bulk_discount > 0 ? `
+        <div class="order-summary-row"><span>Quantity discount</span><span>-${fmtINR(o.bulk_discount)}</span></div>` : ""}
         <div class="order-summary-row"><span>Discount${o.coupon_code ? ` (${esc(o.coupon_code)})` : ""}</span><span>-${fmtINR(o.discount)}</span></div>
         <div class="order-summary-row total"><span>Total</span><span>${fmtINR(o.total)}</span></div>
         ${payment ? `

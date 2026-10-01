@@ -84,8 +84,37 @@
     // customizations of the same product can coexist) - qty/remove must act
     // on the real object key, not item.name, or those rows silently no-op.
     function changeQty(key, delta) {
+      if (delta > 0) {
+        // Stop the shopper here rather than at checkout. The server still has
+        // the final say (it reserves stock atomically), but being refused after
+        // entering an address is a bad way to find out.
+        const item = getCart()[key];
+        const left = cartRemainingFor(item);
+        if (left !== null && left <= 0) {
+          const info = cartStockById[item.product_id];
+          const limit = window.StockUI ? StockUI.limitFor(info) : null;
+          showCartStockNote(key, limit === 0
+            ? 'This item is out of stock.'
+            : `Only ${limit} available.`);
+          return;
+        }
+      }
       CartCore.updateQty(key, delta, {}, { createIfMissing: false });
       renderCartPage();
+    }
+
+    /* A short inline note on the row that refused to go higher. Rendered after
+       the repaint so it survives renderCartPage() rebuilding the list. */
+    let cartStockNote = null;
+    function showCartStockNote(key, message) {
+      cartStockNote = { key, message };
+      renderCartPage();
+      setTimeout(() => {
+        if (cartStockNote && cartStockNote.key === key) {
+          cartStockNote = null;
+          renderCartPage();
+        }
+      }, 3200);
     }
 
     function removeItem(key) {
@@ -465,10 +494,73 @@
       return /^[A-Za-z0-9._-]+\.html(\?|#|$)/.test(url) ? url : '';
     }
 
+    /* ---------------- quantity ("buy more, save more") offers ----------------
+       Tiers are fetched once per page load and kept here; every render reads
+       this. Until the fetch lands (or if it fails) the maps are empty, which
+       renders exactly as a cart with no offers - the summary then re-renders
+       when the data arrives. Checkout re-derives all of this server-side, so
+       nothing here decides what the customer is actually charged; see
+       js/shared/bulk-tiers.js. */
+    let cartBulkTiers = {};
+    let cartStockById = {};
+    let cartBulkResult = { total: 0, byKey: {}, tierByKey: {}, qtyByProduct: {}, nextByProduct: {} };
+
+    /* How many more of this line's product may be added, counting every line of
+       that product already in the cart. Null = not stock-tracked. */
+    function cartRemainingFor(item) {
+      if (!item || !item.product_id || !window.StockUI) return null;
+      const info = cartStockById[item.product_id];
+      if (!info) return null;
+      const inCart = cartBulkResult.qtyByProduct[item.product_id]
+        || Object.values(getCart())
+             .filter(i => i && i.product_id === item.product_id)
+             .reduce((sum, i) => sum + (parseInt(i.qty, 10) || 0), 0);
+      return StockUI.remaining(info, inCart);
+    }
+
+    function recomputeCartBulk() {
+      cartBulkResult = window.BulkTiers
+        ? window.BulkTiers.priceCart(getCart(), cartBulkTiers, parsePrice)
+        : { total: 0, byKey: {}, tierByKey: {}, qtyByProduct: {}, nextByProduct: {} };
+      return cartBulkResult;
+    }
+
+    function loadCartBulkTiers() {
+      if (!window.BulkTiers) return;
+      window.BulkTiers.fetchStock().then((m) => { cartStockById = m; renderCartPage(); }).catch(() => {});
+      window.BulkTiers.fetchTiers().then((map) => {
+        cartBulkTiers = map;
+        // Only worth a repaint if something in this cart actually has an offer.
+        const relevant = Object.values(getCart()).some(i => i && i.product_id && map[i.product_id]);
+        // ...and only while the customer is still ON step 1. renderCartPage()
+        // resets the flow to step 1 and hides the later panels, so repainting
+        // after a slow response would throw someone who had already moved on to
+        // delivery details (or come straight in on a Buy Now handoff, which
+        // opens at step 2) back to the item list. Steps 2 and 3 recompute this
+        // for themselves when they render.
+        if (!relevant) return;
+        if (currentCartStep === 1) renderCartPage();
+        // On step 2 the summary is already on screen at full price; repaint just
+        // that list rather than the page, so the offer appears there too instead
+        // of first showing up as a surprise at the payment step.
+        else if (currentCartStep === 2) {
+          renderMiniList('cartReviewMiniList', 'cartTotalValueStep2', 'cartBulkRowStep2', 'cartBulkValueStep2');
+        }
+      });
+    }
+
     function cartItemRowHTML(item, key, index) {
       const safeKey = escapeForAttr(key);
       const priceNum = parsePrice(item.price);
       const lineTotal = priceNum * item.qty;
+      // This line's share of its product's quantity discount (rounded for
+      // display only - the paisa-exact figures live in cartBulkResult).
+      const lineSaving = Math.round(cartBulkResult.byKey[key] || 0);
+      const lineTier = cartBulkResult.tierByKey[key] || null;
+      // Grey the "+" once this product's stock is fully spoken for by the cart.
+      const leftForLine = cartRemainingFor(item);
+      const atStockCap = leftForLine !== null && leftForLine <= 0;
+      const stockNote = cartStockNote && cartStockNote.key === key ? cartStockNote.message : '';
       const uploadedImages = cartItemUploadedImages(item);
       const options = cartItemOptions(item);
       const productUrl = cartItemProductUrl(item);
@@ -483,6 +575,7 @@
           <div class="cart-item-details">
             <h3>${productUrl ? `<a class="cart-item-title-link" href="${escapeHtml(productUrl)}">${title}</a>` : title}</h3>
             <p class="cart-item-unit-price">${item.price} each${item.qty > 1 ? ` &times; ${item.qty}` : ''}</p>
+            ${lineTier ? `<span class="cart-item-bulk-badge">&#10003; ${escapeHtml(lineTier.label)}</span>` : ''}
             ${item.customization && Object.values(item.customization).some(Boolean) ? '<span class="cart-item-customized-badge">&#10003; Customized</span>' : ''}
             ${options.length ? `
             <ul class="cart-item-options">
@@ -502,12 +595,19 @@
               </div>
             </div>` : ''}
           </div>
-          <div class="cart-qty-selector">
-            <button class="cart-qty-btn" onclick="changeQty('${safeKey}', -1)">-</button>
-            <span class="cart-qty-count">${item.qty}</span>
-            <button class="cart-qty-btn" onclick="changeQty('${safeKey}', 1)">+</button>
+          <div class="cart-qty-wrap">
+            <div class="cart-qty-selector">
+              <button class="cart-qty-btn" onclick="changeQty('${safeKey}', -1)">-</button>
+              <span class="cart-qty-count">${item.qty}</span>
+              <button class="cart-qty-btn${atStockCap ? ' is-capped' : ''}" onclick="changeQty('${safeKey}', 1)"${atStockCap ? ' aria-disabled="true"' : ''}>+</button>
+            </div>
+            ${stockNote ? `<div class="cart-qty-note">${escapeHtml(stockNote)}</div>` : ''}
           </div>
-          <div class="cart-item-price">₹${lineTotal}</div>
+          <div class="cart-item-price">
+            ${lineSaving > 0 ? `<span class="cart-item-price-was">₹${lineTotal}</span>` : ''}
+            <span>₹${lineTotal - lineSaving}</span>
+            ${lineSaving > 0 ? `<span class="cart-item-price-saved">Saved ₹${lineSaving}</span>` : ''}
+          </div>
           <button class="cart-remove-btn" onclick="removeItem('${safeKey}')" aria-label="Remove item">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 6h18"></path>
@@ -573,6 +673,51 @@
       });
     }
 
+    function setBulkSummaryRow(rowId, valueId, saving) {
+      const row = document.getElementById(rowId);
+      if (!row) return;
+      row.style.display = saving > 0 ? 'flex' : 'none';
+      if (saving > 0) document.getElementById(valueId).textContent = `-₹${saving}`;
+    }
+
+    /* "Add 4 more Ceramic Mugs to save 20%" - the only part of this feature that
+       asks the customer for something rather than just reporting a discount, so
+       it shows one product at a time (the closest to its next tier) instead of a
+       list nobody reads. */
+    function renderBulkNudge() {
+      const el = document.getElementById('cartBulkNudge');
+      if (!el) return;
+      const cart = getCart();
+      let best = null;
+      Object.entries(cartBulkResult.nextByProduct || {}).forEach(([pid, tier]) => {
+        if (!tier) return;
+        const have = cartBulkResult.qtyByProduct[pid] || 0;
+        const needed = tier.min_qty - have;
+        if (needed <= 0) return;
+        const line = Object.values(cart).find(i => i && i.product_id === pid);
+        if (!line) return;
+        if (!best || needed < best.needed) best = { needed, tier, name: line.name, pid };
+      });
+      if (!best) { el.style.display = 'none'; el.innerHTML = ''; return; }
+      const saving = best.tier.type === 'flat'
+        ? `₹${Math.round(best.tier.value)} off`
+        : `${best.tier.value}% off`;
+      // How close they already are, so this reads as progress rather than as a
+      // demand for more money.
+      const have = cartBulkResult.qtyByProduct[best.pid] || 0;
+      const pct = Math.max(8, Math.min(100, Math.round((have / best.tier.min_qty) * 100)));
+      // The product name goes on its own muted line: at full length it pushed
+      // the actual offer off the end of the sentence.
+      el.innerHTML = `
+        <div class="cart-bulk-nudge-top">
+          <span class="cbn-badge">${best.needed} more</span>
+          <span class="cbn-text">to get <strong>${escapeHtml(saving)}</strong></span>
+        </div>
+        <div class="cart-bulk-nudge-item">${escapeHtml(best.name)}</div>
+        <div class="cart-bulk-nudge-bar"><span style="width:${pct}%"></span></div>`;
+      el.style.display = 'block';
+    }
+
     function renderCartPage() {
       const cart = getCart();
       const { items, totalQty, totalPrice } = cartTotals();
@@ -597,6 +742,9 @@
       hasItemsSection.style.display = 'grid';
       emptyStateSection.style.display = 'none';
 
+      // Before any row is built: cartItemRowHTML() reads the per-line shares.
+      recomputeCartBulk();
+
       const cartItemsListEl = document.getElementById('cartItemsList');
       cartItemsListEl.innerHTML =
         Object.entries(cart).map(([key, item], index) => cartItemRowHTML(item, key, index)).join('');
@@ -608,7 +756,10 @@
 
       document.getElementById('cartItemCount').textContent = `${totalQty} ${totalQty === 1 ? 'item' : 'items'}`;
       document.getElementById('cartSubtotalValue').textContent = `₹${totalPrice}`;
-      document.getElementById('cartTotalValue').textContent = `₹${totalPrice}`;
+      const bulkSaving = Math.round(cartBulkResult.total || 0);
+      setBulkSummaryRow('cartBulkRow', 'cartBulkValue', bulkSaving);
+      document.getElementById('cartTotalValue').textContent = `₹${totalPrice - bulkSaving}`;
+      renderBulkNudge();
 
       const needsAttention = renderAttentionBanner(cart);
       const checkoutBtn = document.getElementById('proceedToCheckoutBtn');
@@ -631,14 +782,28 @@
       });
     }
 
-    function renderMiniList(listId, totalId) {
-      const { items, totalPrice } = cartTotals();
-      document.getElementById(listId).innerHTML = items.map(item => `
+    /* The review/payment step's compact line list. `bulkRowId`/`bulkValueId` are
+       for step 2, which is still working off this browser's own figures; step 3
+       deliberately passes none and shows the server's confirmed amounts from the
+       created order instead (see renderPaymentStep). */
+    function renderMiniList(listId, totalId, bulkRowId, bulkValueId) {
+      const cart = getCart();
+      const { totalPrice } = cartTotals();
+      recomputeCartBulk();
+      document.getElementById(listId).innerHTML = Object.entries(cart).map(([key, item]) => {
+        const lineTotal = parsePrice(item.price) * item.qty;
+        const saving = Math.round(cartBulkResult.byKey[key] || 0);
+        return `
         <div class="cart-mini-row">
           <span class="cart-mini-name">${escapeHtml(item.name)} <span class="cart-mini-qty">&times;${item.qty}</span></span>
-          <span class="cart-mini-price">₹${parsePrice(item.price) * item.qty}</span>
-        </div>`).join('');
-      if (totalId) document.getElementById(totalId).textContent = `₹${totalPrice}`;
+          <span class="cart-mini-price">${saving > 0
+            ? `<span class="cart-mini-price-was">₹${lineTotal}</span> ₹${lineTotal - saving}`
+            : `₹${lineTotal}`}</span>
+        </div>`;
+      }).join('');
+      const bulkSaving = Math.round(cartBulkResult.total || 0);
+      if (bulkRowId) setBulkSummaryRow(bulkRowId, bulkValueId, bulkSaving);
+      if (totalId) document.getElementById(totalId).textContent = `₹${totalPrice - bulkSaving}`;
     }
 
     // "Continue Shopping" used to always hardcode index.html - a customer who
@@ -679,7 +844,7 @@
       document.getElementById('cartEmptyState').style.display = 'none';
       setStepIndicator(step);
 
-      if (step === 2) renderMiniList('cartReviewMiniList', 'cartTotalValueStep2');
+      if (step === 2) renderMiniList('cartReviewMiniList', 'cartTotalValueStep2', 'cartBulkRowStep2', 'cartBulkValueStep2');
       if (step === 3) enterPaymentStep();
 
       const anchor = document.getElementById('cartSteps');
@@ -942,6 +1107,11 @@
       renderMiniList('cartReviewMiniList2', null);
       updateFinalPayable();
 
+      // From here the server's figures are the ones that matter: the order has
+      // been created and its bulk_discount is what will actually be charged.
+      setBulkSummaryRow('cartBulkRowStep3', 'cartBulkValueStep3',
+        cartOrder && cartOrder.bulk_discount ? Math.round(cartOrder.bulk_discount) : 0);
+
       const discountRow = document.getElementById('cartDiscountRow');
       const discount = cartOrder && cartOrder.discount ? Math.round(cartOrder.discount) : 0;
       if (discountRow) {
@@ -1083,6 +1253,9 @@
     window.addEventListener('DOMContentLoaded', () => {
       const isBuyNowHandoff = consumePendingBuyNow();
       renderCartPage();
+      // Fire-and-forget: the cart above is already on screen at full price, and
+      // this repaints it with any quantity offers once the catalog answers.
+      loadCartBulkTiers();
       prefillDeliveryDetails();
       wireDeliveryFormDirtyTracking();
       // Already logged in from a previous visit (token lives in localStorage) -

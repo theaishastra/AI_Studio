@@ -19,6 +19,26 @@ from sqlalchemy.orm import Session
 from ..models import Product
 
 
+def _invalidate_catalog_cache() -> None:
+    """Drops the storefront's cached product payloads so a stock change is
+    visible to the next shopper.
+
+    The page bundles and the flat product list are cached for five minutes
+    (catalog._PAGE_BUNDLE_CACHE_TTL_SECONDS). That was harmless while stock was
+    only enforced at checkout, but the storefront now SHOWS stock - "Only 3
+    left", an out-of-stock card, a capped quantity picker - and a five-minute
+    stale count turns that display into a promise the checkout then breaks.
+
+    Imported inside the function because routers.catalog imports from services,
+    so a module-level import here would be circular. Invalidation is cheap
+    relative to an order: it costs the next request one catalog re-query."""
+    try:
+        from ..routers.catalog import invalidate_catalog_cache
+        invalidate_catalog_cache()
+    except Exception:  # pragma: no cover - never let cache upkeep break an order
+        pass
+
+
 def try_decrement_stock(db: Session, product_id: str, qty: int) -> bool:
     """Decrements Product.stock by qty, but only if at least qty is currently
     available - the WHERE clause and the write happen as one atomic statement,
@@ -31,6 +51,8 @@ def try_decrement_stock(db: Session, product_id: str, qty: int) -> bool:
         .where(Product.id == product_id, Product.stock >= qty)
         .values(stock=Product.stock - qty)
     )
+    if result.rowcount > 0:
+        _invalidate_catalog_cache()
     return result.rowcount > 0
 
 
@@ -45,3 +67,4 @@ def restock(db: Session, product_id: str, qty: int) -> None:
         .where(Product.id == product_id, Product.stock.isnot(None))
         .values(stock=Product.stock + qty)
     )
+    _invalidate_catalog_cache()

@@ -1219,6 +1219,16 @@
       white-space: nowrap;
     }
 
+    /* The pre-discount value of a line that got a quantity offer, struck
+       through above what it actually cost. */
+    .order-item-amount-was {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gray-500);
+      text-decoration: line-through;
+    }
+
     .order-item-inactive { opacity: 0.6; }
     .order-item-inactive .order-item-amount { text-decoration: line-through; }
 
@@ -2093,6 +2103,38 @@
       min-width: 70px;
       text-align: right;
       color: var(--gray-900);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 1px;
+    }
+
+    /* Quantity-offer ("buy 10, save 10%") price treatment on a cart line: the
+       list value struck through above what this line now costs, with the saving
+       spelled out under it. */
+    .cart-item-price-was {
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--gray-500);
+      text-decoration: line-through;
+    }
+
+    .cart-item-price-saved {
+      font-weight: 700;
+      font-size: 10.5px;
+      color: var(--success);
+      white-space: nowrap;
+    }
+
+    .cart-item-bulk-badge {
+      display: inline-block;
+      margin-top: 5px;
+      font-size: 10.5px;
+      font-weight: 800;
+      color: var(--success);
+      background: rgba(216, 189, 130, 0.18);
+      padding: 2px 8px;
+      border-radius: 20px;
     }
 
     .cart-remove-btn {
@@ -2132,6 +2174,13 @@
       margin-bottom: 10px;
     }
 
+    /* An automatic saving, not a charge - coloured so it reads as money off at a
+       glance next to the plain Subtotal row. */
+    .cart-summary-row.cart-summary-saving {
+      color: var(--success);
+      font-weight: 700;
+    }
+
     .cart-summary-total {
       display: flex;
       justify-content: space-between;
@@ -2141,6 +2190,104 @@
       padding-top: 14px;
       margin-top: 6px;
       border-top: 1px solid var(--gray-200);
+    }
+
+    /* Quantity stepper + the note shown when it refuses to go higher. */
+    .cart-qty-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    /* Capped rather than disabled: the button still responds, and says why.
+       A dead control with no explanation is the worse failure. */
+    .cart-qty-btn.is-capped {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .cart-qty-note {
+      max-width: 120px;
+      font-size: 10.5px;
+      font-weight: 700;
+      line-height: 1.25;
+      text-align: center;
+      color: #B45309;
+    }
+
+    /* "4 more to get 20% off" - the one thing on this card that asks the
+       shopper for something, so it gets a solid tinted panel and a progress
+       bar rather than the dashed outline it had, which read as an unfinished
+       placeholder rather than an offer. */
+    .cart-bulk-nudge {
+      margin-top: 14px;
+      padding: 11px 12px 12px;
+      border: 1px solid rgba(216, 189, 130, 0.55);
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(216, 189, 130, 0.18) 0%, rgba(216, 189, 130, 0.07) 100%);
+    }
+
+    .cart-bulk-nudge-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      line-height: 1.3;
+      color: var(--gray-800);
+    }
+
+    .cart-bulk-nudge-top .cbn-badge {
+      flex-shrink: 0;
+      padding: 3px 9px;
+      border-radius: 99px;
+      /* Brand maroon, not the gold accent: white on #C7A968 is about 2.1:1 and
+         unreadable at this size. */
+      background: var(--success);
+      color: #fff;
+      font-size: 11.5px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .cart-bulk-nudge-top .cbn-text strong { font-weight: 800; }
+
+    /* The product this applies to - muted and clipped, because at full length
+       it crowded out the offer itself. */
+    .cart-bulk-nudge-item {
+      margin-top: 6px;
+      font-size: 11.5px;
+      line-height: 1.35;
+      color: var(--gray-600);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .cart-bulk-nudge-bar {
+      height: 4px;
+      margin-top: 9px;
+      border-radius: 99px;
+      background: rgba(0, 0, 0, 0.07);
+      overflow: hidden;
+    }
+
+    .cart-bulk-nudge-bar span {
+      display: block;
+      height: 100%;
+      border-radius: 99px;
+      background: var(--success);
+      transition: width 0.25s ease;
+    }
+
+    .cart-mini-price-was {
+      font-weight: 600;
+      color: var(--gray-500);
+      text-decoration: line-through;
+      margin-right: 4px;
     }
 
     .whatsapp-checkout-btn {

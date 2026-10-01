@@ -165,6 +165,16 @@ class Product(Base, TimestampMixin):
     # exact title wording. See catalog.py public_products and js/catalog.js /
     # js/shared/search.js, which all match against this too.
     search_keywords: Mapped[list] = mapped_column(JSON, default=list)
+    # Quantity-tier ("buy more, save more") offers on this product, as
+    # [{min_qty, type: percent|flat, value, max_discount?, label?}] sorted by
+    # min_qty - see services/pricing.bulk_discount_for(), which picks the single
+    # highest tier a line's quantity reaches (tiers do not stack with each
+    # other). Quantity is summed across every cart line of this product, so ten
+    # mugs ordered as 6 of one photo + 4 of another still reach a min_qty of 10.
+    # JSON rather than its own table for the same reason as input_fields: the
+    # admin edits the whole list as one form section and nothing ever queries an
+    # individual tier.
+    bulk_discounts: Mapped[list] = mapped_column(JSON, default=list)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort: Mapped[int] = mapped_column(Integer, default=0)
     # Free-form JSON for fields with no dedicated column yet (studio's configurator:
@@ -308,7 +318,15 @@ class Order(Base, TimestampMixin):
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), index=True)
     status: Mapped[str] = mapped_column(String(20), default="created", index=True)
     subtotal: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
+    # Coupon-code discount only. The quantity-tier discount is tracked
+    # separately in bulk_discount below so the customer (and staff) can see
+    # which of the two saved them what, instead of one opaque figure.
     discount: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
+    # Sum of every line's automatic quantity-tier discount (OrderItem.discount).
+    # Applied to the subtotal *before* the coupon, so a coupon percentage is
+    # taken on the already-reduced amount rather than the list price - see
+    # services/pricing.price_cart().
+    bulk_discount: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
     total: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
     coupon_code: Mapped[str | None] = mapped_column(String(40), nullable=True)
     address_id: Mapped[str | None] = mapped_column(ForeignKey("addresses.id", ondelete="SET NULL"), nullable=True)
@@ -354,6 +372,14 @@ class OrderItem(Base):
     product_snapshot: Mapped[dict] = mapped_column(JSON, default=dict)  # {title, slug, type, image}
     unit_price: Mapped[float] = mapped_column(Numeric(10, 2))
     qty: Mapped[int] = mapped_column(Integer, default=1)
+    # This line's share of the order's quantity-tier ("buy 10, save 10%")
+    # discount, already applied to Order.subtotal/total. Held per line rather
+    # than only as one order-level figure because a single line can be cancelled
+    # independently of the rest (see status below): refund_order()/the
+    # cancellation path subtract this line's *net* value, and without the
+    # per-line split they would refund the undiscounted unit_price * qty and
+    # give back more than the customer ever paid.
+    discount: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
     notes: Mapped[str] = mapped_column(Text, default="")
     # active | cancel_requested | cancelled - lets one line item in a multi-item
     # order be cancelled independently of the rest (see OrderCancellationRequest

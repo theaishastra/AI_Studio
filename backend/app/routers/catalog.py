@@ -11,6 +11,7 @@ from ..database import SessionLocal, get_db
 from ..deps import get_current_user
 from ..models import Category, Coupon, Media, Product, Review, Setting, SitePage, User
 from ..schemas import ReviewIn, ReviewOut
+from ..services.pricing import normalize_bulk_tiers
 from ..services.storage import get_or_create_thumbnail, warm_thumbnails
 
 logger = logging.getLogger("catalog")
@@ -89,13 +90,81 @@ def split_media(media) -> tuple[list[str], list[str]]:
     return images, videos
 
 
+def default_variant_pricing(product: Product) -> tuple[float, float | None] | None:
+    """The (price, mrp) a shopper actually sees the moment they open this product,
+    when its price comes from a priced dropdown rather than Product.price.
+
+    A product whose "Customer Questions" include a priced dropdown (Studio's
+    "16 Photos = ₹200", a size/colour picker where each option costs a different
+    amount) is never sold at Product.price: the storefront pre-selects that
+    dropdown's FIRST option on render - see renderChoiceControl() in
+    js/shared/product-fields.js, `const initial = priced ? options[0] : null` -
+    and that option's price is what the page shows and what add-to-cart charges.
+
+    Cards were still advertising Product.price, so a product whose first option
+    costs ₹50 could sit on the grid promising ₹30. This returns what the card
+    should say instead; None means the product has no priced dropdown and its
+    own price is already correct.
+
+    Mirrors getSelectedPricing() exactly, including the fallback: if options[0]
+    happens to carry no price the storefront shows Product.price, so this does
+    too rather than hunting for the next priced option."""
+    fields = sorted(product.input_fields or [], key=lambda f: f.get("sort", 0))
+    field = next(
+        (f for f in fields
+         if f.get("type") == "dropdown" and not f.get("multi_select") and f.get("option_prices")),
+        None,
+    )
+    if not field:
+        return None
+    options = field.get("options") or []
+    if not options:
+        return None
+    initial = options[0]
+    raw_price = (field.get("option_prices") or {}).get(initial)
+    if raw_price is None:
+        return None
+    try:
+        price = float(raw_price)
+    except (TypeError, ValueError):
+        return None
+    raw_mrp = (field.get("option_mrps") or {}).get(initial)
+    try:
+        mrp = float(raw_mrp) if raw_mrp is not None else None
+    except (TypeError, ValueError):
+        mrp = None
+    # Same rule the storefront uses: a was-price is only shown when it is
+    # actually above what is being charged.
+    return price, (mrp if mrp is not None and mrp > price else None)
+
+
+def display_pricing(product: Product) -> tuple[float, float | None]:
+    """(price, mrp) for any card or listing - the priced dropdown's first option
+    when there is one, otherwise the product's own figures."""
+    variant = default_variant_pricing(product)
+    if variant:
+        return variant
+    mrp = float(product.mrp) if product.mrp else None
+    price = float(product.price)
+    return price, (mrp if mrp is not None and mrp > price else None)
+
+
 def format_price(product: Product) -> str:
     """Most products show a real price; a quote-based service (equipment add-ons like
     Drone/Traditional Videography) is flagged with extra.price_on_request instead of
     a fake ₹0, so the storefront shows "On Request" rather than formatting that 0."""
     if (product.extra or {}).get("price_on_request"):
         return "On Request"
-    return format_inr(product.price)
+    return format_inr(display_pricing(product)[0])
+
+
+def format_mrp(product: Product) -> str | None:
+    """The struck-through "was" price to sit beside format_price() - taken from
+    the same option, so the pair on a card always describes one thing."""
+    if (product.extra or {}).get("price_on_request"):
+        return None
+    mrp = display_pricing(product)[1]
+    return format_inr(mrp) if mrp else None
 
 
 def format_inr(value) -> str:
@@ -224,7 +293,7 @@ def _build_page_bundle(page_slug: str, db: Session) -> dict:
                 "title": p.title,
                 "description": p.description or "",
                 "price": format_price(p),
-                "mrp": format_inr(p.mrp) if p.mrp else None,
+                "mrp": format_mrp(p),
                 "feat": p.features or [],
                 "images": product_media[p.id][0],
                 # Short product clips an admin attached alongside the photos. Only the
@@ -233,6 +302,10 @@ def _build_page_bundle(page_slug: str, db: Session) -> dict:
                 "rating": ratings.get(p.id),
                 "extra": p.extra or {},
                 "input_fields": p.input_fields or [],
+                # Normalized here rather than handed over raw so the storefront
+                # never has to sort, dedupe or invent a label for these - see
+                # js/shared/bulk-tiers.js, which only picks and formats.
+                "bulk_discounts": normalize_bulk_tiers(p.bulk_discounts),
                 "delivery_days": p.delivery_days,
                 "type": p.type,
                 "stock": p.stock,
@@ -293,13 +366,14 @@ def get_product(product_id: str, db: Session = Depends(get_db)):
         "title": product.title,
         "description": product.description or "",
         "price": format_price(product),
-        "mrp": format_inr(product.mrp) if product.mrp else None,
+        "mrp": format_mrp(product),
         "feat": product.features or [],
         "images": package_images,
         "videos": package_videos,
         "rating": round(float(avg_rating), 1) if avg_rating else None,
         "extra": product.extra or {},
         "input_fields": product.input_fields or [],
+        "bulk_discounts": normalize_bulk_tiers(product.bulk_discounts),
         "delivery_days": product.delivery_days,
         "type": product.type,
         "stock": product.stock,
@@ -428,7 +502,7 @@ def public_homepage(db: Session = Depends(get_db)):
                 # First *image*, not first media row - a product whose gallery leads
                 # with a video would otherwise put an MP4 in this homepage card's <img>.
                 "image": next((cld_optimize(m.url) for m in p.media if m.media_type != "video"), None),
-                "price": float(p.price),
+                "price": display_pricing(p)[0],
             }
             for p in ordered_prods
         ],
@@ -478,7 +552,9 @@ def public_products(
             {
                 "id": p.id, "title": p.title, "slug": p.slug,
                 "description": p.description or "",
-                "price": float(p.price), "mrp": float(p.mrp) if p.mrp else None,
+                # The priced-dropdown option a shopper lands on, not the bare
+                # Product.price - see display_pricing().
+                "price": display_pricing(p)[0], "mrp": display_pricing(p)[1],
                 # Images only: every consumer of this endpoint (nav search results,
                 # wishlist tiles, cross-page card grids) renders images[0] as an <img>.
                 "images": [cld_optimize(m.url) for m in p.media if m.media_type != "video"],
@@ -490,6 +566,13 @@ def public_products(
                 # catalog.html) to link back to the right place / category filter.
                 "page_slug": p.category.page.slug if p.category and p.category.page else None,
                 "search_keywords": p.search_keywords or [],
+                "bulk_discounts": normalize_bulk_tiers(p.bulk_discounts),
+                # Needed by the cart, which can raise a line's quantity with no
+                # product page in front of it and so has nowhere else to learn
+                # what is actually in stock. Null means "not stock-tracked"
+                # (a service, or a product an admin never gave a count).
+                "type": p.type,
+                "stock": p.stock,
             }
             for p in rows
         ]

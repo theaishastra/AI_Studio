@@ -223,14 +223,21 @@
       return cart[productName] ? cart[productName].qty : 0;
     }
 
-    function updateCartQty(productName, delta, priceStr = '', imgUrl = '') {
-      CartCore.updateQty(productName, delta, { name: productName, price: priceStr, img: imgUrl });
+    /* `key` is the cart line's real storage key (a configuration hash for any
+       line added from a product page), never the display name - keying by name
+       created a duplicate, product_id-less row instead of changing the row on
+       screen. createIfMissing:false keeps that guarantee: the homepage has no
+       add-to-cart of its own any more (its cards navigate to the product page),
+       so these steppers only ever act on a line that already exists, and a
+       stepper must not be able to invent one. */
+    function updateCartQty(key, delta) {
+      CartCore.updateQty(key, delta, {}, { createIfMissing: false });
       updateCartUI();
       renderProducts();
     }
 
-    function removeCartItem(productName) {
-      CartCore.removeItem(productName);
+    function removeCartItem(key) {
+      CartCore.removeItem(key);
       updateCartUI();
       renderProducts();
     }
@@ -296,7 +303,7 @@
           drawerItemsContainer.innerHTML = cartDrawerEmptyStateHTML();
           if (subtotalEl) subtotalEl.textContent = '₹0';
         } else {
-          drawerItemsContainer.innerHTML = items.map(item => `
+          drawerItemsContainer.innerHTML = Object.entries(cart).map(([key, item]) => `
             <div class="cart-drawer-item">
               <img class="cart-drawer-item-img" src="${cldOpt(item.img)}" alt="${item.name}" loading="lazy">
               <div class="cart-drawer-item-info">
@@ -304,11 +311,11 @@
                 <p>${item.price} each</p>
               </div>
               <div class="quantity-selector" style="height: 24px; min-width: 72px;">
-                <button class="qty-btn" onclick="updateCartQty('${escapeAttrJs(item.name)}', -1, '${escapeAttrJs(item.price)}', '${escapeAttrJs(item.img)}')">-</button>
+                <button class="qty-btn" onclick="updateCartQty('${escapeAttrJs(key)}', -1)">-</button>
                 <span class="qty-count">${item.qty}</span>
-                <button class="qty-btn" onclick="updateCartQty('${escapeAttrJs(item.name)}', 1, '${escapeAttrJs(item.price)}', '${escapeAttrJs(item.img)}')">+</button>
+                <button class="qty-btn" onclick="updateCartQty('${escapeAttrJs(key)}', 1)">+</button>
               </div>
-              <button class="cart-drawer-item-remove" onclick="removeCartItem('${escapeAttrJs(item.name)}')" title="Remove item" aria-label="Remove item">
+              <button class="cart-drawer-item-remove" onclick="removeCartItem('${escapeAttrJs(key)}')" title="Remove item" aria-label="Remove item">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>

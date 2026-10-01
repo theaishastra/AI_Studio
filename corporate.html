@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="css/shared/site-chrome.css">
   <link rel="stylesheet" href="css/corporate.css?v=1790000000002">
   <!-- Shared product-view rules. MUST stay after the page stylesheet above: it wins on source order. -->
-  <link rel="stylesheet" href="css/shared/product-view.css?v=1">
+  <link rel="stylesheet" href="css/shared/product-view.css?v=4">
   <style>
     /* Keep the Corporate product information column as one continuous surface. */
     .product-detail-modal .modal-info-col {
@@ -1755,6 +1755,8 @@
             <span class="stock-badge" id="modalStockBadge">In stock</span>
           </div>
 
+          <div class="bulk-offer-box" id="modalBulkOffers" style="display:none;"></div>
+
 
           <div class="pf-fields" id="modalCustomFields" style="display:none;"></div>
 
@@ -1766,6 +1768,7 @@
                 <span class="modal-qty-num" id="modalQtyNum">1</span>
                 <button class="modal-qty-btn" onclick="adjustModalQty(1)" aria-label="Increase quantity">+</button>
               </div>
+              <div class="qty-cap-note" id="modalQtyCapNote" style="display:none;"></div>
             </div>
             <div class="detail-action-buttons">
               <button class="modal-add-cart-btn" id="modalAddCartBtn" onclick="addModalItemToCart()">
@@ -2037,10 +2040,12 @@
   <script src="js/shared/product-fields.js?v=6"></script>
   <script src="js/shared/thumb-map.js"></script>
   <script src="js/shared/api-config.js"></script>
+  <script src="js/shared/stock.js?v=1"></script>
+  <script src="js/shared/bulk-tiers.js?v=3"></script>
   <script src="js/shared/cart-core.js"></script>
   <script src="js/shared/cart-ui.js"></script>
   <script src="js/shared/product-media.js"></script>
-  <script src="js/corporate.js?v=7"></script>
+  <script src="js/corporate.js?v=9"></script>
   <script src="js/shared/home-nav.js" defer></script>
   <script src="js/shared/customer-api.js"></script>
   <script src="js/shared/auth-modal.js" defer></script>

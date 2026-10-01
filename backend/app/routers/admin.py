@@ -35,7 +35,7 @@ from ..services.inventory import restock
 from ..services.media import process_image, process_video, sniff_video
 from ..services.notifications import booking_event, notify, order_event
 from ..services.policy import annotate_order, annotate_orders, refund_status as compute_refund_status
-from ..services.pricing import money
+from ..services.pricing import deduct_order_item, normalize_bulk_tiers
 from ..services.retention import (
     DEFAULT_RETENTION_DAYS, RETENTION_SETTING_KEY,
     TERMINAL_STATUSES as RETENTION_TERMINAL_STATUSES,
@@ -483,6 +483,10 @@ def create_product(body: ProductIn, request: Request,
             f"A product can have at most {MAX_MEDIA_PER_ENTITY} photos/videos",
         )
     data = body.model_dump(exclude={"media"})
+    # Stored canonically (sorted by min_qty, deduped, default labels filled in)
+    # so the storefront and the pricing engine read identical tiers whichever
+    # order the admin happened to add the rows in.
+    data["bulk_discounts"] = normalize_bulk_tiers(data.get("bulk_discounts"))
     product = Product(**data)
     db.add(product)
     db.flush()
@@ -504,6 +508,8 @@ def update_product(product_id: str, body: ProductPatch, request: Request,
     if not product:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Product not found")
     data = body.model_dump(exclude_unset=True)
+    if "bulk_discounts" in data:
+        data["bulk_discounts"] = normalize_bulk_tiers(data["bulk_discounts"])
     if "category_id" in data and not db.get(Category, data["category_id"]):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Category not found")
     if "slug" in data:
@@ -974,9 +980,7 @@ def _decide_item_cancellation(db: Session, req: OrderCancellationRequest, order:
             product = db.get(Product, item.product_id) if item.product_id else None
             if product and product.type == "product" and product.stock is not None:
                 restock(db, product.id, item.qty)
-            line_amount = money(item.unit_price) * item.qty
-            order.subtotal = max(money(0), money(order.subtotal) - line_amount)
-            order.total = max(money(0), money(order.total) - line_amount)
+            deduct_order_item(order, item)
         db.add(OrderTrackingEvent(
             order_id=order.id, status=order.status, title=f"Item cancelled: {title}",
             description=f"Cancellation request approved. Reason: {req.reason}",
@@ -1088,7 +1092,7 @@ def export_orders_csv(admin: User = Depends(require_staff), db: Session = Depend
     writer = csv.writer(buffer)
     writer.writerow([
         "Order Number", "Status", "Customer Name", "Customer Email", "Customer Phone",
-        "Items", "Item Count", "City", "Subtotal", "Discount", "Total", "Coupon",
+        "Items", "Item Count", "City", "Subtotal", "Quantity Discount", "Discount", "Total", "Coupon",
         "Tracking Number", "Created At",
     ])
     for o in orders:
@@ -1097,7 +1101,7 @@ def export_orders_csv(admin: User = Depends(require_staff), db: Session = Depend
             o.number, o.status,
             o.user.name if o.user else "", o.user.email if o.user else "", o.user.phone if o.user else "",
             item_titles, len(o.items), o.address.city if o.address else "",
-            o.subtotal, o.discount, o.total, o.coupon_code or "",
+            o.subtotal, o.bulk_discount, o.discount, o.total, o.coupon_code or "",
             o.tracking_number or "", o.created_at.isoformat(),
         ])
     buffer.seek(0)

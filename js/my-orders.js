@@ -335,7 +335,10 @@
       const uploaded = orderItemUploadedImages(customization);
       const customText = orderItemCustomText(customization);
       const specs = orderItemCustomSpecs(customization);
-      const lineTotal = Math.round(item.unit_price * item.qty);
+      const lineGross = Math.round(item.unit_price * item.qty);
+      // This line's share of the order's automatic quantity discount.
+      const lineSaving = Math.round(item.discount || 0);
+      const lineTotal = lineGross - lineSaving;
       const itemStatus = item.status || 'active';
       const activeCount = (order.items || []).filter(i => (i.status || 'active') === 'active').length;
       // Reasons mirror the order-level Cancel Order button below - an item can
@@ -396,7 +399,10 @@
               : `<button type="button" class="order-item-cancel-btn" disabled title="${escapeOrdAttr(itemCancelDisabledReason)}">Cancel this item</button>
                  <div class="order-action-reason">${escapeOrdHTML(itemCancelDisabledReason)}</div>`) : ''}
           </div>
-          <div class="order-item-amount">&#8377;${lineTotal}</div>
+          <div class="order-item-amount">
+            ${lineSaving > 0 ? `<span class="order-item-amount-was">&#8377;${lineGross}</span>` : ''}
+            <span>&#8377;${lineTotal}</span>
+          </div>
         </div>`;
     }
 
@@ -404,6 +410,12 @@
 
     function orderSummaryHTML(order) {
       const rows = [['Subtotal', `&#8377;${Math.round(order.subtotal)}`]];
+      // Shown separately from the coupon so the customer can see which saving
+      // came from buying in quantity and which from the code they entered -
+      // and so Subtotal minus the rows below actually equals Total.
+      if (order.bulk_discount > 0) {
+        rows.push(['Quantity discount', `&minus;&#8377;${Math.round(order.bulk_discount)}`]);
+      }
       if (order.discount > 0) {
         const label = order.coupon_code ? `Discount (${escapeOrdHTML(order.coupon_code)})` : 'Discount';
         rows.push([label, `&minus;&#8377;${Math.round(order.discount)}`]);

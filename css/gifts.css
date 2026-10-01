@@ -14179,6 +14179,35 @@ html body.gifts-view-category .pkg-discount-badge {
   white-space: nowrap;
 }
 
+/* Stock state on a grid card. Only rendered when there is something worth
+   saying (low or out), so a normally-stocked card is unchanged. */
+html body.gifts-view-category .pkg-stock-note {
+  margin-top: 4px;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+html body.gifts-view-category .pkg-stock-note.pkg-stock-low { color: #B45309; }
+html body.gifts-view-category .pkg-stock-note.pkg-stock-out { color: #B91C1C; }
+
+/* An unbuyable card still opens (the shopper may want the details) but should
+   not look like the rest of the grid. */
+html body.gifts-view-category .pkg-card.pkg-out-of-stock .pkg-image-wrap { opacity: 0.55; }
+html body.gifts-view-category .pkg-card.pkg-out-of-stock .pkg-price { color: var(--gray-500, #A89C8A); }
+
+/* Quantity-offer summary on a grid card ("Buy 10 save 10% · Buy 20 save 20%"),
+   rendered by js/shared/bulk-tiers.js badge(). Present only on products an
+   admin has given tiers, so it adds nothing to a normal card's height. */
+html body.gifts-view-category .pkg-bulk-badge {
+  margin-top: 5px;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.3;
+  color: #16A34A;
+  white-space: normal;
+}
+
 html body.gifts-view-category .pkg-ribbon,
 html body.gifts-view-category .pkg-actions,
 html body.gifts-view-category .pkg-turnaround {

@@ -11,7 +11,7 @@
     rel="stylesheet">
   <link rel="stylesheet" href="css/shared/mobile-nav-extra.css">
   <link rel="stylesheet" href="css/shared/site-chrome.css">
-  <link rel="stylesheet" href="css/cart.css">
+  <link rel="stylesheet" href="css/cart.css?v=4">
 </head>
 
 <body>
@@ -330,10 +330,15 @@
               <span>Subtotal</span>
               <span id="cartSubtotalValue">₹0</span>
             </div>
+            <div class="cart-summary-row cart-summary-saving" id="cartBulkRow" style="display:none;">
+              <span>Quantity discount</span>
+              <span id="cartBulkValue">-₹0</span>
+            </div>
             <div class="cart-summary-total">
               <span>Total</span>
               <span id="cartTotalValue">₹0</span>
             </div>
+            <div class="cart-bulk-nudge" id="cartBulkNudge" style="display:none;"></div>
             <button class="btn-primary-cart" id="proceedToCheckoutBtn" onclick="goToCartStep(2)">
               Proceed to Checkout
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
@@ -440,6 +445,10 @@
               <label class="cart-field-label" for="cartCouponInput">Have a coupon code?</label>
               <input type="text" id="cartCouponInput" class="cart-field-input" placeholder="Enter coupon code" autocapitalize="characters">
             </div>
+            <div class="cart-summary-row cart-summary-saving" id="cartBulkRowStep2" style="display:none;">
+              <span>Quantity discount</span>
+              <span id="cartBulkValueStep2">-₹0</span>
+            </div>
             <div class="cart-summary-total">
               <span>Total</span>
               <span id="cartTotalValueStep2">₹0</span>
@@ -513,6 +522,10 @@
             <h3>Order Summary</h3>
             <div id="cartReviewMiniList2" class="cart-mini-list"></div>
             <div id="cartCouponMsg2" style="display:none;font-size:13px;margin-bottom:8px;"></div>
+            <div class="cart-summary-row cart-summary-saving" id="cartBulkRowStep3" style="display:none;">
+              <span>Quantity discount</span>
+              <span id="cartBulkValueStep3">-₹0</span>
+            </div>
             <div class="cart-summary-row" id="cartDiscountRow" style="display:none;">
               <span>Coupon discount</span>
               <span id="cartDiscountValue">-₹0</span>
@@ -743,10 +756,12 @@
   <script src="js/shared/api-config.js"></script>
   <script src="js/shared/customer-api.js"></script>
   <script src="js/shared/thumb-map.js"></script>
+  <script src="js/shared/stock.js?v=1"></script>
+  <script src="js/shared/bulk-tiers.js?v=3"></script>
   <script src="js/shared/cart-core.js"></script>
   <script src="js/shared/validators.js"></script>
   <script src="js/shared/cart-ui.js"></script>
-  <script src="js/cart.js"></script>
+  <script src="js/cart.js?v=4"></script>
   <script src="js/shared/home-nav.js" defer></script>
   <script src="js/shared/auth-modal.js" defer></script>
   <script src="js/shared/chatbot.js" defer></script>

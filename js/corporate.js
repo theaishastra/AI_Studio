@@ -595,7 +595,7 @@
 
     window.orderNowDirect = function (name, price, img, productId, opts = {}) {
       const product = findCorporateProductById(productId);
-      window.activeModalProduct = activeModalProduct = { name, price, img, id: productId || null, input_fields: product?.input_fields || [], deliveryDays: product?.delivery_days || null };
+      window.activeModalProduct = activeModalProduct = { name, price, img, id: productId || null, input_fields: product?.input_fields || [], bulk_discounts: product?.bulk_discounts || [], type: product?.type || null, stock: product?.stock ?? null, deliveryDays: product?.delivery_days || null };
       const customFieldsWrap = document.getElementById('modalCustomFields');
       if (customFieldsWrap && window.ProductFields) {
         ProductFields.renderProductFields(customFieldsWrap, activeModalProduct);
@@ -635,6 +635,7 @@
       // `price` here would leave the modal advertising the base price while the
       // selected tile - and add-to-cart - use the option's.
       if (priceEl) priceEl.textContent = currentModalPrice();
+      renderCorporateBulkOffers();
       if (breadcrumbNameEl) breadcrumbNameEl.textContent = name;
 
       // product.stock only means something for a real, database-backed physical
@@ -852,10 +853,40 @@
     };
 
     window.adjustModalQty = function (delta) {
-      modalSelectedQty = Math.max(1, modalSelectedQty + delta);
+      // Was unbounded: a shopper could pick 500 of something with 3 in stock
+      // and only find out at checkout.
+      const want = modalSelectedQty + delta;
+      modalSelectedQty = window.StockUI
+        ? StockUI.clampQty(want, activeModalProduct, 99)
+        : Math.max(1, Math.min(99, want));
       const qtyNumEl = document.getElementById('modalQtyNum');
       if (qtyNumEl) qtyNumEl.textContent = modalSelectedQty;
+      const capEl = document.getElementById('modalQtyCapNote');
+      if (capEl && window.StockUI) {
+        const msg = StockUI.capMessage(activeModalProduct, modalSelectedQty);
+        capEl.textContent = msg || '';
+        capEl.style.display = msg ? 'block' : 'none';
+      }
+      renderCorporateBulkOffers();
     };
+
+    /* The "buy more, save more" panel in the product modal, quoted against the
+       quantity picker and whichever priced Customer Questions option is
+       selected - re-run from both, and on open. */
+    function renderCorporateBulkOffers() {
+      const box = document.getElementById('modalBulkOffers');
+      if (!box || !window.BulkTiers || !activeModalProduct) return;
+      const wrap = document.getElementById('modalCustomFields');
+      const selected = wrap && window.ProductFields
+        ? ProductFields.getSelectedPrice(wrap, activeModalProduct) : null;
+      const unitPrice = (selected || selected === 0)
+        ? selected
+        : parseInt(String(activeModalProduct.price || '0').replace(/[^\d]/g, ''), 10) || 0;
+      BulkTiers.renderOfferBox(box, activeModalProduct.bulk_discounts, {
+        qty: modalSelectedQty,
+        unitPrice,
+      });
+    }
 
     // Best-effort synchronous snapshot of the first Customer Questions text-type
     // answer for this product, for the few fallback spots (order summary when
@@ -906,6 +937,7 @@
       const priceEl = document.getElementById('modalProductPrice');
       if (!priceEl || !activeModalProduct) return;
       priceEl.textContent = currentModalPrice();
+      renderCorporateBulkOffers();
     });
 
     /* The gallery index the current Customer-Questions selection points at, or
@@ -2255,6 +2287,7 @@
               };
               if (p.mrp) prod.oldPrice = p.mrp;
               prod.input_fields = p.input_fields || [];
+              prod.bulk_discounts = p.bulk_discounts || [];
               prod.delivery_days = p.delivery_days || null;
               prod.features = p.feat || [];
               prod.type = p.type || null;
