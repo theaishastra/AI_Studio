@@ -220,4 +220,4 @@ Frontend correctly handles:
 **Database**: Seeded with 218 products
 **Last Updated**: 2026-09-08
 
-ssh -i "C:\Users\mohan\Downloads\AI_Studio.pem" ubuntu@54.160.240.144 "sudo journalctl -u studio-backend -f"
+ssh -i "C:\Users\mohan\Downloads\STUDIO_PROJECT.pem" ubuntu@13.201.129.232 "sudo journalctl -u studio-backend -f"

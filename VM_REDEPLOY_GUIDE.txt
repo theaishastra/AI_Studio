@@ -16,8 +16,8 @@ update the VM. Always do both:
   2) the steps below (so the running VM actually has the new code)
 
 Everywhere below, EC2_IP and PEM_PATH mean:
-  EC2_IP="54.160.240.144"
-  PEM_PATH="/c/Users/mohan/Downloads/AI_Studio.pem"
+  EC2_IP="13.201.129.232"
+  PEM_PATH="/c/Users/mohan/Downloads/STUDIO_PROJECT.pem"
 (If the VM was ever stopped/started via the AWS Console, the IP may
 have changed - see VM_STOP_START_GUIDE.txt section C to get the new one
 before using the commands below.)
@@ -120,8 +120,8 @@ curl -s -o /dev/null -w "tunnel: HTTP %{http_code}\n" \
 ------------------------------------------------------------------------
 
 # Set these once per terminal session
-EC2_IP="54.160.240.144"
-PEM_PATH="/c/Users/mohan/Downloads/AI_Studio.pem"
+EC2_IP="13.201.129.232"
+PEM_PATH="/c/Users/mohan/Downloads/STUDIO_PROJECT.pem"
 
 # Backend app logs, live (Ctrl+C to stop watching)
 ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo journalctl -u studio-backend -f"
@@ -142,8 +142,8 @@ ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo tail -f /var/log/nginx/error.log"
  FULL COPY-PASTE BLOCK (all steps in one go)
 ------------------------------------------------------------------------
 
-EC2_IP="54.160.240.144"
-PEM_PATH="/c/Users/mohan/Downloads/AI_Studio.pem"
+EC2_IP="13.201.129.232"
+PEM_PATH="/c/Users/mohan/Downloads/STUDIO_PROJECT.pem"
 cd "/d/Gen AI/Studio/studio-backed"
 tar -czf /tmp/studio-deploy.tar.gz \
   --exclude='backend/venv' --exclude='backend/.venv' \

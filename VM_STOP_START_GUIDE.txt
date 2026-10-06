@@ -16,8 +16,8 @@ Read section C before you do (B) for the first time - it explains a
 gotcha that will break your setup if you don't know about it.
 
 Everywhere below, EC2_IP and PEM_PATH mean:
-  EC2_IP="54.160.240.144"
-  PEM_PATH="/c/Users/mohan/Downloads/AI_Studio.pem"
+  EC2_IP="13.201.129.232"
+  PEM_PATH="/c/Users/mohan/Downloads/STUDIO_PROJECT.pem"
 
 
 ------------------------------------------------------------------------
@@ -81,11 +81,11 @@ preserved untouched while stopped.
 ------------------------------------------------------------------------
 
 By default, AWS assigns a NEW public IPv4 address every time you stop
-and then start an instance (the current one, 54.160.240.144, will
+and then start an instance (the current one, 13.201.129.232, will
 most likely be different after you resume). Nothing about the VM
 itself breaks - but everything that has this IP hardcoded will:
 
-  - Your SSH command (ssh ubuntu@54.160.240.144)
+  - Your SSH command (ssh ubuntu@13.201.129.232)
   - The frontend's js/shared/api-config.js (SAI_API_BASE)
   - Any bookmarked API URLs or the HTML/PDF runbooks I gave you
   - The Cloudflare Tunnel, if you're using one - it also gets a brand
@@ -138,8 +138,8 @@ itself breaks - but everything that has this IP hardcoded will:
 ------------------------------------------------------------------------
 
 # Set these once per terminal session
-EC2_IP="54.160.240.144"
-PEM_PATH="/c/Users/mohan/Downloads/AI_Studio.pem"
+EC2_IP="13.201.129.232"
+PEM_PATH="/c/Users/mohan/Downloads/STUDIO_PROJECT.pem"
 
 # --- Backend app only (VM stays on) ---
 ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo systemctl stop studio-backend"
