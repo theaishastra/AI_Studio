@@ -17,7 +17,7 @@ update the VM. Always do both:
 
 Everywhere below, EC2_IP and PEM_PATH mean:
   EC2_IP="13.201.129.232"
-  PEM_PATH="/c/Users/mohan/Downloads/STUDIO_PROJECT.pem"
+  PEM_PATH="/d/Aws_PEM_KEYS/STUDIO_PROJECT.pem"
 (If the VM was ever stopped/started via the AWS Console, the IP may
 have changed - see VM_STOP_START_GUIDE.txt section C to get the new one
 before using the commands below.)
@@ -104,6 +104,12 @@ curl -s -o /dev/null -w "tunnel: HTTP %{http_code}\n" \
   If it ever changes, update window.SAI_API_BASE in
   js/shared/api-config.js locally, commit, and push so GitHub Pages
   picks up the new URL.
+  That only holds because /etc/systemd/system/cloudflared-studio.service
+  says "Wants=studio-backend.service". With "Requires=" (what the AWS
+  runbook PDF step 12 shows), restarting studio-backend ALSO restarts
+  cloudflared-studio and the tunnel URL changes on every redeploy - this
+  broke the live site on 2026-10-06 and 2026-10-10. If you ever rebuild
+  the VM, use Wants=, not Requires=.
 
 * CORS: the VM's backend/.env CORS_ORIGINS must list every origin that
   calls the API (this includes https://theaishastra.github.io for the
@@ -121,7 +127,7 @@ curl -s -o /dev/null -w "tunnel: HTTP %{http_code}\n" \
 
 # Set these once per terminal session
 EC2_IP="13.201.129.232"
-PEM_PATH="/c/Users/mohan/Downloads/STUDIO_PROJECT.pem"
+PEM_PATH="/d/Aws_PEM_KEYS/STUDIO_PROJECT.pem"
 
 # Backend app logs, live (Ctrl+C to stop watching)
 ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo journalctl -u studio-backend -f"
@@ -143,7 +149,7 @@ ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo tail -f /var/log/nginx/error.log"
 ------------------------------------------------------------------------
 
 EC2_IP="13.201.129.232"
-PEM_PATH="/c/Users/mohan/Downloads/STUDIO_PROJECT.pem"
+PEM_PATH="/d/Aws_PEM_KEYS/STUDIO_PROJECT.pem"
 cd "/d/Gen AI/Studio/studio-backed"
 tar -czf /tmp/studio-deploy.tar.gz \
   --exclude='backend/venv' --exclude='backend/.venv' \

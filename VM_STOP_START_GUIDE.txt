@@ -17,7 +17,7 @@ gotcha that will break your setup if you don't know about it.
 
 Everywhere below, EC2_IP and PEM_PATH mean:
   EC2_IP="13.201.129.232"
-  PEM_PATH="/c/Users/mohan/Downloads/STUDIO_PROJECT.pem"
+  PEM_PATH="/d/Aws_PEM_KEYS/STUDIO_PROJECT.pem"
 
 
 ------------------------------------------------------------------------
@@ -139,7 +139,7 @@ itself breaks - but everything that has this IP hardcoded will:
 
 # Set these once per terminal session
 EC2_IP="13.201.129.232"
-PEM_PATH="/c/Users/mohan/Downloads/STUDIO_PROJECT.pem"
+PEM_PATH="/d/Aws_PEM_KEYS/STUDIO_PROJECT.pem"
 
 # --- Backend app only (VM stays on) ---
 ssh -i "$PEM_PATH" ubuntu@$EC2_IP "sudo systemctl stop studio-backend"
