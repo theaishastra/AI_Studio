@@ -58,6 +58,15 @@
     return (window.THUMB_MAP && window.THUMB_MAP[url]) || url;
   }
 
+  /* The full-quality counterpart of cldOpt(): same /media/ path fix, but never
+     swapped for a THUMB_MAP thumbnail. For anything shown large - hero banners,
+     a product's main photo, the full-screen zoom viewer, a portfolio photo
+     opened up. cldOpt() stays right for cards and thumbnail strips. */
+  function fullImg(url) {
+    if (url && url.startsWith('/media/')) return `${window.SAI_API_BASE || "http://localhost:8000"}${url}`;
+    return url;
+  }
+
   function cartDrawerEmptyStateHTML() {
     return `
       <div style="text-align: center; color: #888; padding-top: 40px;">
@@ -95,6 +104,7 @@
 
   global.escapeAttrJs = escapeAttrJs;
   global.cldOpt = cldOpt;
+  global.fullImg = fullImg;
   global.cartDrawerEmptyStateHTML = cartDrawerEmptyStateHTML;
   global.showCartToast = showCartToast;
   global.goToCartFromToast = goToCartFromToast;

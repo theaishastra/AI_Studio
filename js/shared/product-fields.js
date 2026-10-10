@@ -264,7 +264,7 @@
       const thumb = withPictures
         ? `<span class="pf-choice-thumb">${picture ? `<img src="${escAttr(picture)}" alt="" loading="lazy">` : ''}</span>`
         : '';
-      return `
+      const tile = `
         <button type="button" class="pf-choice${selected ? ' is-selected' : ''}"
                 role="${field.multi_select ? 'checkbox' : 'radio'}" aria-checked="${selected ? 'true' : 'false'}"
                 tabindex="${tabbable ? '0' : '-1'}" data-value="${escAttr(o)}">
@@ -273,6 +273,18 @@
           ${hasPrice ? `<span class="pf-choice-price">${money(price)}</span>` : ''}
           ${showMrp ? `<span class="pf-choice-mrp">${money(mrp)}</span>` : ''}
         </button>`;
+      if (!withPictures) return tile;
+      // The thumbnail is cropped square and small, so a picture tile gets its own
+      // "view larger" control. It sits beside the tile button rather than inside
+      // it - a button nested in a button is invalid and its click would also
+      // select the option.
+      const zoom = picture
+        ? `<button type="button" class="pf-choice-zoom" data-value="${escAttr(o)}"
+                   aria-label="View larger picture of ${escAttr(o)}" title="View larger">
+             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M10 2a8 8 0 0 1 6.32 12.9l5.39 5.4-1.41 1.41-5.4-5.39A8 8 0 1 1 10 2zm0 2a6 6 0 1 0 0 12 6 6 0 0 0 0-12zm1 2v3h3v2h-3v3H9v-3H6V9h3V6h2z"/></svg>
+           </button>`
+        : '';
+      return `<div class="pf-choice-wrap">${tile}${zoom}</div>`;
     }).join('');
 
     return `
@@ -280,6 +292,280 @@
            role="${field.multi_select ? 'group' : 'radiogroup'}"
            aria-labelledby="${cid}_label">${tiles}</div>
       ${select}`;
+  }
+
+  /* Full-screen picture viewer, shared by the option-picture tiles below and
+     the product pages' main gallery (exported as ProductFields.openImageViewer).
+     Shows the picture uncropped at full resolution, with a thumbnail strip to
+     jump between pictures, and zoom: + / - buttons, mouse wheel, double-click,
+     pinch on a phone, and drag to pan around a zoomed picture.
+
+     openImageViewer({ items, index, label, onChoose, isChosen })
+       items:    [{ url, thumb?, title?, subtitle?, value? }]
+       onChoose: optional - shows a "Choose this" button that calls it with the
+                 current item's value (used by the option tiles).
+     One overlay is built lazily and reused. */
+  const ZOOM_MIN = 1;
+  const ZOOM_MAX = 5;
+  let _viewer = null;
+
+  function buildViewer() {
+    const el = document.createElement('div');
+    el.className = 'pf-lightbox';
+    el.hidden = true;
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.innerHTML = `
+      <div class="pf-lightbox-panel">
+        <button type="button" class="pf-lightbox-close" aria-label="Close">&times;</button>
+        <div class="pf-lightbox-stage">
+          <img class="pf-lightbox-img" alt="" draggable="false">
+          <button type="button" class="pf-lightbox-nav pf-lightbox-prev" aria-label="Previous picture">&#8249;</button>
+          <button type="button" class="pf-lightbox-nav pf-lightbox-next" aria-label="Next picture">&#8250;</button>
+          <div class="pf-lightbox-zoom" role="group" aria-label="Zoom">
+            <button type="button" class="pf-zoom-out" aria-label="Zoom out">&minus;</button>
+            <span class="pf-zoom-level" aria-live="polite">100%</span>
+            <button type="button" class="pf-zoom-in" aria-label="Zoom in">+</button>
+            <button type="button" class="pf-zoom-fit" aria-label="Fit to screen">Fit</button>
+          </div>
+        </div>
+        <div class="pf-lightbox-thumbs" role="tablist" aria-label="Pictures"></div>
+        <div class="pf-lightbox-footer">
+          <div class="pf-lightbox-caption">
+            <span class="pf-lightbox-name"></span>
+            <span class="pf-lightbox-price"></span>
+          </div>
+          <span class="pf-lightbox-count"></span>
+          <button type="button" class="pf-lightbox-choose"></button>
+        </div>
+      </div>`;
+    document.body.appendChild(el);
+
+    const stage = el.querySelector('.pf-lightbox-stage');
+    const img = el.querySelector('.pf-lightbox-img');
+    const v = { el, state: null, lastFocus: null, zoom: { s: 1, x: 0, y: 0 } };
+
+    /* ---- zoom / pan ---- */
+    // Keeps the zoomed picture covering the stage: it can't be dragged so far
+    // that a gap opens up beside it.
+    const clampPan = () => {
+      const z = v.zoom;
+      const maxX = Math.max(0, (img.offsetWidth * z.s - stage.clientWidth) / 2);
+      const maxY = Math.max(0, (img.offsetHeight * z.s - stage.clientHeight) / 2);
+      z.x = Math.min(maxX, Math.max(-maxX, z.x));
+      z.y = Math.min(maxY, Math.max(-maxY, z.y));
+    };
+    const applyZoom = () => {
+      const z = v.zoom;
+      if (z.s <= ZOOM_MIN) { z.s = ZOOM_MIN; z.x = 0; z.y = 0; }
+      clampPan();
+      img.style.transform = `translate(${z.x}px, ${z.y}px) scale(${z.s})`;
+      stage.classList.toggle('is-zoomed', z.s > ZOOM_MIN);
+      el.querySelector('.pf-zoom-level').textContent = `${Math.round(z.s * 100)}%`;
+      el.querySelector('.pf-zoom-out').disabled = z.s <= ZOOM_MIN;
+      el.querySelector('.pf-zoom-in').disabled = z.s >= ZOOM_MAX;
+      el.querySelector('.pf-zoom-fit').disabled = z.s <= ZOOM_MIN;
+    };
+    // Zoom to `next`, keeping the point under (clientX, clientY) where it is -
+    // so wheel/pinch zoom into what the shopper is pointing at, not the centre.
+    const zoomTo = (next, clientX, clientY) => {
+      const z = v.zoom;
+      next = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, next));
+      const r = stage.getBoundingClientRect();
+      const cx = (clientX === undefined ? r.left + r.width / 2 : clientX) - (r.left + r.width / 2);
+      const cy = (clientY === undefined ? r.top + r.height / 2 : clientY) - (r.top + r.height / 2);
+      const px = (cx - z.x) / z.s;
+      const py = (cy - z.y) / z.s;
+      z.x = cx - px * next;
+      z.y = cy - py * next;
+      z.s = next;
+      applyZoom();
+    };
+    const resetZoom = () => { v.zoom = { s: 1, x: 0, y: 0 }; applyZoom(); };
+
+    stage.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      zoomTo(v.zoom.s * Math.exp(-e.deltaY * 0.0015), e.clientX, e.clientY);
+    }, { passive: false });
+    img.addEventListener('dblclick', (e) => {
+      zoomTo(v.zoom.s > ZOOM_MIN ? ZOOM_MIN : 2.5, e.clientX, e.clientY);
+    });
+    img.addEventListener('load', resetZoom);
+    window.addEventListener('resize', () => { if (!el.hidden) applyZoom(); });
+
+    // Pointer events cover mouse, pen and touch alike: one pointer drags a
+    // zoomed picture (or swipes to the next one when not zoomed), two pinch.
+    const pointers = new Map();
+    let gesture = null;
+    stage.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('button')) return;
+      stage.setPointerCapture(e.pointerId);
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const pts = Array.from(pointers.values());
+      if (pts.length === 2) {
+        gesture = {
+          type: 'pinch', s: v.zoom.s,
+          dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1,
+        };
+      } else if (pts.length === 1) {
+        gesture = { type: 'drag', sx: e.clientX, sy: e.clientY, x: v.zoom.x, y: v.zoom.y };
+      }
+    });
+    stage.addEventListener('pointermove', (e) => {
+      if (!pointers.has(e.pointerId)) return;
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const pts = Array.from(pointers.values());
+      if (gesture && gesture.type === 'pinch' && pts.length === 2) {
+        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        zoomTo(gesture.s * dist / gesture.dist, (pts[0].x + pts[1].x) / 2, (pts[0].y + pts[1].y) / 2);
+      } else if (gesture && gesture.type === 'drag' && v.zoom.s > ZOOM_MIN) {
+        v.zoom.x = gesture.x + (e.clientX - gesture.sx);
+        v.zoom.y = gesture.y + (e.clientY - gesture.sy);
+        applyZoom();
+      }
+    });
+    const endPointer = (e) => {
+      if (!pointers.has(e.pointerId)) return;
+      pointers.delete(e.pointerId);
+      // A sideways swipe on an un-zoomed picture moves to the next one.
+      if (gesture && gesture.type === 'drag' && v.zoom.s <= ZOOM_MIN && e.type === 'pointerup') {
+        const dx = e.clientX - gesture.sx;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(e.clientY - gesture.sy)) v.step(dx < 0 ? 1 : -1);
+      }
+      // Lifting one finger of a pinch hands over to a drag from where it is.
+      if (pointers.size === 1) {
+        const p = Array.from(pointers.values())[0];
+        gesture = { type: 'drag', sx: p.x, sy: p.y, x: v.zoom.x, y: v.zoom.y };
+      } else if (!pointers.size) {
+        gesture = null;
+      }
+    };
+    stage.addEventListener('pointerup', endPointer);
+    stage.addEventListener('pointercancel', endPointer);
+
+    /* ---- navigation ---- */
+    const close = () => {
+      el.hidden = true;
+      document.body.classList.remove('pf-lightbox-open');
+      if (v.lastFocus && v.lastFocus.focus) v.lastFocus.focus();
+      v.state = null;
+    };
+    v.step = (d) => {
+      const s = v.state;
+      if (!s || s.items.length < 2) return;
+      s.index = (s.index + d + s.items.length) % s.items.length;
+      v.show();
+    };
+    el.addEventListener('click', (e) => {
+      if (e.target === el || e.target.closest('.pf-lightbox-close')) close();
+      else if (e.target.closest('.pf-lightbox-prev')) v.step(-1);
+      else if (e.target.closest('.pf-lightbox-next')) v.step(1);
+      else if (e.target.closest('.pf-zoom-in')) zoomTo(v.zoom.s * 1.5);
+      else if (e.target.closest('.pf-zoom-out')) zoomTo(v.zoom.s / 1.5);
+      else if (e.target.closest('.pf-zoom-fit')) resetZoom();
+      else if (e.target.closest('.pf-lightbox-thumb')) {
+        v.state.index = Number(e.target.closest('.pf-lightbox-thumb').dataset.index);
+        v.show();
+      } else if (e.target.closest('.pf-lightbox-choose')) {
+        const s = v.state;
+        if (s && s.onChoose) s.onChoose(s.items[s.index].value);
+        close();
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (el.hidden) return;
+      if (e.key === 'Escape') close();
+      else if (e.key === 'ArrowLeft') v.step(-1);
+      else if (e.key === 'ArrowRight') v.step(1);
+      else if (e.key === '+' || e.key === '=') zoomTo(v.zoom.s * 1.5);
+      else if (e.key === '-') zoomTo(v.zoom.s / 1.5);
+      else if (e.key === '0') resetZoom();
+    });
+
+    v.show = () => {
+      const s = v.state;
+      const it = s.items[s.index];
+      resetZoom();
+      img.src = it.url;
+      img.alt = it.title || '';
+      el.querySelector('.pf-lightbox-name').textContent = it.title || '';
+      el.querySelector('.pf-lightbox-price').textContent = it.subtitle || '';
+      el.querySelector('.pf-lightbox-count').textContent =
+        s.items.length > 1 ? `${s.index + 1} / ${s.items.length}` : '';
+      el.querySelectorAll('.pf-lightbox-nav').forEach(b => { b.hidden = s.items.length < 2; });
+      // A strip of every picture under the big one, so the shopper can jump
+      // straight to any of them instead of stepping through with arrows.
+      const strip = el.querySelector('.pf-lightbox-thumbs');
+      strip.hidden = s.items.length < 2;
+      if (strip.dataset.for !== s.key) {
+        strip.dataset.for = s.key;
+        strip.innerHTML = s.items.map((x, i) => `
+          <button type="button" class="pf-lightbox-thumb" role="tab" data-index="${i}"
+                  aria-label="${escAttr(x.title || `Picture ${i + 1}`)}"${x.title ? ` title="${escAttr(x.title)}"` : ''}>
+            <img src="${escAttr(x.thumb || x.url)}" alt="" loading="lazy">
+            ${x.title ? `<span>${esc(x.title)}</span>` : ''}
+          </button>`).join('');
+      }
+      strip.querySelectorAll('.pf-lightbox-thumb').forEach((b, i) => {
+        const on = i === s.index;
+        b.classList.toggle('is-active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+        if (on) b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      });
+      const btn = el.querySelector('.pf-lightbox-choose');
+      btn.hidden = !s.onChoose;
+      if (s.onChoose) {
+        const chosen = !!(s.isChosen && s.isChosen(it.value));
+        btn.textContent = chosen ? 'Selected' : 'Choose this';
+        btn.disabled = chosen;
+      }
+      // The caption bar only when it has something to show.
+      el.querySelector('.pf-lightbox-footer').hidden =
+        !it.title && !it.subtitle && !s.onChoose && s.items.length < 2;
+    };
+    return v;
+  }
+
+  function openImageViewer(opts) {
+    const items = ((opts && opts.items) || []).filter(it => it && it.url);
+    if (!items.length) return;
+    if (!_viewer) _viewer = buildViewer();
+    const index = Math.min(items.length - 1, Math.max(0, Number(opts.index) || 0));
+    _viewer.el.setAttribute('aria-label', opts.label || 'Picture viewer');
+    // key: rebuild the thumbnail strip only when a different set of pictures is
+    // opened, not on every step.
+    _viewer.state = {
+      items, index, key: items.map(it => it.url).join('|'),
+      onChoose: opts.onChoose || null, isChosen: opts.isChosen || null,
+    };
+    _viewer.lastFocus = document.activeElement;
+    _viewer.el.hidden = false;
+    document.body.classList.add('pf-lightbox-open');
+    _viewer.show();
+    _viewer.el.querySelector('.pf-lightbox-close').focus();
+  }
+
+  /* The option tiles' "view larger" button: every pictured option in the field,
+     captioned with its name and price, with "Choose this" to pick one. */
+  function openOptionLightbox(field, startValue, onChoose, getSelected) {
+    const options = (field.options || []).filter(o => optionImageUrl(field, o));
+    const prices = field.option_prices || {};
+    openImageViewer({
+      label: field.label || 'Option picture',
+      index: Math.max(0, options.indexOf(startValue)),
+      items: options.map(o => ({
+        value: o,
+        // Original, never a THUMB_MAP thumbnail - this is the zoom view.
+        url: typeof global.fullImg === 'function'
+          ? global.fullImg((field.option_image_urls || {})[o])
+          : optionImageUrl(field, o),
+        thumb: optionImageUrl(field, o),
+        title: o,
+        subtitle: (prices[o] || prices[o] === 0) ? money(prices[o]) : '',
+      })),
+      onChoose,
+      isChosen: value => getSelected().indexOf(value) !== -1,
+    });
   }
 
   /* Reflects the tile grid from its <select> and updates the "Label: <selected>"
@@ -349,6 +635,17 @@
     };
 
     grid.addEventListener('click', (e) => {
+      const zoom = e.target.closest('.pf-choice-zoom');
+      if (zoom && grid.contains(zoom)) {
+        openOptionLightbox(field, zoom.dataset.value, (value) => {
+          const tile = Array.from(grid.querySelectorAll('.pf-choice')).find(t => t.dataset.value === value);
+          // Choosing from the lightbox only ever turns an option on - toggling a
+          // ticked multi-select option off from a "Choose this" button would be
+          // the opposite of what it says.
+          if (tile && !(field.multi_select && tile.classList.contains('is-selected'))) choose(tile);
+        }, () => Array.from(grid.querySelectorAll('.pf-choice.is-selected')).map(t => t.dataset.value));
+        return;
+      }
       const tile = e.target.closest('.pf-choice');
       if (tile && grid.contains(tile)) choose(tile);
     });
@@ -503,6 +800,35 @@
     return fileToDataUri(file);
   }
 
+  /* For the older gifts customizers, which keep a downscaled copy of the photo
+     for their on-screen preview: swaps that preview copy for the ORIGINAL file,
+     uploaded untouched, at add-to-cart time - so what gets printed is what the
+     customer picked, not a 900px JPEG. `previewValue` is returned unchanged when
+     there's nothing to swap (no photo, photo since removed, not signed in, or the
+     upload failed), so the order still goes through exactly as before. */
+  // One upload per picked file: adding the same photo twice reuses the URL, so
+  // the cart sees the same configuration (qty 2) rather than two different ones.
+  const _originalUrls = new WeakMap();
+
+  async function originalPhotoValue(file, previewValue) {
+    if (!file || !previewValue) return previewValue;
+    if (_originalUrls.has(file)) return _originalUrls.get(file);
+    const canUpload = typeof CustomerAuth !== 'undefined'
+      && typeof CustomerAuth.uploadArtwork === 'function'
+      && typeof isCustomerLoggedIn === 'function' && isCustomerLoggedIn();
+    if (!canUpload) return previewValue;
+    try {
+      const result = await CustomerAuth.uploadArtwork(file);
+      if (result && result.url) {
+        _originalUrls.set(file, result.url);
+        return result.url;
+      }
+    } catch (e) {
+      console.warn('Original photo upload failed, keeping the preview copy', e);
+    }
+    return previewValue;
+  }
+
   function fileToDataUri(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -624,7 +950,7 @@
 
   global.ProductFields = {
     renderProductFields, collectProductFields, validateProductFields, getSelectedPrice,
-    getSelectedPricing, getSelectedImageIndex,
+    getSelectedPricing, getSelectedImageIndex, openImageViewer,
     // Exported as formatPrice so a page's headline price is written the same way
     // as the option tile it came from - the two sit next to each other, and
     // "Rs 1234.5" beside "Rs 1,234.50" reads like two different numbers.
@@ -634,6 +960,6 @@
     // reuse the same size cap + auto-resize instead of reading a raw file
     // straight to base64 (which has no ceiling and can blow past
     // localStorage's quota on an unresized phone photo).
-    fileToDataUri, fileToStoredValue, MAX_UPLOAD_BYTES, MAX_UPLOAD_MB,
+    fileToDataUri, fileToStoredValue, originalPhotoValue, MAX_UPLOAD_BYTES, MAX_UPLOAD_MB,
   };
 })(window);

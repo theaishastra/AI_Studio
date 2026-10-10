@@ -42,7 +42,7 @@
 
 /* ---------------------------------------------------------------------
    1. TITLE BLOCK
-   Phone 18 -> tablet 20 -> desktop 25. The desktop step is where the three
+   Phone 18 -> tablet 20 -> desktop 22. The desktop step is where the three
    were furthest apart: gifts ran to clamp(28px, 3.2vw, 40px) while
    corporate sat at a flat 25px and studio at 24px.
    --------------------------------------------------------------------- */
@@ -72,13 +72,16 @@ body .preview-scroll .preview-title-block h2 {
   }
 }
 
-/* The gifts page's own desktop size, kept as-is because that page is the
-   reference the other two are matching. */
+/* Desktop. Was clamp(28px, 3.2vw, 40px), which turned the long, keyword-heavy
+   product names ("... | Wedding | For Couples, ...") into several huge lines
+   above the price - sized like a marketplace product title instead. */
 @media (min-width: 1024px) {
   body .details-main .details-copy h1,
   body .modal-grid .modal-title-block h2,
   body .preview-scroll .preview-title-block h2 {
-    font-size: clamp(28px, 3.2vw, 40px);
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.35;
   }
 }
 
@@ -570,4 +573,11 @@ body .preview-scroll .preview-title-block h2 {
   font-weight: 700;
   line-height: 1.3;
   color: #B45309;
+}
+
+/* Product photos open the full-screen zoom viewer on click
+   (ProductFields.openImageViewer) - say so with the cursor. */
+.preview-scroll img.preview-slide,
+.modal-gallery-main #modalMainImg {
+  cursor: zoom-in;
 }

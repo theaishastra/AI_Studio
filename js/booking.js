@@ -104,10 +104,10 @@ const EQUIPMENT_GALLERIES={
 function resolvePackageImages(cat,tier){
   const tierKey=(tier||"").toLowerCase().replace(/\s+/g,"-");
   const files=PACKAGE_IMAGES[cat+"|"+tierKey];
-  if(files) return files.map(f=>cldOpt(`https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/packages/${f}`));
+  if(files) return files.map(f=>`https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/packages/${f}`);
   // equipment/coverage service — show its own three portfolio photos
   const equip=EQUIPMENT_GALLERIES[cat];
-  if(equip) return equip.map(f=>cldOpt(`https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/${f}`));
+  if(equip) return equip.map(f=>`https://pub-0f96bbc0f4a649b7b396578fc5db875b.r2.dev/sai_kumar_studio/Photography_assets/assets/portfolio/${f}`);
   // no dedicated package photos for this category/tier — reuse its hero image
   // (always exists) so the gallery never shows a broken thumbnail
   return [resolveCategoryImage(cat),resolveCategoryImage(cat),resolveCategoryImage(cat)];
@@ -384,7 +384,7 @@ function renderGalleryThumbs(imgs){
   window._imgs=imgs;
   document.getElementById("thumbs").innerHTML=imgs.map((src,i)=>`
   <div class="thumb ${i===0?'active':''}" onclick="setMain(${i})">
-    <img class="thumb-photo" src="${src}" alt="view ${i+1}" loading="${i===0?'eager':'lazy'}"
+    <img class="thumb-photo" src="${cldOpt(src)}" alt="view ${i+1}" loading="${i===0?'eager':'lazy'}"
          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
     <div class="ph">Image ${i+1}<br>add photo</div>
   </div>`).join("");
@@ -397,7 +397,7 @@ function setMain(i){
   const ph=document.getElementById("mainPh");
   ph.innerHTML="Image "+(i+1)+"<br>［ add photo ］";ph.style.display="flex";
   const img=document.createElement("img");
-  img.className="main-photo";img.src=window._imgs[i];
+  img.className="main-photo";img.src=fullImg(window._imgs[i]);
   img.onload=()=>{ph.style.display="none";};
   img.onerror=()=>{img.remove();ph.style.display="flex";};
   box.prepend(img);
@@ -739,7 +739,7 @@ function openEquipModal(id) {
     <div class="modal-grid">
       <div class="modal-media-col">
         <div class="modal-media-main" id="modalMainMedia">
-          <img src="${cldOpt(item.gallery[0] || item.bgImage)}" id="modalMainImg" alt="${item.name}">
+          <img src="${fullImg(item.gallery[0] || item.bgImage)}" id="modalMainImg" alt="${item.name}">
         </div>
         <div class="modal-gallery-thumbs">
           ${item.gallery.map((img, idx) => `
@@ -792,7 +792,7 @@ function openEquipModal(id) {
 
 function setModalMainImg(src, el) {
   const img = document.getElementById("modalMainImg");
-  if (img) img.src = cldOpt(src);
+  if (img) img.src = fullImg(src);
   document.querySelectorAll(".modal-thumb").forEach(t => t.classList.remove("active"));
   if (el) el.classList.add("active");
 }
@@ -854,7 +854,9 @@ renderEquipCards();
       price: p.price,
       feat: p.feat || [],
       extra: p.extra || {},
-      images: p.images && p.images.length ? p.images : resolvePackageImages(cat, p.tier),
+      // Originals (full_images) - this page shows one photo large; the thumbnail
+      // strip shrinks them through cldOpt() itself.
+      images: p.full_images && p.full_images.length ? p.full_images : (p.images && p.images.length ? p.images : resolvePackageImages(cat, p.tier)),
     }))
     .catch(err => console.error("Failed to load the authoritative product record, showing the link's own values:", err));
 })();

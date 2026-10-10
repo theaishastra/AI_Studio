@@ -1,7 +1,7 @@
 import io
 
 import pillow_avif  # noqa: F401 - registers Pillow's AVIF decoder/encoder on import
-from PIL import Image
+from PIL import Image, ImageOps
 
 # The per-photo ceiling for every image that reaches this app - an admin's Media
 # Library upload and a customer's checkout photo alike. The storefront mirrors it
@@ -10,7 +10,6 @@ from PIL import Image
 # that actually enforces it.
 MAX_SIZE = 20 * 1024 * 1024
 MIN_SIZE = 100
-MAX_DIMENSION = 4096
 ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP"}
 
 # Product gallery videos. Deliberately a much smaller cap than a video site would
@@ -24,38 +23,46 @@ MIN_VIDEO_SIZE = 1024
 _EBML_MAGIC = bytes((0x1A, 0x45, 0xDF, 0xA3))
 
 
+_FORMAT_EXT = {
+    "JPEG": (".jpg", "image/jpeg"),
+    "PNG": (".png", "image/png"),
+    "WEBP": (".webp", "image/webp"),
+}
+
+
 def process_image(data: bytes, to_webp: bool = True) -> tuple[bytes, str, str]:
-    """Validates and re-encodes an uploaded image. Returns (bytes, ext, mime) -
-    callers decide where the result is persisted (Cloudinary, previously local
-    disk) rather than this function writing anywhere itself, so the same
-    validation/conversion logic works regardless of storage backend."""
+    """Validates an uploaded image and returns it UNCHANGED as (bytes, ext, mime) -
+    callers decide where the result is persisted.
+
+    No resize and no re-encode, for admin and customer uploads alike: these are
+    photos that get printed and shown large, and every lossy pass (the old WebP
+    q88 re-encode, the 4096px cap) cost detail that can't be got back. Keeping the
+    original also keeps its colour profile and EXIF orientation, both of which a
+    re-encode silently dropped (so a phone photo could come out sideways).
+
+    Validation is unchanged: the bytes must fully decode as one of
+    ALLOWED_FORMATS (judged from the decoded data, never the filename or declared
+    type), and the stored content-type comes from that decoded format, so nothing
+    but a real JPEG/PNG/WebP reaches the public bucket. `to_webp` is accepted for
+    existing callers and ignored. Card/listing thumbnails are still small WebPs,
+    made separately by make_thumbnail()."""
     if len(data) > MAX_SIZE:
         raise ValueError(f"Image too large (max {MAX_SIZE // (1024 * 1024)}MB)")
     if len(data) < MIN_SIZE:
         raise ValueError("Image too small or empty")
 
-    img = Image.open(io.BytesIO(data))
-    img.load()
+    try:
+        img = Image.open(io.BytesIO(data))
+        img.load()
+    except Image.DecompressionBombError:
+        raise ValueError("Image dimensions are too large")
+    except Exception:
+        raise ValueError("That file is not a readable image")
     if img.format not in ALLOWED_FORMATS:
         raise ValueError("Unsupported image format — use JPEG, PNG, or WEBP")
 
-    if max(img.size) > MAX_DIMENSION:
-        img.thumbnail((MAX_DIMENSION, MAX_DIMENSION))
-
-    buffer = io.BytesIO()
-
-    if to_webp:
-        img = img.convert("RGBA") if img.mode in ("RGBA", "LA", "P") else img.convert("RGB")
-        img.save(buffer, format="WEBP", quality=88)
-        ext, mime = ".webp", "image/webp"
-    elif img.mode in ("RGBA", "LA", "P"):
-        img.save(buffer, format="PNG")
-        ext, mime = ".png", "image/png"
-    else:
-        img.convert("RGB").save(buffer, format="JPEG", quality=88)
-        ext, mime = ".jpg", "image/jpeg"
-
-    return buffer.getvalue(), ext, mime
+    ext, mime = _FORMAT_EXT[img.format]
+    return data, ext, mime
 
 
 def make_thumbnail(data: bytes, width: int = 640, quality: int = 75) -> bytes:
@@ -64,6 +71,10 @@ def make_thumbnail(data: bytes, width: int = 640, quality: int = 75) -> bytes:
     network. Only shrinks (never upscales) images narrower than `width`."""
     img = Image.open(io.BytesIO(data))
     img.load()
+    # Originals are stored untouched (see process_image), so a phone photo still
+    # carries its EXIF rotation - apply it here, or the thumbnail comes out
+    # sideways while the full image (which browsers rotate themselves) doesn't.
+    img = ImageOps.exif_transpose(img)
     if img.width > width:
         height = round(img.height * width / img.width)
         img = img.resize((width, height), Image.LANCZOS)

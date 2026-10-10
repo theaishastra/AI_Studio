@@ -140,7 +140,9 @@
       if (!modalBody) return;
 
       const imageList = items.map((item, i) => ({
-        src: item.url,
+        // The portfolio modal shows one photo large - the original, not the
+        // strip's thumbnail (`full` from the catalog API; `url` as a fallback).
+        src: item.full || item.url,
         caption: item.caption || `${catObj.name} Photo ${i + 1}`,
       }));
 

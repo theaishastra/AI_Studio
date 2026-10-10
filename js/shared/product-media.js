@@ -27,10 +27,16 @@
      there would open the product on a black frame. An admin who drags a video to
      the front of the list in the panel still gets it second here - that ordering
      controls the photos' order among themselves, which is what it's for. */
-  function build(images, videos) {
+  /* `fullImages` (optional) is the API's full_images: the same photos in the
+     same order, uncompressed. Each image item carries its original as `full`
+     so a view can show the thumbnail in its strip and the original large. */
+  function build(images, videos, fullImages) {
     var items = [];
-    (images || []).forEach(function (url) {
-      if (url) items.push({ type: 'image', url: url });
+    (images || []).forEach(function (url, i) {
+      if (!url) return;
+      var item = { type: 'image', url: url };
+      if (fullImages && fullImages[i]) item.full = fullImages[i];
+      items.push(item);
     });
     (videos || []).forEach(function (url) {
       if (url) items.push({ type: 'video', url: url });

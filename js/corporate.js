@@ -614,6 +614,8 @@
       activeModalImages = ProductMedia.build(
         (product && product.images && product.images.length) ? product.images : [img],
         product && product.videos,
+        // Originals for the main image + zoom viewer; the strip keeps thumbnails.
+        (product && product.images && product.images.length && product.fullImages) || null,
       );
       if (!activeModalImages.length) activeModalImages = [{ type: 'image', url: img }];
       renderModalRelated(product);
@@ -810,7 +812,7 @@
           // has to be cleared each time or products after the first never fade in.
           delete mainImgEl.dataset.skImgWired;
           mainImgEl.classList.remove('sk-img-loaded');
-          mainImgEl.src = cldOpt(item.url);
+          mainImgEl.src = fullImg(item.full || item.url);
           mainImgEl.onerror = function () { this.onerror = null; this.src = (window.SkLoading && window.SkLoading.PLACEHOLDER_IMG) || ''; };
           if (window.SkLoading) window.SkLoading.wireImage(mainImgEl, { wrap: mainImgEl.closest('.modal-gallery-main') });
         }
@@ -819,6 +821,21 @@
         btn.classList.toggle('active', idx === index);
       });
     };
+
+    // Click the main photo to open it full screen with zoom
+    // (ProductFields.openImageViewer) - same viewer as the gifts and studio pages.
+    window.openModalImageViewer = function () {
+      if (!window.ProductFields || !ProductFields.openImageViewer) return;
+      const current = activeModalImages[currentModalImgIndex];
+      if (!current || current.type === 'video') return;
+      const photos = activeModalImages.filter(item => item.type !== 'video');
+      ProductFields.openImageViewer({
+        label: `${(activeModalProduct && activeModalProduct.name) || 'Product'} photos`,
+        index: Math.max(0, photos.indexOf(current)),
+        items: photos.map(item => ({ url: fullImg(item.full || item.url), thumb: cldOpt(item.url) })),
+      });
+    };
+    document.getElementById('modalMainImg')?.addEventListener('click', () => window.openModalImageViewer());
 
     window.navigateModalGallery = function (direction) {
       if (!activeModalImages.length) return;
@@ -2281,6 +2298,8 @@
                 // with every photo an admin attached, not only the one the
                 // card itself was rendered with.
                 images: p.images || [],
+                // Same photos uncompressed, for the modal's main image and zoom viewer.
+                fullImages: p.full_images || [],
                 // Only the detail modal's gallery plays these - cards stay images-only.
                 videos: p.videos || [],
                 subtitle: p.description || "",

@@ -7460,13 +7460,18 @@ body.gifts-module-route .details-gallery {
   top: 100px;
 }
 
+/* As tall as the main photo beside it, however many photos there are - the
+   0 height + 100% min-height lets the photo alone set the row height, so 10
+   thumbnails scroll inside the column instead of stretching the gallery. */
 body.gifts-module-route .gallery-thumbs {
   display: grid;
   align-content: start;
   gap: 10px;
-  max-height: 430px;
+  height: 0;
+  min-height: 100%;
   overflow-y: auto;
   scrollbar-width: thin;
+  padding: 2px 4px 2px 2px;
 }
 
 body.gifts-module-route .gallery-thumb {
@@ -7531,8 +7536,29 @@ body.gifts-module-route .gallery-main img {
   transform-origin: center;
 }
 
-body.gifts-module-route .gallery-main.zoomed img {
-  transform: scale(1.75);
+/* "Click to zoom" pill - opens the full-screen viewer (ProductFields.openImageViewer). */
+body.gifts-module-route .gallery-main .gallery-expand {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .94);
+  color: #241a20;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+  cursor: zoom-in;
+}
+
+body.gifts-module-route .gallery-main.showing-video .gallery-expand {
+  display: none;
 }
 
 /* A product's gallery can end with a short video the admin attached. It shares
@@ -7757,11 +7783,15 @@ body.gifts-module-route .details-copy .eyebrow {
   text-transform: uppercase;
 }
 
+/* Product names here are long, keyword-heavy titles ("... | Wedding | For
+   Couples, ..."), so the old 28-40px display size wrapped them over several
+   huge lines. Sized like a marketplace product title instead. */
 body.gifts-module-route .details-copy h1 {
-  margin: 9px 0 12px;
+  margin: 8px 0 10px;
   font-family: Georgia, serif;
-  font-size: clamp(28px, 3.2vw, 40px);
-  line-height: 1.15;
+  font-size: clamp(20px, 1.6vw, 24px);
+  font-weight: 600;
+  line-height: 1.35;
   color: var(--ink);
 }
 
@@ -7795,6 +7825,41 @@ body.gifts-module-route .details-description {
   font-size: 15px;
   line-height: 1.6;
   margin-bottom: 18px;
+}
+
+/* Paragraphs / bullet lists / sub-headings built by formatDescription(). */
+body.gifts-module-route .details-description p {
+  margin: 0 0 12px;
+}
+
+body.gifts-module-route .details-description h4 {
+  margin: 18px 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+body.gifts-module-route .details-description ul {
+  margin: 0 0 14px;
+  padding-left: 20px;
+}
+
+body.gifts-module-route .details-description li {
+  margin-bottom: 6px;
+  padding-left: 2px;
+}
+
+body.gifts-module-route .details-description li::marker {
+  color: var(--ink);
+}
+
+body.gifts-module-route .details-description strong {
+  color: var(--ink);
+  font-weight: 650;
+}
+
+body.gifts-module-route .details-description > :last-child {
+  margin-bottom: 0;
 }
 
 body.gifts-module-route .details-copy .delivery-box {
@@ -9117,7 +9182,10 @@ body.gifts-module-route .related-offer {
   body.gifts-module-route .gallery-thumbs {
     display: flex;
     order: 2;
+    height: auto;
+    min-height: 0;
     overflow-x: auto;
+    overflow-y: hidden;
   }
 
   body.gifts-module-route .gallery-main {

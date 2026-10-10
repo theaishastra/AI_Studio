@@ -271,6 +271,9 @@ def _build_page_bundle(page_slug: str, db: Session) -> dict:
             "name": c.name,
             "description": c.description or "",
             "image": cld_optimize(c.thumb_image_url) or "",
+            # The same picture uncompressed, for pages that show it as a banner
+            # rather than a card (e.g. the gifts category header).
+            "image_full": c.thumb_image_url or "",
             "group_label": c.group_label,
         })
 
@@ -296,6 +299,9 @@ def _build_page_bundle(page_slug: str, db: Session) -> dict:
                 "mrp": format_mrp(p),
                 "feat": p.features or [],
                 "images": product_media[p.id][0],
+                # Same photos, same order, uncompressed - for the detail views'
+                # main image and full-screen viewer (`images` are card thumbnails).
+                "full_images": [m.url for m in p.media if m.media_type != "video"],
                 # Short product clips an admin attached alongside the photos. Only the
                 # product detail gallery renders these - cards/heroes stay images-only.
                 "videos": product_media[p.id][1],
@@ -314,14 +320,19 @@ def _build_page_bundle(page_slug: str, db: Session) -> dict:
             for p in active_products
         ]
 
-        folio[c.slug] = [{"url": cld_optimize(m.url), "caption": m.alt} for m in c.media]
+        # `url` is the thumbnail for the portfolio strip; `full` is the original
+        # for anywhere a portfolio photo is opened large.
+        folio[c.slug] = [{"url": cld_optimize(m.url), "full": m.url, "caption": m.alt} for m in c.media]
         folio_titles[c.slug] = c.folio_title or f"{c.name} Portfolio"
 
+        # Hero / banner pictures are shown full width, so they're sent as the
+        # original - a 640px card thumbnail stretched across a desktop banner is
+        # exactly the blur this app should never show.
         if c.hero_image_url:
-            category_images[c.slug] = cld_optimize(c.hero_image_url)
+            category_images[c.slug] = c.hero_image_url
 
         if c.show_in_hero and c.hero_image_url:
-            hero.append({"id": c.slug, "title": c.name, "tag": c.hero_tagline or "", "img": cld_optimize(c.hero_image_url)})
+            hero.append({"id": c.slug, "title": c.name, "tag": c.hero_tagline or "", "img": c.hero_image_url})
 
     result = {
         "page": page.slug,
@@ -369,6 +380,11 @@ def get_product(product_id: str, db: Session = Depends(get_db)):
         "mrp": format_mrp(product),
         "feat": product.features or [],
         "images": package_images,
+        # The same photos, same order, as uploaded rather than through
+        # cld_optimize()'s 640px thumbnail - for the detail page's main gallery
+        # image, which is shown large (and zoomed) where a thumbnail looks soft.
+        # `images` stays the thumbnails for the thumb strip and every other surface.
+        "full_images": [m.url for m in package_media if m.media_type != "video"],
         "videos": package_videos,
         "rating": round(float(avg_rating), 1) if avg_rating else None,
         "extra": product.extra or {},

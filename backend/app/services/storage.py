@@ -17,6 +17,7 @@ import io
 import logging
 import re
 import threading
+import time
 import uuid
 
 import boto3
@@ -182,16 +183,39 @@ def _object_exists(key: str) -> bool:
 # adds minutes of pure network wait for no reason, since within one process
 # lifetime the answer for a given (url, width, quality) never changes.
 _thumb_url_cache: dict[str, str | None] = {}
+
+# Card / listing thumbnails. 800px at q82 rather than the old 640px at q75: a
+# card is ~300-400 CSS px wide, i.e. 600-800 real pixels on a phone or laptop
+# with a 2x screen, so 640px was being upscaled there and looked soft. Large
+# views (banners, detail galleries, the zoom viewer) use the original instead.
+# Changing either value gives every thumbnail a new cache key, so they are all
+# regenerated once (warm_thumbnails() at startup does that up front).
+THUMB_WIDTH = 800
+THUMB_QUALITY = 82
 _thumb_cache_lock = threading.Lock()
 
 
+# A failed thumbnail is retried after this long rather than remembered as failed
+# for the life of the process - a dropped connection on one large original
+# would otherwise leave that card loading the full multi-MB file until restart.
+_THUMB_RETRY_AFTER = 600  # seconds
+_thumb_failed_at: dict[str, float] = {}
+
+
 def _fetch_and_upload_thumbnail(url: str, key: str, width: int, quality: int) -> str | None:
-    try:
-        resp = httpx.get(url, timeout=10, follow_redirects=True)
-        resp.raise_for_status()
-    except Exception as e:
-        logger.warning("Thumbnail source fetch failed for %s: %s", url, e)
-        return None
+    # Originals are stored untouched now (several MB each), and R2's public
+    # endpoint occasionally drops a long download part-way - one quick retry
+    # covers that without making a genuinely missing file slow.
+    resp = None
+    for attempt in (1, 2):
+        try:
+            resp = httpx.get(url, timeout=30, follow_redirects=True)
+            resp.raise_for_status()
+            break
+        except Exception as e:
+            if attempt == 2:
+                logger.warning("Thumbnail source fetch failed for %s: %s", url, e)
+                return None
 
     try:
         thumb_bytes = make_thumbnail(resp.content, width=width, quality=quality)
@@ -202,7 +226,7 @@ def _fetch_and_upload_thumbnail(url: str, key: str, width: int, quality: int) ->
     return _put_object(thumb_bytes, key, "image/webp")
 
 
-def get_or_create_thumbnail(url: str, width: int = 640, quality: int = 75) -> str | None:
+def get_or_create_thumbnail(url: str, width: int = THUMB_WIDTH, quality: int = THUMB_QUALITY) -> str | None:
     """Resizes an already-hosted (R2) image to a small WebP thumbnail with Pillow and
     caches it permanently in R2 under a key derived from (url, width, quality) - the
     self-hosted replacement for routing every card/thumbnail through images.weserv.nl.
@@ -220,6 +244,9 @@ def get_or_create_thumbnail(url: str, width: int = 640, quality: int = 75) -> st
     with _thumb_cache_lock:
         if cache_key in _thumb_url_cache:
             return _thumb_url_cache[cache_key]
+        failed_at = _thumb_failed_at.get(cache_key)
+        if failed_at and time.monotonic() - failed_at < _THUMB_RETRY_AFTER:
+            return None
 
     digest = hashlib.sha1(cache_key.encode()).hexdigest()
     key = f"{settings.cloudinary_folder}/thumb_cache/{digest}.webp"
@@ -230,11 +257,15 @@ def get_or_create_thumbnail(url: str, width: int = 640, quality: int = 75) -> st
         result = _fetch_and_upload_thumbnail(url, key, width, quality)
 
     with _thumb_cache_lock:
-        _thumb_url_cache[cache_key] = result
+        if result:
+            _thumb_url_cache[cache_key] = result
+            _thumb_failed_at.pop(cache_key, None)
+        else:
+            _thumb_failed_at[cache_key] = time.monotonic()
     return result
 
 
-def warm_thumbnails(urls: list[str], width: int = 640, quality: int = 75, max_workers: int = 24) -> None:
+def warm_thumbnails(urls: list[str], width: int = THUMB_WIDTH, quality: int = THUMB_QUALITY, max_workers: int = 24) -> None:
     """Pre-populates both the R2 thumbnail cache and the in-process memo above for many
     URLs at once, using a thread pool since each is a blocking network call (head_object,
     and on a miss, an httpx fetch + upload) - the same work get_or_create_thumbnail() would

@@ -89,7 +89,7 @@ function renderHeroSlideHTML(slide, eager) {
   const lazyAttr = eager ? '' : ' loading="lazy"';
   return slide.banner ? `
     <div class="hero-slide hero-slide-banner" onclick="switchCategory('${slide.key}')" style="${slide.bannerBg ? `background-color: ${slide.bannerBg};` : ''}">
-      <img src="${cldOpt(slide.banner)}" alt="${slide.title}"${lazyAttr} style="${slide.bannerBg ? `background: ${slide.bannerBg};` : ''}">
+      <img src="${fullImg(slide.banner)}" alt="${slide.title}"${lazyAttr} style="${slide.bannerBg ? `background: ${slide.bannerBg};` : ''}">
     </div>
   ` : `
     <div class="hero-slide" onclick="switchCategory('${slide.key}')">
@@ -99,7 +99,7 @@ function renderHeroSlideHTML(slide, eager) {
         ${heroBadgesHTML}
       </div>
       <div class="hero-banner-image">
-        <img src="${cldOpt(slide.img)}" alt="${slide.title}"${lazyAttr}>
+        <img src="${fullImg(slide.img)}" alt="${slide.title}"${lazyAttr}>
       </div>
     </div>
   `;
@@ -493,7 +493,7 @@ function openProductPreview(idx, opts = {}) {
   const images = pkg.images && pkg.images.length ? pkg.images : [pkg.img];
   // Photos first, then any clip the admin attached - see js/shared/product-media.js
   // for why videos are kept out of `images` rather than appended to it upstream.
-  const galleryItems = ProductMedia.build(images, pkg.videos);
+  const galleryItems = ProductMedia.build(images, pkg.videos, pkg.images && pkg.images.length ? pkg.fullImages : null);
   const highlights = pkg.highlights && pkg.highlights.length
     ? pkg.highlights
     : ["High-Quality Output", "Premium Paper Stock", "Quick Studio Handover"];
@@ -538,7 +538,7 @@ function openProductPreview(idx, opts = {}) {
   // carousel the visitor may never scroll to, so it costs a header until played.
   galleryEl.innerHTML = galleryItems.map((item, i) => item.type === 'video'
     ? `<video src="${cldOpt(item.url)}" class="preview-slide preview-slide-video" controls playsinline preload="metadata" aria-label="${pkg.name} video"></video>`
-    : `<img src="${cldOpt(item.url)}" class="preview-slide" alt="${pkg.name} view ${i + 1}" loading="${i === 0 ? 'eager' : 'lazy'}" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">`
+    : `<img src="${fullImg(item.full || item.url)}" class="preview-slide" data-slide-index="${i}" alt="${pkg.name} view ${i + 1}" loading="${i === 0 ? 'eager' : 'lazy'}" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">`
   ).join('');
 
   document.getElementById('previewDots').innerHTML = galleryItems.map((item, i) => `
@@ -563,6 +563,18 @@ function openProductPreview(idx, opts = {}) {
     galleryEl.querySelectorAll('img.preview-slide').forEach(img => window.SkLoading.wireImage(img));
     thumbRailEl.querySelectorAll('img.preview-thumb').forEach(img => window.SkLoading.wireImage(img));
   }
+  // Click a photo to open it full screen with zoom (ProductFields.openImageViewer).
+  galleryEl.onclick = (event) => {
+    const slide = event.target.closest('img.preview-slide');
+    if (!slide || !window.ProductFields || !ProductFields.openImageViewer) return;
+    const photos = galleryItems.filter(item => item.type !== 'video');
+    const clicked = galleryItems[Number(slide.dataset.slideIndex)];
+    ProductFields.openImageViewer({
+      label: `${pkg.name} photos`,
+      index: Math.max(0, photos.indexOf(clicked)),
+      items: photos.map(item => ({ url: fullImg(item.full || item.url), thumb: cldOpt(item.url) })),
+    });
+  };
 
   galleryEl.scrollLeft = 0;
   galleryEl.onscroll = handlePreviewGalleryScroll;
@@ -1397,6 +1409,8 @@ async function loadStudioCatalog() {
           price: p.price,
           img: (p.images && p.images[0]) || "",
           images: p.images || [],
+          // Same photos uncompressed, for the preview's large slides and zoom viewer.
+          fullImages: p.full_images || [],
           // Rendered only by the preview modal's gallery, never by a card.
           videos: p.videos || [],
           highlights,
