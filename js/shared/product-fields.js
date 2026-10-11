@@ -387,18 +387,17 @@
       e.preventDefault();
       zoomTo(v.zoom.s * Math.exp(-e.deltaY * 0.0015), e.clientX, e.clientY);
     }, { passive: false });
-    img.addEventListener('dblclick', (e) => {
-      zoomTo(v.zoom.s > ZOOM_MIN ? ZOOM_MIN : 2.5, e.clientX, e.clientY);
-    });
     img.addEventListener('load', resetZoom);
     window.addEventListener('resize', () => { if (!el.hidden) applyZoom(); });
 
-    // Pointer events cover mouse, pen and touch alike: one pointer drags a
-    // zoomed picture (or swipes to the next one when not zoomed), two pinch.
+    // Pointer events cover mouse, pen and touch alike: a click/tap on the picture
+    // zooms in on that spot (or back out when already zoomed), one pointer drags
+    // a zoomed picture (or swipes to the next one when not zoomed), two pinch.
     const pointers = new Map();
     let gesture = null;
     stage.addEventListener('pointerdown', (e) => {
       if (e.target.closest('button')) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
       stage.setPointerCapture(e.pointerId);
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       const pts = Array.from(pointers.values());
@@ -408,7 +407,9 @@
           dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1,
         };
       } else if (pts.length === 1) {
-        gesture = { type: 'drag', sx: e.clientX, sy: e.clientY, x: v.zoom.x, y: v.zoom.y };
+        // tap: still a candidate for click-to-zoom until it moves or a second
+        // finger joins; only a press that started on the picture itself counts.
+        gesture = { type: 'drag', sx: e.clientX, sy: e.clientY, x: v.zoom.x, y: v.zoom.y, tap: e.target === img };
       }
     });
     stage.addEventListener('pointermove', (e) => {
@@ -418,7 +419,9 @@
       if (gesture && gesture.type === 'pinch' && pts.length === 2) {
         const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
         zoomTo(gesture.s * dist / gesture.dist, (pts[0].x + pts[1].x) / 2, (pts[0].y + pts[1].y) / 2);
-      } else if (gesture && gesture.type === 'drag' && v.zoom.s > ZOOM_MIN) {
+      } else if (gesture && gesture.type === 'drag') {
+        if (Math.hypot(e.clientX - gesture.sx, e.clientY - gesture.sy) > 6) gesture.tap = false;
+        if (v.zoom.s <= ZOOM_MIN) return;
         v.zoom.x = gesture.x + (e.clientX - gesture.sx);
         v.zoom.y = gesture.y + (e.clientY - gesture.sy);
         applyZoom();
@@ -427,6 +430,12 @@
     const endPointer = (e) => {
       if (!pointers.has(e.pointerId)) return;
       pointers.delete(e.pointerId);
+      // A click/tap (no drag) toggles zoom at that spot: in to 250%, or back out.
+      if (gesture && gesture.type === 'drag' && gesture.tap && e.type === 'pointerup' && !pointers.size) {
+        zoomTo(v.zoom.s > ZOOM_MIN ? ZOOM_MIN : 2.5, e.clientX, e.clientY);
+        gesture = null;
+        return;
+      }
       // A sideways swipe on an un-zoomed picture moves to the next one.
       if (gesture && gesture.type === 'drag' && v.zoom.s <= ZOOM_MIN && e.type === 'pointerup') {
         const dx = e.clientX - gesture.sx;
@@ -666,7 +675,40 @@
     });
   }
 
+  /* A "product link" field: not a question but a signpost to other versions of
+     this product (e.g. the black & white and sepia ones). The backend resolves
+     `field.links` to each target's current picture/URL and short name, and
+     drops any target that is gone - see public_input_fields() in
+     backend/app/routers/catalog.py. Nothing is collected or validated for it.
+
+     Rendered Amazon's "other styles" way: the field's label as the heading,
+     then one row of picture tiles - just the photo and its short name - so
+     four or five versions line up neatly instead of stacking as long cards. */
+  function linkTileHTML(link) {
+    // Only our own same-site page links ("gifts.html?..."), as the backend builds
+    // them - never an arbitrary or javascript: URL.
+    if (!link || !/^[a-z-]+\.html\?/.test(String(link.url || ''))) return '';
+    const image = link.image ? resolveMediaUrl(link.image) : '';
+    return `
+      <a class="pf-link-tile" href="${escAttr(link.url)}" title="${escAttr(link.title || link.label || '')}">
+        <span class="pf-link-thumb">${image ? `<img src="${escAttr(image)}" alt="" loading="lazy">` : ''}</span>
+        <span class="pf-link-name">${esc(link.label || link.title || '')}</span>
+      </a>`;
+  }
+
+  function renderLinkField(field) {
+    const tiles = (field.links || []).map(linkTileHTML).join('');
+    if (!tiles) return '';
+    return `
+      <div class="pf-field pf-field-link" data-field-id="${escAttr(field.id)}" data-field-type="link">
+        <span class="pf-label">${esc(field.label)}</span>
+        <div class="pf-link-tiles">${tiles}</div>
+        ${field.help_text ? `<div class="pf-help">${esc(field.help_text)}</div>` : ''}
+      </div>`;
+  }
+
   function renderField(container, field) {
+    if (field.type === 'link') return renderLinkField(field);
     const cid = controlId(container, field);
     const req = field.required ? '<span class="pf-required">*</span>' : '';
     const help = field.help_text ? `<div class="pf-help">${esc(field.help_text)}</div>` : '';

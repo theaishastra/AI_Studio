@@ -312,6 +312,20 @@ class CategoryOut(CategoryIn):
 
 # ---------------------------------------------------------------- products
 
+class ProductLinkIn(BaseModel):
+    """One tile in a "product link" field: which product it opens, and the short
+    name printed under its photo ("Black & White"). Blank -> the product's title."""
+    product_id: str = Field(min_length=1, max_length=64)
+    label: str = Field(default="", max_length=60)
+
+    @field_validator("label")
+    @classmethod
+    def _no_markup_chars(cls, v: str) -> str:
+        if v and _UNSAFE_TEXT_CHARS.search(v):
+            raise ValueError("Cannot contain double quotes or angle brackets")
+        return v
+
+
 class ProductInputFieldIn(BaseModel):
     """One admin-configured extra customer input on a product's order/booking
     form - built by the "Customer Input Fields" form builder in the admin
@@ -326,7 +340,7 @@ class ProductInputFieldIn(BaseModel):
     # _EMAIL_RE and _validate_media_url above: reject it at the source instead
     # of relying on every render site to escape it correctly.
     id: str = Field(min_length=1, max_length=40, pattern=r"^[A-Za-z0-9_-]+$")
-    type: str = Field(pattern="^(upload|dropdown|text)$")
+    type: str = Field(pattern="^(upload|dropdown|text|link)$")
     label: str = Field(min_length=1, max_length=160)
     required: bool = False
     help_text: str = Field(default="", max_length=300)
@@ -381,7 +395,23 @@ class ProductInputFieldIn(BaseModel):
     # message" can differ; the ceiling keeps any single answer bounded.
     max_length: int = Field(default=500, ge=1, le=5000)
 
-    @field_validator("label", "help_text", "placeholder")
+    # link only - not a question at all but a signpost: "Also available in Black &
+    # White ->" pointing at another product (the colour and B&W versions of one
+    # design, say). Display only: the customer answers nothing, nothing is stored
+    # on the order, and it is never required. The public catalog resolves the id
+    # to that product's current name/picture/price/URL (catalog.public_input_fields),
+    # so renaming or re-pricing the linked product never leaves this stale, and a
+    # link to a deleted or hidden product simply isn't shown.
+    link_product_id: str | None = Field(default=None, max_length=64)
+    # Legacy: the old single-link card's button wording. No longer shown.
+    link_text: str = Field(default="", max_length=60)
+    # The products this field links to - one picture tile each, in this order,
+    # under the field's label as a heading ("Also available in"). Supersedes
+    # link_product_id, which only ever held one; that is still read for fields
+    # saved before this existed (see catalog.public_input_fields).
+    links: list[ProductLinkIn] = Field(default_factory=list, max_length=12)
+
+    @field_validator("label", "help_text", "placeholder", "link_text")
     @classmethod
     def _no_markup_chars(cls, v: str) -> str:
         # These are rendered into the storefront product page; quotes and angle
@@ -412,6 +442,11 @@ class ProductInputFieldIn(BaseModel):
     def _check_type_fields(self):
         if self.type == "dropdown" and not self.options:
             raise ValueError(f'Dropdown field "{self.label}" needs at least one option')
+        if self.type == "link":
+            if not self.links and not self.link_product_id:
+                raise ValueError(f'Product link "{self.label}" needs at least one product to link to')
+            # Nothing for the customer to fill in, so it can never be required.
+            self.required = False
         if self.type == "upload" and self.multiple and self.max_files < 2:
             raise ValueError(f'Upload field "{self.label}" allows multiple files but has max_files < 2')
         if self.option_prices:

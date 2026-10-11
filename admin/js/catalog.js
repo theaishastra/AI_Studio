@@ -296,20 +296,113 @@ async function renderProducts(params) {
       <div class="empty-state">No categories yet — add one under Categories first.</div>`;
     return;
   }
+  // Remembered across visits, so the admin lands back on the section they
+  // were working in rather than the first one every time.
+  if (!CURRENT_CATEGORY_ID) {
+    try { CURRENT_CATEGORY_ID = localStorage.getItem("admin_products_cat"); } catch { /* storage blocked */ }
+  }
   if (!CURRENT_CATEGORY_ID || !allCats.some(c => c.id === CURRENT_CATEGORY_ID)) CURRENT_CATEGORY_ID = allCats[0].id;
 
+  /* Section picker: page tabs, then one-click chips for that page's categories
+     (with product counts), plus a search that finds any product by name across
+     every section and opens it. Replaces one long "Page — Category" <select>
+     that had to be opened and scrolled for every switch. */
   view.innerHTML = `
     <header class="page-head">
       <h1>Products & Packages</h1>
       <button class="btn" id="addProdBtn">+ Add Product</button>
     </header>
-    <div class="toolbar">
-      <select id="catSelect">${allCats.map(c => `<option value="${c.id}" ${c.id === CURRENT_CATEGORY_ID ? "selected" : ""}>${esc(c.pageName)} — ${esc(c.name)}</option>`).join("")}</select>
+    <div class="section-picker">
+      <div class="section-picker-top">
+        <div class="section-tabs" id="sectionTabs" role="tablist"></div>
+        <div class="section-search">
+          <input id="productSearch" type="search" placeholder="Find any product by name…" autocomplete="off">
+          <div class="section-search-results" id="productSearchResults" hidden></div>
+        </div>
+      </div>
+      <div class="section-chips" id="sectionChips"></div>
     </div>
     <div id="prodTableWrap"></div>
   `;
-  document.getElementById("catSelect").addEventListener("change", (e) => { CURRENT_CATEGORY_ID = e.target.value; loadProdTable(); });
+  const counts = {};
+  let everyProduct = [];
+  const pageOf = (catId) => (allCats.find(c => c.id === catId) || {}).pageSlug;
+  let activePage = pageOf(CURRENT_CATEGORY_ID);
+
+  const renderTabs = () => {
+    document.getElementById("sectionTabs").innerHTML = pages.filter(pg => allCats.some(c => c.pageSlug === pg.slug)).map(pg => `
+      <button type="button" role="tab" class="section-tab${pg.slug === activePage ? " active" : ""}" data-page="${esc(pg.slug)}"
+              aria-selected="${pg.slug === activePage}">${esc(pg.name)}</button>`).join("");
+  };
+  const renderChips = () => {
+    document.getElementById("sectionChips").innerHTML = allCats.filter(c => c.pageSlug === activePage).map(c => `
+      <button type="button" class="section-chip${c.id === CURRENT_CATEGORY_ID ? " active" : ""}" data-cat="${esc(c.id)}">
+        ${esc(c.name)}${counts[c.id] !== undefined ? `<span class="section-chip-count">${counts[c.id]}</span>` : ""}
+      </button>`).join("");
+  };
+  const selectCategory = async (catId) => {
+    CURRENT_CATEGORY_ID = catId;
+    activePage = pageOf(catId);
+    try { localStorage.setItem("admin_products_cat", catId); } catch { /* storage blocked */ }
+    renderTabs();
+    renderChips();
+    await loadProdTable();
+  };
+
+  document.getElementById("sectionTabs").addEventListener("click", (e) => {
+    const tab = e.target.closest("[data-page]");
+    if (!tab || tab.dataset.page === activePage) return;
+    // Switching page opens that page's first category straight away.
+    const first = allCats.find(c => c.pageSlug === tab.dataset.page);
+    if (first) selectCategory(first.id);
+  });
+  document.getElementById("sectionChips").addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-cat]");
+    if (chip && chip.dataset.cat !== CURRENT_CATEGORY_ID) selectCategory(chip.dataset.cat);
+  });
+
+  // Search: every product on every page, matched on its title.
+  const search = document.getElementById("productSearch");
+  const results = document.getElementById("productSearchResults");
+  const catLabel = (catId) => { const c = allCats.find(x => x.id === catId); return c ? `${c.pageName} — ${c.name}` : ""; };
+  const showResults = () => {
+    const q = search.value.trim().toLowerCase();
+    if (!q) { results.hidden = true; results.innerHTML = ""; return; }
+    const matches = everyProduct.filter(x => (x.title || "").toLowerCase().includes(q)).slice(0, 10);
+    results.innerHTML = matches.length
+      ? matches.map(x => `<button type="button" data-pid="${esc(x.id)}" data-cat="${esc(x.category_id)}">
+          <span class="ssr-title">${esc(x.title)}</span><span class="ssr-cat">${esc(catLabel(x.category_id))}</span></button>`).join("")
+      : `<div class="ssr-empty">${everyProduct.length ? `No product matches "${esc(search.value.trim())}".` : "Loading products…"}</div>`;
+    results.hidden = false;
+  };
+  search.addEventListener("input", showResults);
+  search.addEventListener("focus", showResults);
+  search.addEventListener("keydown", (e) => { if (e.key === "Escape") { search.value = ""; showResults(); } });
+  document.addEventListener("click", (e) => { if (!e.target.closest(".section-search")) results.hidden = true; });
+  results.addEventListener("click", async (e) => {
+    const hit = e.target.closest("[data-pid]");
+    if (!hit) return;
+    results.hidden = true;
+    search.value = "";
+    if (hit.dataset.cat !== CURRENT_CATEGORY_ID) await selectCategory(hit.dataset.cat);
+    // Its category's table is loaded now, so the edit form can find it.
+    if ((window._PRODUCTS_CACHE || []).some(x => x.id === hit.dataset.pid)) openProductForm(hit.dataset.pid);
+  });
+
+  renderTabs();
+  renderChips();
+  // afterProductSaved() uses this to land on the saved product's section.
+  window._selectProductsCategory = selectCategory;
   document.getElementById("addProdBtn").addEventListener("click", () => openProductForm());
+  // Counts and the search list come from one fetch of every product; the
+  // chips render immediately and gain their counts when it lands.
+  Api.allProducts().then(r => {
+    everyProduct = r.items || [];
+    everyProduct.forEach(x => { counts[x.category_id] = (counts[x.category_id] || 0) + 1; });
+    allCats.forEach(c => { if (counts[c.id] === undefined) counts[c.id] = 0; });
+    if (document.getElementById("sectionChips")) renderChips();
+    if (search.value.trim()) showResults();
+  }).catch(() => { /* chips and the table still work without counts */ });
   await loadProdTable();
 }
 
@@ -621,11 +714,28 @@ function openProductForm(id, opts = {}) {
     upload: { icon: "📤", label: "Upload" },
     dropdown: { icon: "▾", label: "Dropdown" },
     text: { icon: "✎", label: "Text" },
+    link: { icon: "🔗", label: "Product link" },
+  };
+  // Loaded once per form, the first time a "Product link" field needs it.
+  let _allProductsPromise = null;
+  const allProductsForLinks = () => {
+    if (!_allProductsPromise) _allProductsPromise = Api.allProducts().then(r => r.items || []).catch(() => { _allProductsPromise = null; return []; });
+    return _allProductsPromise;
   };
   const fieldsWrap = document.getElementById("inputFieldsRows");
   let _fieldRowSeq = 0;
 
   function fieldTypePanelHTML(row, type) {
+    if (type === "link") {
+      return `
+        <div class="field-type-panel fp-link">
+          <div class="form-hint" style="margin-bottom:8px;">Shows a row of picture tiles on this product's page, each taking the customer to another version of it — e.g. on the <b>colour</b> version, tiles for the <b>Black &amp; White</b> and <b>Sepia</b> ones. The <b>Field heading</b> above is the row's heading (e.g. <b>Also available in</b>); each tile shows that product's photo with the short name you give it below. Nothing is asked of the customer and nothing is added to their order.</div>
+          <label>Linked products <span class="form-hint fr_link_count"></span></label>
+          <div class="fr_link_list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
+          <input class="fr_link_search" placeholder="Search a product by name to add it…" autocomplete="off">
+          <div class="fr_link_results" style="display:flex;flex-direction:column;gap:4px;margin-top:6px;max-height:220px;overflow-y:auto;"></div>
+        </div>`;
+    }
     if (type === "upload") {
       const multiple = row?.multiple ?? false;
       return `
@@ -688,6 +798,91 @@ function openProductForm(id, opts = {}) {
     wireUploadModeToggle(rowEl);
     wireRichOptions(rowEl, row);
     wireDropdownPricedToggle(rowEl);
+    wireLinkPicker(rowEl, row);
+  }
+
+  /* "Product link" picker: search every product on every page and click to add
+     it to this field's list (up to MAX_LINKS), each with a short tile name
+     ("Black & White"), in the order shown. Stores only product ids - the
+     storefront always shows each product's current photo and URL, so a rename
+     never breaks a link the way a pasted URL would. */
+  const MAX_LINKS = 12;
+  function wireLinkPicker(rowEl, row) {
+    // A link has nothing for the customer to answer, so "Required" means nothing.
+    const requiredWrap = rowEl.querySelector(".field-row-required");
+    if (requiredWrap) requiredWrap.style.display = row.type === "link" ? "none" : "";
+    const search = rowEl.querySelector(".fr_link_search");
+    if (!search) return;
+    row.links = row.links || [];
+    const results = rowEl.querySelector(".fr_link_results");
+    const list = rowEl.querySelector(".fr_link_list");
+    const count = rowEl.querySelector(".fr_link_count");
+    const catName = (id) => ((window._ALL_CATS || []).find(c => c.id === id) || {}).name || "";
+    const photoOf = (x) => { const m = (x?.media || []).find(m => m.media_type !== "video"); return m ? mediaUrl(m.url) : ""; };
+    list.innerHTML = `<div class="form-hint">Loading…</div>`;
+    allProductsForLinks().then(products => {
+      // Linking a product to itself would be a tile that reloads the same page.
+      const choices = products.filter(x => !p || x.id !== p.id);
+      const byId = (id) => products.find(x => x.id === id);
+      const renderList = () => {
+        count.textContent = row.links.length ? `(${row.links.length} of ${MAX_LINKS})` : "";
+        list.innerHTML = row.links.length ? row.links.map((link, i) => {
+          const x = byId(link.product_id);
+          const note = !x ? "This product no longer exists — remove it."
+            : x.is_active === false ? "Hidden — its tile won't show until it's active." : `${x.title}${catName(x.category_id) ? ` · ${catName(x.category_id)}` : ""}`;
+          return `
+            <div class="fr-link-item" data-i="${i}" style="display:flex;align-items:center;gap:8px;padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--panel);">
+              <span style="flex:0 0 44px;width:44px;height:44px;border-radius:6px;overflow:hidden;background:var(--bg);">${x && photoOf(x) ? `<img src="${esc(photoOf(x))}" alt="" style="width:100%;height:100%;object-fit:cover;">` : ""}</span>
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+                <input class="fr_link_label" maxlength="60" value="${esc(link.label || "")}" placeholder="Tile name, e.g. Black &amp; White" style="margin:0;">
+                <span class="form-hint" style="margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(note)}</span>
+              </span>
+              <span style="display:flex;flex-direction:column;gap:2px;">
+                <button type="button" class="fr_link_up" title="Move left" ${i === 0 ? "disabled" : ""}>▲</button>
+                <button type="button" class="fr_link_down" title="Move right" ${i === row.links.length - 1 ? "disabled" : ""}>▼</button>
+              </span>
+              <button type="button" class="field-row-remove fr_link_remove" title="Remove this link" style="position:static;">×</button>
+            </div>`;
+        }).join("") : `<div class="form-hint">No products linked yet — search below to add one.</div>`;
+        search.disabled = row.links.length >= MAX_LINKS;
+        search.placeholder = search.disabled ? `The most is ${MAX_LINKS} links` : "Search a product by name to add it…";
+      };
+      list.addEventListener("input", (e) => {
+        const input = e.target.closest(".fr_link_label");
+        if (input) row.links[Number(input.closest(".fr-link-item").dataset.i)].label = input.value;
+      });
+      list.addEventListener("click", (e) => {
+        const item = e.target.closest(".fr-link-item");
+        if (!item) return;
+        const i = Number(item.dataset.i);
+        if (e.target.closest(".fr_link_remove")) row.links.splice(i, 1);
+        else if (e.target.closest(".fr_link_up") && i > 0) row.links.splice(i - 1, 0, row.links.splice(i, 1)[0]);
+        else if (e.target.closest(".fr_link_down") && i < row.links.length - 1) row.links.splice(i + 1, 0, row.links.splice(i, 1)[0]);
+        else return;
+        renderList();
+      });
+      const showResults = () => {
+        const q = search.value.trim().toLowerCase();
+        if (!q) { results.innerHTML = ""; return; }
+        const taken = new Set(row.links.map(l => l.product_id));
+        const matches = choices.filter(x => !taken.has(x.id) && (x.title || "").toLowerCase().includes(q)).slice(0, 12);
+        results.innerHTML = matches.length
+          ? matches.map(x => `<button type="button" class="btn secondary" data-pid="${esc(x.id)}" style="text-align:left;justify-content:flex-start;">+ ${esc(x.title)}<span class="form-hint" style="margin-left:6px;">${esc(catName(x.category_id))}</span></button>`).join("")
+          : `<div class="form-hint">No product matches "${esc(search.value.trim())}".</div>`;
+      };
+      results.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-pid]");
+        if (!btn || row.links.length >= MAX_LINKS) return;
+        row.links.push({ product_id: btn.dataset.pid, label: "" });
+        search.value = "";
+        results.innerHTML = "";
+        renderList();
+        // Straight into naming the tile that was just added.
+        list.querySelector(".fr-link-item:last-child .fr_link_label")?.focus();
+      });
+      search.addEventListener("input", showResults);
+      renderList();
+    });
   }
 
   function wireUploadModeToggle(rowEl) {
@@ -965,7 +1160,10 @@ function openProductForm(id, opts = {}) {
       _rid: rid,
       id: field?.id || null,
       type: field?.type || "upload",
-      label: field?.label || "",
+      // An old single-link field used its heading as the tile name (carried into
+      // `links` below), so it opens with the row heading the storefront showed.
+      label: (field?.type === "link" && !(field.links && field.links.length) && field.link_product_id)
+        ? "Also available in" : (field?.label || ""),
       required: field?.required ?? false,
       help_text: field?.help_text || "",
       multiple: field?.multiple ?? false,
@@ -978,6 +1176,10 @@ function openProductForm(id, opts = {}) {
       option_mrps: field?.option_mrps || null,
       option_images: field?.option_images || null,
       option_image_urls: field?.option_image_urls || null,
+      links: (field?.links && field.links.length)
+        ? field.links.map(l => ({ product_id: l.product_id, label: l.label || "" }))
+        // Saved before multi-link: its heading was the tile's name.
+        : (field?.link_product_id ? [{ product_id: field.link_product_id, label: field.label || "" }] : []),
     };
     const div = document.createElement("div");
     div.className = "field-row";
@@ -1015,6 +1217,7 @@ function openProductForm(id, opts = {}) {
     wireUploadModeToggle(div);
     wireRichOptions(div, row);
     wireDropdownPricedToggle(div);
+    wireLinkPicker(div, row);
 
     div.querySelectorAll(".type-checkbox").forEach(chip => {
       chip.addEventListener("click", (e) => {
@@ -1146,6 +1349,10 @@ function openProductForm(id, opts = {}) {
     const errors = [];
     const seenQty = new Set();
     Array.from(bulkWrap.querySelectorAll(".bulk-tier-row")).forEach((row, index) => {
+      // Whatever this row adds to `errors` marks the row itself, so a failed save
+      // can take the admin straight to it (see the save handler below).
+      const errorsBefore = errors.length;
+      try {
       const minQty = parseInt(row.querySelector(".bt_min_qty").value, 10);
       const value = Number(row.querySelector(".bt_value").value);
       const type = row.querySelector(".bt_type").value === "flat" ? "flat" : "percent";
@@ -1171,6 +1378,9 @@ function openProductForm(id, opts = {}) {
         max_discount: type === "percent" && rawMax !== "" && Number(rawMax) > 0 ? Number(rawMax) : null,
         label,
       });
+      } finally {
+        row.classList.toggle("field-row-error", errors.length > errorsBefore);
+      }
     });
     bulk_discounts.sort((a, b) => a.min_qty - b.min_qty);
     return { bulk_discounts, errors };
@@ -1180,6 +1390,10 @@ function openProductForm(id, opts = {}) {
     const input_fields = [];
     const errors = [];
     Array.from(fieldsWrap.querySelectorAll(".field-row")).forEach((row, index) => {
+      // Whatever this row adds to `errors` marks the row itself, so a failed save
+      // can take the admin straight to it (see the save handler below).
+      const errorsBefore = errors.length;
+      try {
       const type = row.querySelector(".type-checkbox.active")?.dataset.type || "text";
       const label = row.querySelector(".fr_label").value.trim();
       if (!label) { errors.push(`Field #${index + 1} needs a heading.`); return; }
@@ -1207,8 +1421,14 @@ function openProductForm(id, opts = {}) {
         field.max_length = Math.max(1, Math.min(5000, parseInt(row.querySelector(".fr_max_length")?.value || "500", 10) || 500));
         if (UNSAFE.test(field.placeholder)) errors.push(`Placeholder for "${label}" cannot contain double quotes or angle brackets.`);
       }
+      if (type === "link") {
+        field.required = false;
+        field.links = (row.__field.links || []).map(l => ({ product_id: l.product_id, label: (l.label || "").trim() }));
+        if (!field.links.length) errors.push(`Product link "${label}" has no products — search for one and click it to add it, or remove this field with its × button.`);
+        field.links.filter(l => UNSAFE.test(l.label)).forEach(l =>
+          errors.push(`Tile name "${l.label}" cannot contain double quotes or angle brackets.`));
+      }
       if (type === "upload") {
-        field.multiple = !!row.querySelector(".fr_upload_multiple")?.checked;
         field.max_files = field.multiple ? Math.max(2, Math.min(10, parseInt(row.querySelector(".fr_max_files")?.value || "3", 10))) : 1;
       } else if (type === "dropdown") {
         const priced = !!row.querySelector(".fr_priced")?.checked;
@@ -1294,6 +1514,9 @@ function openProductForm(id, opts = {}) {
           errors.push(`Dropdown option "${o}" cannot contain double quotes or angle brackets.`));
       }
       input_fields.push(field);
+      } finally {
+        row.classList.toggle("field-row-error", errors.length > errorsBefore);
+      }
     });
     return { input_fields, errors };
   }
@@ -1343,6 +1566,13 @@ function openProductForm(id, opts = {}) {
     const allErrors = fieldErrors.concat(bulkErrors);
     if (allErrors.length) {
       document.getElementById("formMsg").innerHTML = `<div class="msg error">${allErrors.map(esc).join("<br>")}</div>`;
+      // Take the admin to the first field that needs fixing (outlined in red)
+      // instead of leaving them to hunt for it in a long form.
+      const firstBad = document.querySelector("#prodForm .field-row-error");
+      if (firstBad) {
+        firstBad.scrollIntoView({ behavior: "smooth", block: "center" });
+        firstBad.querySelector("input:not([type=checkbox]):not([type=radio]), textarea, select")?.focus({ preventScroll: true });
+      }
       return;
     }
     const categoryId = document.getElementById("f_category").value;
@@ -1385,10 +1615,8 @@ function openProductForm(id, opts = {}) {
 // from the Categories page's "+ Add Service" / "+ Add Product" buttons).
 function afterProductSaved(categoryId) {
   CURRENT_CATEGORY_ID = categoryId;
-  const catSelect = document.getElementById("catSelect");
-  if (catSelect) {
-    catSelect.value = categoryId;
-    loadProdTable();
+  if (document.getElementById("sectionChips") && window._selectProductsCategory) {
+    window._selectProductsCategory(categoryId);
   } else {
     location.hash = `#/products?cat=${categoryId}`;
   }

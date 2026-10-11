@@ -110,6 +110,36 @@ function openModal(html, wide) {
   bg.innerHTML = `<div class="modal${wide ? " modal-wide" : ""}">${html}</div>`;
   bg.addEventListener("click", (e) => { if (e.target === bg) closeModal(); });
   document.body.appendChild(bg);
+  wireModalErrorDock(bg.querySelector(".modal"));
+}
+
+/* Long forms (a product with many fields) put #formMsg at the very top, while
+   Save sits at the bottom - so a failed save showed its reason somewhere the
+   admin couldn't see, and they had to scroll all the way up to find it. Every
+   modal form writes its errors into #formMsg, so instead of changing each one,
+   this watches that box and mirrors any error into a "dock" inside the action
+   bar, which is pinned to the bottom of the screen (see .modal-actions in
+   admin.css). The top message stays where it was; the dock disappears again as
+   soon as the form clears it, or with its own x. */
+function wireModalErrorDock(modal) {
+  const msg = modal && modal.querySelector("#formMsg");
+  if (!msg) return;
+  const sync = () => {
+    const error = msg.querySelector(".msg.error");
+    const actions = Array.from(modal.querySelectorAll(".modal-actions")).pop();
+    let dock = modal.querySelector(".modal-error-dock");
+    if (!error || !actions) { dock?.remove(); return; }
+    if (!dock) {
+      dock = document.createElement("div");
+      dock.className = "modal-error-dock msg error";
+      dock.setAttribute("role", "alert");
+      actions.prepend(dock);
+    }
+    dock.innerHTML = `<div class="modal-error-dock-text">${error.innerHTML}</div>
+      <button type="button" class="modal-error-dock-close" aria-label="Dismiss">&times;</button>`;
+    dock.querySelector(".modal-error-dock-close").addEventListener("click", () => dock.remove());
+  };
+  new MutationObserver(sync).observe(msg, { childList: true, subtree: true, characterData: true });
 }
 function closeModal() { document.getElementById("modalBackdrop")?.remove(); }
 

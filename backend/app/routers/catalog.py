@@ -138,6 +138,94 @@ def default_variant_pricing(product: Product) -> tuple[float, float | None] | No
     return price, (mrp if mrp is not None and mrp > price else None)
 
 
+def product_page_url(p: Product) -> str | None:
+    """Storefront link straight to one product - the Python twin of
+    js/shared/search.js's buildProductUrl(), so a "product link" field opens the
+    product exactly the way a search result for it does. Each page has its own
+    deep-link scheme (see that function's comment); photography has no
+    per-product opener, so it links to the category."""
+    from urllib.parse import quote
+    page = p.category.page.slug if p.category and p.category.page else None
+    name = quote(p.title, safe="")
+    if page == "gifts":
+        return f"gifts.html?view=product&product={name}"
+    if page == "corporate":
+        img = next((m.url for m in p.media if m.media_type != "video"), "")
+        return (f"corporate.html?openProduct={name}&openPrice={quote(format_price(p), safe='')}"
+                f"&openImg={quote(cld_optimize(img) or '', safe='')}&pid={quote(str(p.id), safe='')}")
+    if page == "studio":
+        return f"studio.html?openProduct={name}&pid={quote(str(p.id), safe='')}"
+    if page == "photography":
+        return f"photography.html?category={quote(p.category.slug if p.category else '', safe='')}"
+    return None
+
+
+def _link_entries(field: dict) -> list[dict]:
+    """A link field's [{product_id, label}] - its `links` list, or for a field
+    saved before multi-link existed, its single link_product_id."""
+    if field.get("links"):
+        return [e for e in field["links"] if isinstance(e, dict) and e.get("product_id")]
+    if field.get("link_product_id"):
+        return [{"product_id": field["link_product_id"], "label": field.get("label") or ""}]
+    return []
+
+
+def linked_products(db: Session, products) -> dict:
+    """Every active product that any of `products`' "product link" fields points
+    at, fetched in one query - {id: Product}."""
+    ids = {
+        e["product_id"]
+        for p in products
+        for f in (p.input_fields or [])
+        if f.get("type") == "link"
+        for e in _link_entries(f)
+    }
+    if not ids:
+        return {}
+    rows = (
+        db.query(Product)
+        .options(selectinload(Product.media), selectinload(Product.category).selectinload(Category.page))
+        .filter(Product.id.in_(ids), Product.is_active == True)
+        .all()
+    )
+    return {p.id: p for p in rows}
+
+
+def public_input_fields(fields, linked: dict) -> list:
+    """A product's input_fields as the storefront should see them: each "product
+    link" field gets a `link` block with the target's CURRENT name, picture,
+    price and URL (resolved here, never stored, so it can't go stale), and a link
+    whose target was deleted or hidden is dropped rather than shown broken."""
+    out = []
+    for f in fields or []:
+        if f.get("type") == "link":
+            resolved = []
+            for entry in _link_entries(f):
+                target = linked.get(entry["product_id"])
+                url = product_page_url(target) if target else None
+                if not url:
+                    continue
+                image = next((m.url for m in target.media if m.media_type != "video"), None)
+                resolved.append({
+                    "id": target.id,
+                    "title": target.title,
+                    "label": entry.get("label") or target.title,
+                    "image": cld_optimize(image) if image else "",
+                    "price": format_price(target),
+                    "url": url,
+                })
+            if not resolved:
+                continue
+            legacy = not f.get("links")
+            f = {**f, "links": resolved}
+            # A field saved before multi-link used its label as the tile's name,
+            # so it gets the generic heading the old single tile sat under.
+            if legacy:
+                f["label"] = "Also available in"
+        out.append(f)
+    return out
+
+
 def display_pricing(product: Product) -> tuple[float, float | None]:
     """(price, mrp) for any card or listing - the priced dropdown's first option
     when there is one, otherwise the product's own figures."""
@@ -263,6 +351,8 @@ def _build_page_bundle(page_slug: str, db: Session) -> dict:
 
     cat_list, packages, folio, folio_titles = [], {}, {}, {}
     category_images, hero = {}, []
+    # Targets of every "product link" field on this page, in one query.
+    linked = linked_products(db, [p for c in categories for p in c.products])
 
     for c in categories:
         cat_list.append({
@@ -307,7 +397,7 @@ def _build_page_bundle(page_slug: str, db: Session) -> dict:
                 "videos": product_media[p.id][1],
                 "rating": ratings.get(p.id),
                 "extra": p.extra or {},
-                "input_fields": p.input_fields or [],
+                "input_fields": public_input_fields(p.input_fields, linked),
                 # Normalized here rather than handed over raw so the storefront
                 # never has to sort, dedupe or invent a label for these - see
                 # js/shared/bulk-tiers.js, which only picks and formats.
@@ -388,7 +478,7 @@ def get_product(product_id: str, db: Session = Depends(get_db)):
         "videos": package_videos,
         "rating": round(float(avg_rating), 1) if avg_rating else None,
         "extra": product.extra or {},
-        "input_fields": product.input_fields or [],
+        "input_fields": public_input_fields(product.input_fields, linked_products(db, [product])),
         "bulk_discounts": normalize_bulk_tiers(product.bulk_discounts),
         "delivery_days": product.delivery_days,
         "type": product.type,

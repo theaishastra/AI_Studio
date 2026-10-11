@@ -13,6 +13,12 @@ def _field_value_errors(field: dict, value) -> list[str]:
     required = bool(field.get("required"))
     ftype = field.get("type")
 
+    # A product link is a signpost to another product, not a question - there is
+    # never an answer to check (and a stray "required" on one must not block
+    # checkout).
+    if ftype == "link":
+        return []
+
     if value is None or value == "" or value == []:
         return [f'"{label}" is required'] if required else []
 

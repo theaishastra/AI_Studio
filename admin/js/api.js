@@ -84,6 +84,8 @@ const Api = {
   addCategoryMedia: (id, data) => api(`/api/admin/categories/${id}/media`, { method: "POST", body: JSON.stringify(data) }),
 
   products: (categoryId) => api(`/api/admin/products${categoryId ? `?category_id=${encodeURIComponent(categoryId)}` : ""}`),
+  // Every product on every page - the field builder's "Product link" picker searches these.
+  allProducts: () => api("/api/admin/products?page_size=500"),
   createProduct: (data) => api("/api/admin/products", { method: "POST", body: JSON.stringify(data) }),
   updateProduct: (id, data) => api(`/api/admin/products/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteProduct: (id) => api(`/api/admin/products/${id}`, { method: "DELETE" }),
