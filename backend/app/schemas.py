@@ -946,6 +946,176 @@ class HomepageLayoutIn(BaseModel):
     product_ids: list[str] = Field(default_factory=list, max_length=20)
 
 
+# ---------------------------------------------------------------- site menu (category menu bar)
+
+# Custom links end up as <a href> on every storefront page, so anything that could
+# run script (javascript:, data:, vbscript:) is refused here. Relative paths
+# ("gifts.html?category=frames"), "#anchors", http(s), mailto: and tel: are fine.
+_MENU_URL_RE = re.compile(r"^(https?://|mailto:|tel:|#|[A-Za-z0-9_./?=&%+-])", re.IGNORECASE)
+_MENU_BAD_SCHEME_RE = re.compile(r"^\s*(javascript|data|vbscript):", re.IGNORECASE)
+_SLUG_RE = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
+
+
+def _clean_menu_url(v: str) -> str:
+    v = (v or "").strip()
+    if not v:
+        raise ValueError("Link URL is required")
+    if _MENU_BAD_SCHEME_RE.match(v) or not _MENU_URL_RE.match(v):
+        raise ValueError(f"Unsupported link URL: {v[:60]}")
+    return v
+
+
+class MenuTargetIn(BaseModel):
+    """Where a menu entry points. Pages/categories/products are stored as
+    references (not URLs) so the storefront link is built from live data - a
+    renamed product keeps working, a hidden one drops out of the menu."""
+    type: str = Field(pattern="^(page|category|product|url)$")
+    page: str = Field(default="", max_length=60)        # page / category targets
+    category: str = Field(default="", max_length=80)    # category slug within `page`
+    keyword: str = Field(default="", max_length=60)     # optional filter within a gifts category
+    product_id: str = Field(default="", max_length=64)
+    url: str = Field(default="", max_length=500)
+
+    @model_validator(mode="after")
+    def _check(self):
+        self.keyword = self.keyword.strip()
+        if self.type in ("page", "category") and not _SLUG_RE.match(self.page or ""):
+            raise ValueError("Choose a page for this link")
+        if self.type == "category" and not _SLUG_RE.match(self.category or ""):
+            raise ValueError("Choose a category for this link")
+        if self.type == "product" and not self.product_id.strip():
+            raise ValueError("Choose a product for this link")
+        if self.type == "url":
+            self.url = _clean_menu_url(self.url)
+        return self
+
+
+def _legacy_url_to_target(data):
+    # Menus saved before links had pickers stored a plain "url".
+    if isinstance(data, dict) and not data.get("target") and data.get("url"):
+        data = {**data, "target": {"type": "url", "url": data["url"]}}
+        data.pop("url", None)
+    return data
+
+
+def _clean_menu_image(v: str) -> str:
+    v = (v or "").strip()
+    if v and not re.match(r"^(https?://|[A-Za-z0-9_./-])", v, re.IGNORECASE):
+        raise ValueError("Images must be an http(s) URL or a site path")
+    return v
+
+
+class MenuLinkIn(BaseModel):
+    # A row is either a link (label + target, optional badge) or a sub-heading inside
+    # the column (heading only) - e.g. "Pillows" under the Drinkware links.
+    label: str = Field(default="", max_length=80)
+    badge: str = Field(default="", max_length=20)
+    # Only used by "cards" columns (photo + one-line description). Blank = taken
+    # from the linked category/product.
+    description: str = Field(default="", max_length=160)
+    image: str = Field(default="", max_length=1000)
+    heading: str | None = Field(default=None, max_length=80)
+    is_active: bool = True
+    target: MenuTargetIn | None = None
+
+    _legacy = model_validator(mode="before")(_legacy_url_to_target)
+
+    @model_validator(mode="after")
+    def _check(self):
+        if self.heading is not None:
+            self.heading = self.heading.strip()
+            if not self.heading:
+                raise ValueError("Sub-heading text is required")
+            self.target = None
+            return self
+        self.label = self.label.strip()
+        if not self.label:
+            raise ValueError("Every dropdown link needs a label")
+        if self.target is None:
+            raise ValueError(f'Choose where "{self.label}" links to')
+        self.badge = self.badge.strip()
+        self.description = self.description.strip()
+        self.image = _clean_menu_image(self.image)
+        return self
+
+
+class MenuCtaIn(BaseModel):
+    """Small "Need something special? [Contact Us]" box under a column."""
+    title: str = Field(default="", max_length=80)
+    text: str = Field(default="", max_length=200)
+    button: str = Field(default="", max_length=40)
+    target: MenuTargetIn | None = None
+
+
+class MenuColumnIn(BaseModel):
+    title: str = Field(default="", max_length=80)
+    style: str = Field(default="list", pattern="^(list|cards)$")
+    is_active: bool = True
+    links: list[MenuLinkIn] = Field(default_factory=list, max_length=40)
+    cta: MenuCtaIn | None = None
+
+    @field_validator("cta")
+    @classmethod
+    def _cta(cls, v):
+        return v if v is not None and (v.title or v.text or v.button) else None
+
+
+class MenuPromoIn(BaseModel):
+    image: str = Field(default="", max_length=1000)
+    tag: str = Field(default="", max_length=40)       # e.g. "Special Offer" (photography layout)
+    title: str = Field(default="", max_length=80)
+    subtitle: str = Field(default="", max_length=120)
+    button: str = Field(default="", max_length=40)    # e.g. "View All Packages →" (photography layout)
+    target: MenuTargetIn | None = None  # None = same place as the menu item
+
+    _legacy = model_validator(mode="before")(_legacy_url_to_target)
+
+    @field_validator("image")
+    @classmethod
+    def _image(cls, v):
+        return _clean_menu_image(v)
+
+
+class MenuItemIn(BaseModel):
+    label: str = Field(min_length=1, max_length=60)
+    target: MenuTargetIn
+    is_active: bool = True
+    dropdown_active: bool = True
+    in_more: bool = False  # studio layout: listed under the bar's "More" dropdown
+    columns: list[MenuColumnIn] = Field(default_factory=list, max_length=6)
+    promo: MenuPromoIn | None = None
+
+    _legacy = model_validator(mode="before")(_legacy_url_to_target)
+
+    @field_validator("label")
+    @classmethod
+    def _label(cls, v):
+        v = v.strip()
+        if not v:
+            raise ValueError("Menu item label is required")
+        return v
+
+    @field_validator("promo")
+    @classmethod
+    def _promo(cls, v):
+        # An all-blank promo card is the same as no promo card.
+        if v is not None and not (v.image or v.title or v.subtitle):
+            return None
+        return v
+
+
+class MenuBenefitIn(BaseModel):
+    icon: str = Field(default="", max_length=8)
+    title: str = Field(default="", max_length=60)
+    text: str = Field(default="", max_length=100)
+
+
+class SiteMenuIn(BaseModel):
+    items: list[MenuItemIn] = Field(min_length=1, max_length=20)
+    # Strip along the bottom of every dropdown (photography layout only).
+    benefits: list[MenuBenefitIn] = Field(default_factory=list, max_length=6)
+
+
 class ArrangeIn(BaseModel):
     category_id: str
     ids: list[str]

@@ -570,11 +570,12 @@
           return { item: p, score: shared * 10 + sameCategory };
         })
         .sort((a, b) => b.score - a.score)
-        .slice(0, 4)
         .map(entry => entry.item);
 
       if (sectionEl) sectionEl.style.display = scored.length ? '' : 'none';
-      relatedEl.innerHTML = scored.map(p => {
+      // First 4, then a "View more" button pages through the rest of the
+      // corporate catalog (js/shared/related-more.js).
+      const relatedCard = p => {
         const cleanName = p.name.replace(/'/g, "\\'");
         return `
         <div class="pkg-card fnp-product-card" onclick="orderNowDirect('${cleanName}', '${p.price}', '${p.img}', '${p.id || ''}')">
@@ -587,9 +588,16 @@
             <div class="p-price-row"><span class="p-price">${p.price}</span>${p.oldPrice ? `<span class="p-old-price">${p.oldPrice}</span>` : ''}</div>
           </div>
         </div>`;
-      }).join('');
-      if (window.SkLoading) {
-        relatedEl.querySelectorAll('.p-thumb img').forEach(img => window.SkLoading.wireImage(img, { wrap: img.closest('.p-thumb') }));
+      };
+      const wireImages = cards => {
+        if (!window.SkLoading) return;
+        cards.forEach(card => card.querySelectorAll('.p-thumb img').forEach(img => window.SkLoading.wireImage(img, { wrap: img.closest('.p-thumb') })));
+      };
+      if (window.RelatedMore) {
+        RelatedMore.render(relatedEl, scored, relatedCard, { key: product && product.id, afterAppend: wireImages });
+      } else {
+        relatedEl.innerHTML = scored.slice(0, 4).map(relatedCard).join('');
+        wireImages(Array.from(relatedEl.children));
       }
     }
 

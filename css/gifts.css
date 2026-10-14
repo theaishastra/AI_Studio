@@ -9755,30 +9755,23 @@ body.gifts-module-route .related-offer {
     line-height: 1.4;
   }
 
+  /* Two-column grid, like the corporate/studio views - "View more" can add 30
+     cards at a time, which a single sideways-scrolling row can't sensibly hold. */
   body.gifts-module-route .related-grid {
-    display: flex;
-    grid-template-columns: none;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
-    overflow-x: auto;
     padding: 0 12px 12px;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-    overscroll-behavior-inline: contain;
-  }
-
-  body.gifts-module-route .related-grid::-webkit-scrollbar {
-    display: none;
   }
 
   body.gifts-module-route .related-grid .product-card {
     display: block;
-    flex: 0 0 154px;
+    min-width: 0;
     min-height: 275px;
     overflow: hidden;
     border: 1px solid #e8e4df;
     border-radius: 9px;
     background: #fff;
-    scroll-snap-align: start;
   }
 
   body.gifts-module-route .related-grid .product-media {

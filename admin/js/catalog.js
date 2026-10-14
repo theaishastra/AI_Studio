@@ -420,6 +420,20 @@ function bulkOfferCell(p) {
   return `<span class="badge offer-badge" title="${esc(tiers.map(t => t.label).join(" · "))}">${esc(parts.join(" · "))}</span>`;
 }
 
+/* The Stock column, read the same way the storefront does (js/shared/stock.js):
+   only a type "product" with a count set is limited - a service, or a product
+   whose stock was left blank, is unlimited. Stock lives on the product itself;
+   options/variants carry none of their own. Low (<= 5, the storefront's
+   "Only N left" line) and Out of stock reuse the existing badge colours. */
+function stockCell(p) {
+  const tracked = p.type === "product" && p.stock !== null && p.stock !== undefined && p.stock !== "";
+  if (!tracked) return `<span class="offer-none" title="Stock not tracked - unlimited">Unlimited</span>`;
+  const n = Math.max(0, parseInt(p.stock, 10) || 0);
+  if (n === 0) return `<span class="badge off">Out of stock</span>`;
+  if (n <= 5) return `<span class="badge req-pending" title="Low stock">${n} left</span>`;
+  return `${n}`;
+}
+
 async function loadProdTable() {
   const wrap = document.getElementById("prodTableWrap");
   wrap.innerHTML = LOADING;
@@ -430,9 +444,12 @@ async function loadProdTable() {
     wrap.innerHTML = `<div class="empty-state">No products/packages in this category yet.</div>`;
     return;
   }
+  // Photography sells bookable services with no stock, so its sections keep the
+  // photo/video count; every other page shows stock instead.
+  const showMedia = ((window._ALL_CATS || []).find(c => c.id === CURRENT_CATEGORY_ID) || {}).pageSlug === "photography";
   wrap.innerHTML = `
     <table>
-      <thead><tr><th class="drag-col"></th><th class="table-thumb-col"></th><th>Tier</th><th>Title</th><th>Price</th><th>Offers</th><th>Media</th><th>Status</th><th>Sort</th><th></th></tr></thead>
+      <thead><tr><th class="drag-col"></th><th class="table-thumb-col"></th><th>Tier</th><th>Title</th><th>Price</th><th>Offers</th><th>${showMedia ? "Media" : "Stock"}</th><th>Status</th><th>Sort</th><th></th></tr></thead>
       <tbody id="prodTableBody">
         ${products.map(p => `
           <tr draggable="true" data-id="${esc(p.id)}">
@@ -444,7 +461,7 @@ async function loadProdTable() {
             <td>${esc(p.title)}</td>
             <td>${fmtINR(p.price)}</td>
             <td>${bulkOfferCell(p)}</td>
-            <td>${p.media.length}${(p.media || []).some(isVideoMedia) ? " ▶" : ""}</td>
+            <td>${showMedia ? `${p.media.length}${(p.media || []).some(isVideoMedia) ? " ▶" : ""}` : stockCell(p)}</td>
             <td><span class="badge ${p.is_active ? "on" : "off"}">${p.is_active ? "Active" : "Hidden"}</span></td>
             <td>${p.sort}</td>
             <td class="actions">
@@ -715,6 +732,19 @@ function openProductForm(id, opts = {}) {
     dropdown: { icon: "▾", label: "Dropdown" },
     text: { icon: "✎", label: "Text" },
     link: { icon: "🔗", label: "Product link" },
+  };
+  // Heading pre-filled on a new question of each type, so the common ones need
+  // no typing. Switching type swaps it only while it is still one of these (or
+  // blank) - a heading the admin typed is never overwritten.
+  const FIELD_DEFAULT_LABELS = {
+    upload: "UPLOAD YOUR PHOTO",
+    dropdown: "CHOOSE AN OPTION",
+    text: "NAME OR QUOTE HERE",
+    link: "ALSO AVAILABLE IN",
+  };
+  const isDefaultFieldLabel = (v) => {
+    const t = (v || "").trim().toLowerCase();
+    return !t || Object.values(FIELD_DEFAULT_LABELS).some(d => d.toLowerCase() === t);
   };
   // Loaded once per form, the first time a "Product link" field needs it.
   let _allProductsPromise = null;
@@ -1163,7 +1193,9 @@ function openProductForm(id, opts = {}) {
       // An old single-link field used its heading as the tile name (carried into
       // `links` below), so it opens with the row heading the storefront showed.
       label: (field?.type === "link" && !(field.links && field.links.length) && field.link_product_id)
-        ? "Also available in" : (field?.label || ""),
+        ? "Also available in"
+        // A brand-new question opens with its type's default; saved ones keep theirs.
+        : (field ? (field.label || "") : FIELD_DEFAULT_LABELS.upload),
       required: field?.required ?? false,
       help_text: field?.help_text || "",
       multiple: field?.multiple ?? false,
@@ -1188,7 +1220,7 @@ function openProductForm(id, opts = {}) {
       <div class="field-row-top">
         <div class="fr-label">
           <label style="margin-bottom:4px;">Field heading (shown to the customer)</label>
-          <input class="fr_label" value="${esc(row.label)}" placeholder="e.g. Upload your photo" required>
+          <input class="fr_label" value="${esc(row.label)}" placeholder="${esc(FIELD_DEFAULT_LABELS[row.type] || "")}" required>
         </div>
         <div class="field-row-side">
           <label class="field-row-required"><input type="checkbox" class="fr_required" ${row.required ? "checked" : ""}> Required</label>
@@ -1223,6 +1255,10 @@ function openProductForm(id, opts = {}) {
       chip.addEventListener("click", (e) => {
         e.preventDefault();
         row.type = chip.dataset.type;
+        const labelInput = div.querySelector(".fr_label");
+        const def = FIELD_DEFAULT_LABELS[row.type] || "";
+        labelInput.placeholder = def;
+        if (isDefaultFieldLabel(labelInput.value)) labelInput.value = def;
         refreshFieldTypeUI(div, row);
       });
     });

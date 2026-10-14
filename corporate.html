@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="css/shared/site-chrome.css">
   <link rel="stylesheet" href="css/corporate.css?v=1790000000002">
   <!-- Shared product-view rules. MUST stay after the page stylesheet above: it wins on source order. -->
-  <link rel="stylesheet" href="css/shared/product-view.css?v=6">
+  <link rel="stylesheet" href="css/shared/product-view.css?v=7">
   <style>
     /* Keep the Corporate product information column as one continuous surface. */
     .product-detail-modal .modal-info-col {
@@ -132,7 +132,7 @@
   <!-- ================= SECONDARY NAVIGATION (CORPORATE CATEGORIES MENU) ================= -->
   <!-- ================= SECONDARY NAVIGATION (CORPORATE CATEGORIES MENU) ================= -->
   <div class="category-menu-bar">
-    <div class="menu-container">
+    <div class="menu-container" data-site-menu="corporate">
       <a href="index.html" class="menu-link" id="menuLinkHome">Home</a>
 
       <!-- 1. Combo Kits Dropdown -->
@@ -2040,12 +2040,14 @@
   <script src="js/shared/product-fields.js?v=15"></script>
   <script src="js/shared/thumb-map.js"></script>
   <script src="js/shared/api-config.js"></script>
+  <script src="js/shared/site-menu.js"></script>
   <script src="js/shared/stock.js?v=1"></script>
   <script src="js/shared/bulk-tiers.js?v=3"></script>
   <script src="js/shared/cart-core.js"></script>
   <script src="js/shared/cart-ui.js?v=2"></script>
   <script src="js/shared/product-media.js?v=2"></script>
-  <script src="js/corporate.js?v=10"></script>
+  <script src="js/shared/related-more.js?v=2"></script>
+  <script src="js/corporate.js?v=11"></script>
   <script src="js/shared/home-nav.js" defer></script>
   <script src="js/shared/customer-api.js"></script>
   <script src="js/shared/auth-modal.js" defer></script>

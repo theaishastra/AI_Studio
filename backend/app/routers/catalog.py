@@ -12,6 +12,7 @@ from ..deps import get_current_user
 from ..models import Category, Coupon, Media, Product, Review, Setting, SitePage, User
 from ..schemas import ReviewIn, ReviewOut
 from ..services.pricing import normalize_bulk_tiers
+from ..services.site_menu import MENUS, get_site_menu, public_menu
 from ..services.storage import get_or_create_thumbnail, warm_thumbnails
 
 logger = logging.getLogger("catalog")
@@ -494,6 +495,7 @@ reviews_router = APIRouter(tags=["reviews"])
 
 _homepage_cache: dict[str, tuple[float, dict]] = {}
 _products_cache: dict[str, tuple[float, list]] = {}
+_menu_cache: dict[str, tuple[float, dict]] = {}
 
 
 def invalidate_catalog_cache() -> None:
@@ -507,6 +509,7 @@ def invalidate_catalog_cache() -> None:
     _page_bundle_cache.clear()
     _homepage_cache.clear()
     _products_cache.clear()
+    _menu_cache.clear()
 
 
 def warm_catalog_cache() -> None:
@@ -615,6 +618,25 @@ def public_homepage(db: Session = Depends(get_db)):
     }
     if gen == _cache_generation:
         _homepage_cache["v"] = (time.monotonic(), result)
+    return result
+
+
+@reviews_router.get("/api/menu")
+def public_site_menu(name: str = Query("main", pattern="^[a-z]{1,20}$"), db: Session = Depends(get_db)):
+    """A category menu bar the storefront renders (js/shared/site-menu.js), as edited
+    in admin's Menu section - "main" or one page's own menu (see site_menu.MENUS).
+    Requested on every page view, so it's cached the same way as the homepage; admin
+    menu/catalog writes call invalidate_catalog_cache()."""
+    if name not in MENUS:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Unknown menu")
+    cached = _menu_cache.get(name)
+    if cached and time.monotonic() - cached[0] < _PAGE_BUNDLE_CACHE_TTL_SECONDS:
+        return cached[1]
+    gen = _cache_generation
+    menu, _ = get_site_menu(db, name)
+    result = public_menu(db, menu, MENUS[name]["layout"])
+    if gen == _cache_generation:
+        _menu_cache[name] = (time.monotonic(), result)
     return result
 
 

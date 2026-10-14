@@ -195,6 +195,10 @@ const Api = {
   homepage: () => api("/api/admin/homepage"),
   setHomepage: (layout) => api("/api/admin/homepage", { method: "PUT", body: JSON.stringify(layout) }),
   resetHomepage: () => api("/api/admin/homepage", { method: "DELETE" }),
+  menu: (name = "main") => api(`/api/admin/menu?name=${encodeURIComponent(name)}`),
+  menuTargets: () => api("/api/admin/menu/targets"),
+  setMenu: (name, menu) => api(`/api/admin/menu?name=${encodeURIComponent(name)}`, { method: "PUT", body: JSON.stringify(menu) }),
+  resetMenu: (name) => api(`/api/admin/menu?name=${encodeURIComponent(name)}`, { method: "DELETE" }),
 
   arrange: (categoryId) => api(`/api/admin/arrange/${categoryId}`),
   setArrange: (categoryId, ids) => api("/api/admin/arrange", { method: "PUT", body: JSON.stringify({ category_id: categoryId, ids }) }),

@@ -372,6 +372,67 @@ body .preview-scroll .preview-title-block h2 {
   }
 }
 
+/* "View more" under the row (js/shared/related-more.js): the first 4 cards
+   show, each click appends the next 8, and the button goes once everything
+   is out. Same outline look as the cards' "View Product" button. */
+.related-section .related-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.related-section .related-more[hidden],
+.related-section .related-more-btn[hidden] {
+  display: none;
+}
+
+.related-section .related-more-count {
+  margin: 0;
+  font-size: 13px;
+  color: var(--pv-muted);
+}
+
+.related-section .related-more-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  min-width: 180px;
+  padding: 10px 26px;
+  border: 1.5px solid #990F4B;
+  border-radius: 9px;
+  background: #FFFFFF;
+  color: #990F4B;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color .28s ease, background-color .28s ease, box-shadow .28s ease;
+}
+
+.related-section .related-more-btn:hover,
+.related-section .related-more-btn:focus-visible {
+  background: #990F4B;
+  color: #FFFFFF;
+  box-shadow: 0 8px 22px rgba(153, 15, 75, 0.35);
+}
+
+.related-section .related-more-btn:focus-visible {
+  outline: 2px solid #990F4B;
+  outline-offset: 3px;
+}
+
+/* Gifts' phone layout bleeds the section to the screen edges (a horizontally
+   scrolling row, css/gifts.css); keep the control off the edge like the heading. */
+@media (max-width: 575px) {
+  body.gifts-module-route .related-section .related-more {
+    margin: 6px 12px 0;
+  }
+}
+
 /* ---------------------------------------------------------------------
    QUANTITY OFFERS ("buy more, save more")
    ---------------------------------------------------------------------

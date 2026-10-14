@@ -4659,8 +4659,12 @@ else if (GiftsModule.view === 'product') {
     // fetch hasn't resolved yet or failed outright.
     const pool = liveCatalogFlat.length ? liveCatalogFlat : PRODUCTS;
     const currentKeywords = new Set((product.keywords || []).map(k => String(k).toLowerCase().trim()).filter(Boolean));
+    // Every other product on the gifts page, best matches first (shared
+    // keywords, then same category); the stable sort keeps the rest in catalog
+    // order. RelatedMore shows the first 4 and pages through the remainder with
+    // a "View more" button (js/shared/related-more.js).
     const scored = pool
-      .filter(item => item.name !== product.name)
+      .filter(item => item.name !== product.name && (item.id == null || item.id !== product.id))
       .map(item => {
         const itemKeywords = (item.keywords || []).map(k => String(k).toLowerCase().trim());
         const sharedKeywords = itemKeywords.filter(k => currentKeywords.has(k)).length;
@@ -4668,16 +4672,23 @@ else if (GiftsModule.view === 'product') {
         return { item, score: sharedKeywords * 10 + sameCategory };
       })
       .sort((a, b) => b.score - a.score)
-      .slice(0, 4)
       .map(entry => entry.item);
     const relatedEl = document.getElementById('relatedProducts');
-    relatedEl.innerHTML = scored.map(item => `
+    const relatedCard = item => `
     <article class="product-card" data-product="${escapeText(item.name)}" tabindex="0" role="link">
       <div class="product-media"><img src="${cldOpt(item.image)}" alt="${escapeText(item.name)}" loading="lazy" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">${item.off ? `<span class="discount">${item.off}</span>` : ''}</div>
       <div class="product-info"><h3>${escapeText(item.name)}</h3>${item.off ? `<div class="related-offer">${item.off}</div>` : ''}<div class="prices"><span class="price">${money(item.price)}</span>${item.old ? `<span class="old-price">${money(item.old)}</span>` : ''}</div><button class="btn btn-cart" type="button">View Product</button></div>
-    </article>`).join('');
-    if (window.SkLoading) {
-      relatedEl.querySelectorAll('.product-media img').forEach(img => window.SkLoading.wireImage(img, { wrap: img.closest('.product-media') }));
+    </article>`;
+    const wireImages = cards => {
+      if (!window.SkLoading) return;
+      cards.forEach(card => card.querySelectorAll('.product-media img').forEach(img => window.SkLoading.wireImage(img, { wrap: img.closest('.product-media') })));
+    };
+    if (window.RelatedMore) {
+      // Cards are keyed by name: that is what the click handler navigates by.
+      RelatedMore.render(relatedEl, scored, relatedCard, { keyOf: item => item.name, key: product.name, afterAppend: wireImages });
+    } else {
+      relatedEl.innerHTML = scored.slice(0, 4).map(relatedCard).join('');
+      wireImages(Array.from(relatedEl.children));
     }
   }
   function updateProductTransform() {

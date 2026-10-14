@@ -333,6 +333,17 @@ function buildCategoryMegaMenus() {
   });
 }
 
+// The menu bar itself comes from admin > Menu (js/shared/site-menu.js) and can be
+// redrawn after this page has set up - each redraw brings back empty automatic
+// dropdowns and no active link, so refill/re-mark them. Before the catalog has
+// loaded, buildCategoryMegaMenus() simply skips them; init fills them later.
+document.addEventListener('sitemenu:rendered', () => {
+  buildCategoryMegaMenus();
+  document.querySelectorAll('.menu-cat-link').forEach(el => {
+    el.classList.toggle('active', el.dataset.key === currentCategory);
+  });
+});
+
 // Dynamically measures the sticky header (same idea as corporate.js's
 // getScrollOffset()) so the jump to categoryHeader clears it instead of
 // landing partly hidden underneath.
@@ -647,11 +658,12 @@ function renderPreviewRelated(pkg) {
       return { item: p, score: shared * 10 + sameCategory };
     })
     .sort((a, b) => b.score - a.score)
-    .slice(0, 4)
     .map(entry => entry.item);
 
   if (sectionEl) sectionEl.style.display = scored.length ? '' : 'none';
-  relatedEl.innerHTML = scored.map(p => `
+  // First 4, then a "View more" button pages through the rest of the studio
+  // catalog (js/shared/related-more.js).
+  const relatedCard = p => `
     <div class="pkg-card" onclick="openStudioRelatedProduct('${p.id}')">
       <div class="pkg-image-wrap">
         <img class="pkg-image" src="${cldOpt(p.img)}" alt="${p.name}" loading="lazy" onerror="this.onerror=null;this.src=(window.SkLoading&&window.SkLoading.PLACEHOLDER_IMG)||'';">
@@ -663,9 +675,16 @@ function renderPreviewRelated(pkg) {
         </div>
       </div>
     </div>
-  `).join('');
-  if (window.SkLoading) {
-    relatedEl.querySelectorAll('.pkg-image-wrap img').forEach(img => window.SkLoading.wireImage(img, { wrap: img.closest('.pkg-image-wrap') }));
+  `;
+  const wireImages = cards => {
+    if (!window.SkLoading) return;
+    cards.forEach(card => card.querySelectorAll('.pkg-image-wrap img').forEach(img => window.SkLoading.wireImage(img, { wrap: img.closest('.pkg-image-wrap') })));
+  };
+  if (window.RelatedMore) {
+    RelatedMore.render(relatedEl, scored, relatedCard, { key: pkg.id, afterAppend: wireImages });
+  } else {
+    relatedEl.innerHTML = scored.slice(0, 4).map(relatedCard).join('');
+    wireImages(Array.from(relatedEl.children));
   }
 }
 

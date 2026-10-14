@@ -28,7 +28,7 @@ from ..schemas import (
     CategoryOut, CategoryReorderIn, ContactOut, ContactReadIn, CouponIn, CouponOut, CustomerOut,
     HomepageLayoutIn, MediaIn, MediaLibraryOut,
     MediaOut, MediaReorderIn, MediaUsageOut, OrderOut, OrderStatusUpdate, ProductIn, ProductOut, ProductPatch,
-    SettingIn, SettingOut, SitePageIn, SitePageOut, StaffIn, TrackingUpdateIn, UserOut,
+    SettingIn, SettingOut, SiteMenuIn, SitePageIn, SitePageOut, StaffIn, TrackingUpdateIn, UserOut,
 )
 from ..security import hash_password
 from ..services.inventory import restock
@@ -41,6 +41,7 @@ from ..services.retention import (
     TERMINAL_STATUSES as RETENTION_TERMINAL_STATUSES,
     get_retention_days, purge_due_artwork, purge_uploads_now, schedule_order_artwork_purge,
 )
+from ..services.site_menu import MENUS, default_menu, get_site_menu, menu_list, menu_targets
 from ..services.storage import CUSTOM_UPLOAD_FIELDS, get_or_create_thumbnail, upload_media_library_asset
 from .catalog import invalidate_catalog_cache
 
@@ -1546,6 +1547,55 @@ def list_media(
 @router.get("/settings")
 def list_settings(admin: User = Depends(require_staff), db: Session = Depends(get_db)):
     return {s.key: s.value for s in db.query(Setting).all()}
+
+
+# ---------------------------------------------------------------- site menu (category menu bar)
+
+def _menu_name(name: str) -> str:
+    if name not in MENUS:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Unknown menu")
+    return name
+
+
+@router.get("/menu")
+def get_menu(name: str = "main", admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    menu, is_default = get_site_menu(db, _menu_name(name))
+    return {"name": name, "menu": menu, "is_default": is_default, "menus": menu_list()}
+
+
+@router.get("/menu/targets")
+def get_menu_targets(admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    """Pages, categories and products the Menu editor's link picker offers."""
+    return menu_targets(db)
+
+
+@router.put("/menu")
+def set_menu(body: SiteMenuIn, request: Request, name: str = "main",
+             admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    key = MENUS[_menu_name(name)]["key"]
+    value = body.model_dump()
+    setting = db.get(Setting, key)
+    if setting:
+        setting.value = value
+    else:
+        db.add(Setting(key=key, value=value))
+    audit(db, admin, "set", "setting", key, {"items": len(value["items"])}, request)
+    db.commit()
+    invalidate_catalog_cache()
+    return {"name": name, "menu": value, "is_default": False, "menus": menu_list()}
+
+
+@router.delete("/menu")
+def reset_menu(request: Request, name: str = "main",
+               admin: User = Depends(require_staff), db: Session = Depends(get_db)):
+    key = MENUS[_menu_name(name)]["key"]
+    setting = db.get(Setting, key)
+    if setting:
+        db.delete(setting)
+        audit(db, admin, "delete", "setting", key, {}, request)
+        db.commit()
+        invalidate_catalog_cache()
+    return {"name": name, "menu": default_menu(name), "is_default": True, "menus": menu_list()}
 
 
 # ---------------------------------------------------------------- homepage builder
