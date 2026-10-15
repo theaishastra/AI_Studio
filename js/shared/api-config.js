@@ -10,5 +10,5 @@
   var isLocalDev = window.location.hostname === "" || /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname);
   window.SAI_API_BASE = isLocalDev
     ? "http://127.0.0.1:8000"
-    : "https://answer-wanting-operated-keep.trycloudflare.com";
+    : "https://meals-perhaps-prove-roses.trycloudflare.com";
 })();
