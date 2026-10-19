@@ -1148,3 +1148,12 @@ tr.row-unread td { font-weight: 500; }
 .menu-benefit-row input { margin: 0; }
 .menu-benefit-row input.menu-benefit-icon { flex: 0 0 56px; text-align: center; }
 .menu-auto-note { background: var(--panel-2); border: 1px dashed var(--border); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13px; line-height: 1.5; margin: 10px 0 12px; }
+
+/* Audit Log page: filters, and the who/what/changes columns. */
+.audit-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+.audit-filters select, .audit-filters input { width: auto; min-width: 180px; }
+.audit-table-wrap { overflow-x: auto; }
+.audit-table td { vertical-align: top; }
+.audit-dim { color: var(--text-dim); font-size: 12px; }
+.audit-changes { margin: 0; padding-left: 16px; font-size: 12.5px; }
+.audit-changes li { margin: 1px 0; }

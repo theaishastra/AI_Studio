@@ -31,6 +31,7 @@ from ..schemas import (
     SettingIn, SettingOut, SiteMenuIn, SitePageIn, SitePageOut, StaffIn, TrackingUpdateIn, UserOut,
 )
 from ..security import hash_password
+from ..services.audit_changes import describe_changes
 from ..services.inventory import restock
 from ..services.media import process_image, process_video, sniff_video
 from ..services.notifications import booking_event, notify, order_event
@@ -348,9 +349,11 @@ def update_category(cat_id: str, body: CategoryIn, request: Request,
     )
     if clash:
         raise HTTPException(status.HTTP_409_CONFLICT, "Slug already exists on this page")
-    for key, value in body.model_dump().items():
+    data = body.model_dump()
+    changes = describe_changes(cat, data)
+    for key, value in data.items():
         setattr(cat, key, value)
-    audit(db, admin, "update", "category", cat.id, {"name": cat.name}, request)
+    audit(db, admin, "update", "category", cat.id, {"name": cat.name, "changes": changes}, request)
     db.commit()
     db.refresh(cat)
     invalidate_catalog_cache()
@@ -517,9 +520,10 @@ def update_product(product_id: str, body: ProductPatch, request: Request,
         clash = db.query(Product).filter(Product.slug == data["slug"], Product.id != product_id).first()
         if clash:
             raise HTTPException(status.HTTP_409_CONFLICT, "Slug already exists")
+    changes = describe_changes(product, data)
     for key, value in data.items():
         setattr(product, key, value)
-    audit(db, admin, "update", "product", product.id, {"title": product.title}, request)
+    audit(db, admin, "update", "product", product.id, {"title": product.title, "changes": changes}, request)
     db.commit()
     db.refresh(product)
     invalidate_catalog_cache()
@@ -600,9 +604,10 @@ def update_coupon(coupon_id: str, body: CouponIn, request: Request,
     clash = db.query(Coupon).filter(Coupon.code == data["code"], Coupon.id != coupon_id).first()
     if clash:
         raise HTTPException(status.HTTP_409_CONFLICT, "Coupon code already exists")
+    changes = describe_changes(coupon, data)
     for key, value in data.items():
         setattr(coupon, key, value)
-    audit(db, admin, "update", "coupon", coupon.id, {"code": coupon.code}, request)
+    audit(db, admin, "update", "coupon", coupon.id, {"code": coupon.code, "changes": changes}, request)
     db.commit()
     db.refresh(coupon)
     return coupon
@@ -743,11 +748,18 @@ def reactivate_staff(user_id: str, request: Request,
 @router.get("/audit-log")
 def list_audit_log(limit: int = 100, admin: User = Depends(require_owner), db: Session = Depends(get_db)):
     logs = db.query(AuditLog).order_by(AuditLog.created_at.desc()).limit(min(limit, 500)).all()
+    # Who did it, by name and email: the page used to show only actions, so with
+    # several owner logins there was no way to tell whose save was whose.
+    user_ids = {l.user_id for l in logs if l.user_id}
+    users = {u.id: u for u in db.query(User).filter(User.id.in_(user_ids)).all()} if user_ids else {}
     return [
         {
             "id": l.id, "user_id": l.user_id, "action": l.action, "entity": l.entity,
             "entity_id": l.entity_id, "detail": l.detail, "ip": l.ip,
             "created_at": l.created_at.isoformat(),
+            "user_name": users[l.user_id].name if l.user_id in users else None,
+            "user_email": users[l.user_id].email if l.user_id in users else None,
+            "user_role": users[l.user_id].role if l.user_id in users else None,
         }
         for l in logs
     ]

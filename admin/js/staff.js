@@ -103,6 +103,62 @@ async function renderAudit() {
   await loadAuditTable();
 }
 
+// Plain-language wording for each recorded action, so the log reads as
+// "Updated product "Collage frame"" instead of raw action/entity/JSON columns.
+const AUDIT_VERBS = {
+  create: "Created", update: "Updated", delete: "Deleted", reorder: "Reordered", arrange: "Arranged",
+  set: "Changed", upload: "Uploaded", block: "Blocked", unblock: "Unblocked",
+  deactivate: "Deactivated", reactivate: "Reactivated", refund: "Refunded",
+  update_status: "Changed status of", update_tracking: "Updated tracking for",
+  toggle_review: "Showed/hid", clear_audit_log: "Cleared the audit log",
+  clear_otp_activity: "Cleared OTP activity for",
+  admin_login: "Logged in to admin", login: "Logged in", signup: "Signed up", logout: "Logged out",
+  artwork_hold: "Held artwork for", artwork_purge_now: "Purged artwork for",
+  artwork_sweep: "Ran artwork cleanup", artwork_retention: "Changed artwork retention",
+};
+const AUDIT_NOUNS = {
+  product: "product", category: "category", coupon: "coupon", staff: "login", order: "order",
+  booking: "booking", setting: "setting", media: "photo", category_media: "category photo",
+  product_media: "product photo", site_page: "page", customer: "customer", email: "email",
+  review: "review", contact_message: "contact message", customer_upload: "customer upload",
+};
+// Actions where naming the entity would only repeat the verb.
+const AUDIT_NO_NOUN = new Set(["admin_login", "login", "signup", "logout", "clear_audit_log", "artwork_sweep", "artwork_retention"]);
+
+function auditSubject(l) {
+  const d = l.detail || {};
+  return d.title || d.name || d.code || d.email || d.key || d.order_number || "";
+}
+
+function auditWhat(l) {
+  const verb = AUDIT_VERBS[l.action] || l.action;
+  if (AUDIT_NO_NOUN.has(l.action)) return esc(verb);
+  const noun = AUDIT_NOUNS[l.entity] || (l.entity || "").replace(/_/g, " ");
+  const subject = auditSubject(l);
+  return `${esc(verb)} ${esc(noun)}${subject ? ` <strong>${esc(subject)}</strong>` : ""}`;
+}
+
+function auditChanges(l) {
+  const d = l.detail || {};
+  if (Array.isArray(d.changes)) {
+    if (!d.changes.length) return `<span class="audit-dim">Saved with no changes</span>`;
+    return `<ul class="audit-changes">${d.changes.map(c => `<li>${esc(c)}</li>`).join("")}</ul>`;
+  }
+  // Older rows (before changes were recorded) and non-update actions: show
+  // whatever extra detail exists beyond the name already in "What happened".
+  const shown = new Set(["title", "name", "code", "email", "key", "order_number"]);
+  const rest = Object.entries(d).filter(([k, v]) => !shown.has(k) && v !== null && v !== "");
+  if (!rest.length) return l.action === "update" ? `<span class="audit-dim">Not recorded (older entry)</span>` : "";
+  return `<span class="audit-dim">${rest.map(([k, v]) => `${esc(k.replace(/_/g, " "))}: ${esc(typeof v === "object" ? JSON.stringify(v) : String(v))}`).join(" · ")}</span>`;
+}
+
+function auditWho(l) {
+  if (!l.user_email) return `<span class="audit-dim">System / unknown</span>`;
+  return `<div><strong>${esc(l.user_name || l.user_email)}</strong>
+    <span class="badge ${l.user_role === "owner" ? "on" : ""}" style="margin-left:4px;">${esc(l.user_role || "")}</span></div>
+    <div class="audit-dim">${esc(l.user_email)}</div>`;
+}
+
 async function loadAuditTable() {
   const logs = await Api.auditLog();
   const wrap = document.getElementById("auditWrap");
@@ -110,21 +166,52 @@ async function loadAuditTable() {
     wrap.innerHTML = `<div class="empty-state">No audit log entries.</div>`;
     return;
   }
+  const people = [...new Map(logs.filter(l => l.user_email).map(l => [l.user_email, l.user_name || l.user_email])).entries()]
+    .sort((a, b) => a[1].localeCompare(b[1]));
   wrap.innerHTML = `
-    <table>
-      <thead><tr><th>When (IST)</th><th>Action</th><th>Entity</th><th>Detail</th><th>IP Address</th></tr></thead>
-      <tbody>
-        ${logs.map(l => `
-          <tr>
-            <td>${fmtIST(l.created_at)}</td>
-            <td>${esc(l.action)}</td>
-            <td>${esc(l.entity)}</td>
-            <td>${esc(JSON.stringify(l.detail))}</td>
-            <td class="mono">${esc(l.ip || "—")}</td>
-          </tr>`).join("")}
-      </tbody>
-    </table>
+    <div class="audit-filters">
+      <select id="auditWho">
+        <option value="">Everyone</option>
+        ${people.map(([email, name]) => `<option value="${esc(email)}">${esc(name)} (${esc(email)})</option>`).join("")}
+      </select>
+      <select id="auditKind">
+        <option value="">All actions</option>
+        <option value="changes">Changes only (no logins)</option>
+        <option value="logins">Logins only</option>
+      </select>
+      <input type="search" id="auditSearch" placeholder="Search product, IP, change…">
+      <span class="audit-dim" id="auditCount"></span>
+    </div>
+    <div class="audit-table-wrap">
+      <table class="audit-table">
+        <thead><tr><th>When (IST)</th><th>Who</th><th>What happened</th><th>Changes</th><th>IP Address</th></tr></thead>
+        <tbody id="auditBody"></tbody>
+      </table>
+    </div>
   `;
+  const LOGIN_ACTIONS = new Set(["admin_login", "login", "signup", "logout"]);
+  const draw = () => {
+    const who = document.getElementById("auditWho").value;
+    const kind = document.getElementById("auditKind").value;
+    const q = document.getElementById("auditSearch").value.trim().toLowerCase();
+    const rows = logs.filter(l =>
+      (!who || l.user_email === who) &&
+      (!kind || (kind === "logins") === LOGIN_ACTIONS.has(l.action)) &&
+      (!q || [l.user_name, l.user_email, l.ip, l.action, l.entity, JSON.stringify(l.detail || {})]
+        .join(" ").toLowerCase().includes(q)));
+    document.getElementById("auditCount").textContent = `${rows.length} of ${logs.length} entries`;
+    document.getElementById("auditBody").innerHTML = rows.map(l => `
+      <tr>
+        <td style="white-space:nowrap;">${fmtIST(l.created_at)}</td>
+        <td>${auditWho(l)}</td>
+        <td>${auditWhat(l)}</td>
+        <td>${auditChanges(l)}</td>
+        <td class="mono">${esc(l.ip || "—")}</td>
+      </tr>`).join("") || `<tr><td colspan="5" class="audit-dim">No entries match.</td></tr>`;
+  };
+  ["auditWho", "auditKind"].forEach(id => document.getElementById(id).addEventListener("change", draw));
+  document.getElementById("auditSearch").addEventListener("input", draw);
+  draw();
 }
 
 async function clearAuditLog(onDone, btn) {

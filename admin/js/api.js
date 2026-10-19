@@ -110,7 +110,7 @@ const Api = {
   deactivateStaff: (id) => api(`/api/admin/staff/${id}`, { method: "DELETE" }),
   reactivateStaff: (id) => api(`/api/admin/staff/${id}/reactivate`, { method: "POST" }),
 
-  auditLog: () => api("/api/admin/audit-log"),
+  auditLog: (limit = 500) => api(`/api/admin/audit-log?limit=${limit}`),
   clearAuditLog: (olderThanDays) => api(`/api/admin/audit-log${olderThanDays ? `?older_than_days=${olderThanDays}` : ""}`, { method: "DELETE" }),
   activity: () => api("/api/admin/activity"),
 
