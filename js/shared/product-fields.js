@@ -727,10 +727,15 @@
       control = renderChoiceControl(cid, field);
     } else if (field.type === 'upload') {
       const max = field.multiple ? (field.max_files || 1) : 1;
+      // The limit is stated up front: before this the only sign of it was a
+      // count that appeared after picking, so customers picked 10 photos for a
+      // 6-photo frame and the extras were silently dropped.
+      const limit = max > 1 ? `Upload up to ${max} photos` : 'Upload 1 photo';
       control = `
-        <label class="pf-upload-btn" for="${cid}">${field.multiple ? 'Choose photo(s)' : 'Choose a photo'}</label>
-        <span class="pf-upload-hint">Max ${MAX_UPLOAD_MB} MB per photo</span>
-        <input type="file" accept="image/*" class="pf-upload-input" id="${cid}" data-max-files="${max}" ${field.multiple ? 'multiple' : ''}>
+        <span class="pf-upload-limit">${limit} &middot; max ${MAX_UPLOAD_MB} MB each</span>
+        <label class="pf-upload-btn" for="${cid}">${max > 1 ? 'Choose photos' : 'Choose a photo'}</label>
+        <input type="file" accept="image/*" class="pf-upload-input" id="${cid}" data-max-files="${max}" ${max > 1 ? 'multiple' : ''}>
+        <div class="pf-upload-status" id="${cid}_status"></div>
         <div class="pf-upload-list" id="${cid}_list"></div>`;
     }
     // A dropdown's label points at the tile grid (via the grid's aria-labelledby)
@@ -753,27 +758,75 @@
     const max = parseInt(input.dataset.maxFiles || '1', 10);
     let store = _fileStore.get(container);
     if (!store) { store = {}; _fileStore.set(container, store); }
-    const existing = store[fieldId] || [];
     const incoming = Array.from(input.files || []);
-    store[fieldId] = existing.concat(incoming).slice(0, max);
     input.value = '';
-    renderUploadList(container, input, fieldId, store[fieldId]);
+    if (!incoming.length) return;
+    // A single-photo field swaps the photo: appending would keep the first
+    // pick and silently ignore every later one.
+    const existing = max === 1 ? [] : (store[fieldId] || []);
+    const combined = existing.concat(incoming);
+    const dropped = Math.max(0, combined.length - max);
+    if (max === 1) (store[fieldId] || []).forEach(revokePreview);
+    combined.slice(max).forEach(revokePreview);
+    store[fieldId] = combined.slice(0, max);
+    renderUploadList(container, input, fieldId, store[fieldId], dropped);
   }
 
-  function renderUploadList(container, input, fieldId, files) {
+  // Object URLs for the thumbnails, one per File, released when the photo is
+  // removed so a customer swapping photos repeatedly doesn't pin them all in memory.
+  const _previewUrls = new WeakMap();
+  function previewUrl(file) {
+    if (!_previewUrls.has(file)) _previewUrls.set(file, URL.createObjectURL(file));
+    return _previewUrls.get(file);
+  }
+  function revokePreview(file) {
+    const url = _previewUrls.get(file);
+    if (url) { URL.revokeObjectURL(url); _previewUrls.delete(file); }
+  }
+
+  function renderUploadList(container, input, fieldId, files, dropped = 0) {
     const list = document.getElementById(`${input.id}_list`);
     if (!list) return;
     const max = parseInt(input.dataset.maxFiles || '1', 10);
+    // Thumbnails rather than filename chips: phone photo names
+    // ("IMG-20241012-WA0012...jpg") are one unbreakable word that pushed the
+    // remove button out of its chip, hiding it for some photos. The button now
+    // sits inside a fixed-size tile, so a name can never move it.
     list.innerHTML = files.map((f, i) => `
-      <span class="pf-upload-chip">${esc(f.name)}<button type="button" data-i="${i}" aria-label="Remove file">&times;</button></span>
-    `).join('') + (max > 1 ? `<span class="pf-upload-count">${files.length}/${max} files</span>` : '');
-    list.querySelectorAll('button').forEach(btn => {
+      <div class="pf-upload-thumb" title="${escAttr(f.name)}">
+        <img src="${previewUrl(f)}" alt="${escAttr(f.name)}">
+        <button type="button" class="pf-upload-remove" data-i="${i}" aria-label="Remove ${escAttr(f.name)}">&times;</button>
+      </div>
+    `).join('');
+    list.querySelectorAll('.pf-upload-remove').forEach(btn => {
       btn.addEventListener('click', () => {
         const store = _fileStore.get(container);
-        store[fieldId].splice(parseInt(btn.dataset.i, 10), 1);
+        const [removed] = store[fieldId].splice(parseInt(btn.dataset.i, 10), 1);
+        if (removed) revokePreview(removed);
         renderUploadList(container, input, fieldId, store[fieldId]);
       });
     });
+
+    const full = max > 1 && files.length >= max;
+    const btn = container.querySelector(`label.pf-upload-btn[for="${CSS.escape(input.id)}"]`);
+    input.disabled = full;
+    if (btn) {
+      btn.classList.toggle('is-disabled', full);
+      btn.textContent = max === 1
+        ? (files.length ? 'Change photo' : 'Choose a photo')
+        : (full ? `All ${max} photos added` : (files.length ? 'Add more photos' : 'Choose photos'));
+    }
+    const status = document.getElementById(`${input.id}_status`);
+    if (status) {
+      let text = '';
+      if (max > 1 && files.length) {
+        text = `${files.length} of ${max} photos added`;
+        if (!full) text += ` - you can add ${max - files.length} more`;
+      }
+      if (dropped) text += `${text ? '. ' : ''}Only ${max} photo${max > 1 ? 's are' : ' is'} allowed, so ${dropped} ${dropped > 1 ? 'were' : 'was'} not added.`;
+      status.textContent = text;
+      status.classList.toggle('is-warning', !!dropped);
+    }
   }
 
   // A raw phone-camera photo (often 3-10MB) read straight into a base64 data:

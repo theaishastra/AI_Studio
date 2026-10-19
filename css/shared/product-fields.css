@@ -545,48 +545,70 @@ body.pf-lightbox-open {
 
 .pf-upload-btn:hover { background: #f9e3ee; }
 
-.pf-upload-hint {
-  font-size: 11px;
+.pf-upload-btn.is-disabled {
+  cursor: default;
+  opacity: 0.6;
+  border-style: solid;
+}
+.pf-upload-btn.is-disabled:hover { background: #fdf1f6; }
+
+.pf-upload-limit {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5c0930;
+}
+
+.pf-upload-status {
+  font-size: 11.5px;
   color: #8a7688;
 }
+.pf-upload-status:empty { display: none; }
+.pf-upload-status.is-warning { color: #b35a00; }
 
 .pf-upload-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 4px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 8px;
+  max-width: 420px;
 }
+.pf-upload-list:empty { display: none; }
 
-.pf-upload-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+/* Fixed-size tile with the remove button positioned inside it, so nothing the
+   photo or its name does can push the button out of view. */
+.pf-upload-thumb {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
   background: #f3f0f1;
-  border-radius: 20px;
-  padding: 4px 6px 4px 12px;
-  font-size: 11.5px;
-  color: #4a3a43;
-  max-width: 220px;
+  border: 1px solid #ead9e1;
 }
 
-.pf-upload-chip button {
+.pf-upload-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pf-upload-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
   border: none;
-  background: #d8b9c6;
-  color: #5c0930;
-  width: 18px;
-  height: 18px;
   border-radius: 50%;
+  background: rgba(92, 9, 48, 0.85);
+  color: #fff;
+  font-size: 15px;
+  line-height: 22px;
+  padding: 0;
+  text-align: center;
   cursor: pointer;
-  font-size: 12px;
-  line-height: 1;
-  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
-
-.pf-upload-count {
-  font-size: 11px;
-  color: #8a7688;
-  align-self: center;
-}
+.pf-upload-remove:hover { background: #5c0930; }
 
 .pf-error {
   font-size: 11.5px;
