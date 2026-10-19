@@ -794,7 +794,7 @@
     // sits inside a fixed-size tile, so a name can never move it.
     list.innerHTML = files.map((f, i) => `
       <div class="pf-upload-thumb" title="${escAttr(f.name)}">
-        <img src="${previewUrl(f)}" alt="${escAttr(f.name)}">
+        <img src="${previewUrl(f)}" alt="">
         <button type="button" class="pf-upload-remove" data-i="${i}" aria-label="Remove ${escAttr(f.name)}">&times;</button>
       </div>
     `).join('');
