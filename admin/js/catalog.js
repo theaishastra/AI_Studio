@@ -1465,6 +1465,7 @@ function openProductForm(id, opts = {}) {
           errors.push(`Tile name "${l.label}" cannot contain double quotes or angle brackets.`));
       }
       if (type === "upload") {
+        field.multiple = !!row.querySelector(".fr_upload_multiple")?.checked;
         field.max_files = field.multiple ? Math.max(2, Math.min(10, parseInt(row.querySelector(".fr_max_files")?.value || "3", 10))) : 1;
       } else if (type === "dropdown") {
         const priced = !!row.querySelector(".fr_priced")?.checked;
